@@ -6,7 +6,7 @@ from sesame.observables import *
 
 def getFandJ(v, efn, efp, params):
 
-    bl, eg, nA, nD, scn, scp, g, mu, tau, rho, xpts, ypts = params
+    bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho, xpts, ypts = params
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
     
@@ -110,7 +110,7 @@ def getFandJ(v, efn, efp, params):
 
             fv = 1./dxbar * ((v_s-v_sm1)/dx_im1 - (v_sp1-v_s)/dx_i)\
                  + 1./dybar * ((v_s-v_smN)/dy_jm1 - (v_spN-v_s)/dy_j)\
-                 - (rho[s] + exp(bl-eg+efp_s-v_s) - exp(-bl+efn_s+v_s))
+                 - (rho[s] + nV*exp(bl-eg+efp_s-v_s) - nC*exp(-bl+efn_s+v_s))
 
             ## fn derivatives
             ###################################################
