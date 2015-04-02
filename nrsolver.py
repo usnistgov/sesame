@@ -5,8 +5,8 @@
 import numpy as np
 import scipy.sparse.linalg as lg
 
-from getFandJ_eq import getFandJ_eq
-from getFandJ import getFandJ
+from sesame.getFandJ_eq import getFandJ_eq
+from sesame.getFandJ import getFandJ
 
 def solver(guess, tolerance, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm

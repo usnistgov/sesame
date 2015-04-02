@@ -53,11 +53,11 @@ def getFandJ_eq(v, params):
                  - (rho[s] + exp(bl-eg-v_s) - exp(-bl+v_s))
             
             ## fv derivatives
-            dfv_dvmN = 0#-1./(dy_jm1 * dybar )
+            dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
             dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + exp(bl-eg-v_s)+exp(-bl+v_s)
             dfv_dvp1 = -1./(dx_i * dxbar)
-            dfv_dvpN = 0#-1./(dy_j * dybar)
+            dfv_dvpN = -1./(dy_j * dybar)
 
             rows += 5*[fv_row]
             columns += [v_smN_col, v_sm1_col, v_s_col, v_sp1_col, v_spN_col]
