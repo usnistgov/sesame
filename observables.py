@@ -3,7 +3,7 @@ from numpy import exp
 def get_n(efn, v, params):
     bl = params.bl
     nC = params.nC
-    return nc*exp(-bl+efn+v)
+    return nC*exp(-bl+efn+v)
 
 def get_p(efp, v, params):
     bl = params.bl
@@ -99,8 +99,8 @@ def get_jp_derivs(efp_i, efp_ip1, v_i, v_ip1, dx_i, params):
 
 def get_rr_derivs(efn_i, efp_i, v_i, tau, params):
     eg = params.eg
-    n = get_n(efn, v, params)
-    p = get_p(efp, v, params)
+    n = get_n(efn_i, v_i, params)
+    p = get_p(efp_i, v_i, params)
     ni = exp(-eg/2.)
 
     defp_i = 1/tau * (n*p*(2*ni+n+p) - (n*p-ni**2)*p) / (2*ni+n+p)**2
