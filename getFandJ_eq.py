@@ -10,6 +10,8 @@ def getFandJ_eq(v, params):
     xpts = params.xpts
     ypts = params.ypts
     rho = params.rho
+    nC = params.nC
+    nV = params.nV
 
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
@@ -50,12 +52,13 @@ def getFandJ_eq(v, params):
 
             fv = 1./dxbar * ((v_s-v_sm1)/dx_im1 - (v_sp1-v_s)/dx_i)\
                  + 1./dybar * ((v_s-v_smN)/dy_jm1 - (v_spN-v_s)/dy_j)\
-                 - (rho[s] + exp(bl-eg-v_s) - exp(-bl+v_s))
+                 - (rho[s] + nV*exp(bl-eg-v_s) - nC*exp(-bl+v_s))
             
             ## fv derivatives
             dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
-            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + exp(bl-eg-v_s)+exp(-bl+v_s)
+            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + nV*exp(bl-eg-v_s)\
+                     + nC*exp(-bl+v_s)
             dfv_dvp1 = -1./(dx_i * dxbar)
             dfv_dvpN = -1./(dy_j * dybar)
 

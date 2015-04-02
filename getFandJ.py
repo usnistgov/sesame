@@ -199,9 +199,9 @@ def getFandJ(v, efn, efp, params):
             dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
             dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) +\
-                     exp(bl-eg+efp_s-v_s) + exp(-bl+efn_s+v_s)
-            dfv_defn = exp(-bl+efn_s+v_s)
-            dfv_defp = -exp(bl-eg+efp_s-v_s)
+                     nV*exp(bl-eg+efp_s-v_s) + nC*exp(-bl+efn_s+v_s)
+            dfv_defn = nC*exp(-bl+efn_s+v_s)
+            dfv_defp = -nV*exp(bl-eg+efp_s-v_s)
             dfv_dvp1 = -1./(dx_i * dxbar)
             dfv_dvpN = -1./(dy_j * dybar)
 
