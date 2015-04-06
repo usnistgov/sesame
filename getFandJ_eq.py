@@ -12,7 +12,6 @@ def getFandJ_eq(v, params):
     rho = params.rho
     nC = params.nC
     nV = params.nV
-    GBsites = params.GBsites
     NGB = params.NGB
     nGB = params.nGB
     pGB = params.pGB
@@ -57,7 +56,7 @@ def getFandJ_eq(v, params):
             n = nC*exp(-bl+v_s)
             p = nV*exp(bl-eg-v_s)
 
-            if s in GBsites: XXX dictionaries are the way to go!!
+            if s in NGB:
                 fGB = (n + pGB[s]) / (n + p + nGB[s] + pGB[s])
                 rhoGB_s = NGB[s]/2. * (1 - 2*fGB)
                 drhoGB_dv = -NGB[s] * (n*(n+p+nGB+pGB) - (n+pGB)*n) / (n+p+nGB+pGB)**2
