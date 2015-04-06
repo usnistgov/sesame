@@ -12,6 +12,10 @@ def getFandJ_eq(v, params):
     rho = params.rho
     nC = params.nC
     nV = params.nV
+    GBsites = params.GBsites
+    NGB = params.NGB
+    nGB = params.nGB
+    pGB = params.pGB
 
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
@@ -50,15 +54,25 @@ def getFandJ_eq(v, params):
             v_smN = v[s-Nx]
             v_spN = v[s+Nx]
 
+            n = nC*exp(-bl+v_s)
+            p = nV*exp(bl-eg-v_s)
+
+            if s in GBsites: XXX dictionaries are the way to go!!
+                fGB = (n + pGB[s]) / (n + p + nGB[s] + pGB[s])
+                rhoGB_s = NGB[s]/2. * (1 - 2*fGB)
+                drhoGB_dv = -NGB[s] * (n*(n+p+nGB+pGB) - (n+pGB)*n) / (n+p+nGB+pGB)**2
+            else:
+                rhoGB = 0
+                drhoGB_dv = 0
+
             fv = 1./dxbar * ((v_s-v_sm1)/dx_im1 - (v_sp1-v_s)/dx_i)\
                  + 1./dybar * ((v_s-v_smN)/dy_jm1 - (v_spN-v_s)/dy_j)\
-                 - (rho[s] + nV*exp(bl-eg-v_s) - nC*exp(-bl+v_s))
+                 - (rho[s] + rhoGB + p - n)
             
             ## fv derivatives
             dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
-            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + nV*exp(bl-eg-v_s)\
-                     + nC*exp(-bl+v_s)
+            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + p + n - drhoGB_dv
             dfv_dvp1 = -1./(dx_i * dxbar)
             dfv_dvpN = -1./(dy_j * dybar)
 
