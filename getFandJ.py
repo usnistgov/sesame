@@ -6,7 +6,7 @@ from sesame.observables import *
 
 def getFandJ(v, efn, efp, params):
 
-    bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho, xpts, ypts = params
+    bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho, NGB, tauGB, nGB, pGB, xpts, ypts = params
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
     
@@ -76,12 +76,39 @@ def getFandJ(v, efn, efp, params):
             v_spN = v[s+Nx]
 
 
+        n_s = get_n(efn_s, v_s, params)
+        p_s = get_p(efp_s, v_s, params)
+        
+        if s in NGB:
+            # GB charge density
+            fGB = (n_s + pGB) / (n_s + p_s + nGB + pGB)
+            rhoGB = NGB[s]/2. * (1 - 2*fGB)
+            drhoGB_dv = -NGB[s] * (n_s*(n_s+p_s+nGB+pGB)-(n_s+pGB)*(n_s-p_s))\
+                                / (n_s+p_s+nGB+pGB)**2
+            drhoGB_defn = -NGB[s] * (n_s*(n_s+p_s+nGB+pGB)-(n_s+pGB)*n_s)\
+                                  / (n_s+p_s+nGB+pGB)**2
+            drhoGB_defp = NGB[s] * (n_s+pGB)*p_s / (n_s+p_s+nGB+pGB)**2
+            # GB recombination rate
+            rGB = get_rrGB(efn_s, efp_s, v_s, tauGB[s], params)
+            drrGB_defp, drrGB_defn, drrGB_dv = \
+            get_rrGB_derivs(efn_s, efp_s, v_s, tauGB[s], params)
+        else:
+            rhoGB = 0
+            drhoGB_dv, drhoGB_defn, drhoGB_defp = 0, 0, 0
+            rGB = 0
+            drrGB_defp, drrGB_defn, drrGB_dv = 0, 0, 0
+
+
         ## recombination rate and its derivatives (needed everywhere)
         #################################################################
-        r = get_rr(efn_s, efp_s, v_s, tau[s], params)
+        r = get_rr(efn_s, efp_s, v_s, tau[s], params) + rGB
         
         drr_defp_s, drr_defn_s, drr_dv_s = \
-        get_rr_derivs(efn_s, efp_s, v_s, tau[s], params)
+        get_rr_derivs(efn_s, efp_s, v_s, tau[s], params)\
+
+        drr_defp_s += drrGB_defp
+        drr_defn_s += drrGB_defn
+        drr_dv_s += drrGB_dv
 
 
         ## inside the grid
@@ -110,7 +137,7 @@ def getFandJ(v, efn, efp, params):
 
             fv = 1./dxbar * ((v_s-v_sm1)/dx_im1 - (v_sp1-v_s)/dx_i)\
                  + 1./dybar * ((v_s-v_smN)/dy_jm1 - (v_spN-v_s)/dy_j)\
-                 - (rho[s] + nV*exp(bl-eg+efp_s-v_s) - nC*exp(-bl+efn_s+v_s))
+                 - (rho[s] + rhoGB + nV*exp(bl-eg+efp_s-v_s) - nC*exp(-bl+efn_s+v_s))
 
             ## fn derivatives
             ###################################################
@@ -198,10 +225,10 @@ def getFandJ(v, efn, efp, params):
             ###################################################
             dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
-            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) +\
-                     nV*exp(bl-eg+efp_s-v_s) + nC*exp(-bl+efn_s+v_s)
-            dfv_defn = nC*exp(-bl+efn_s+v_s)
-            dfv_defp = -nV*exp(bl-eg+efp_s-v_s)
+            dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + p_s + n_s -\
+                     drhoGB_dv
+            dfv_defn = n_s - drhoGB_defn
+            dfv_defp = -p_s - drhoGB_defp
             dfv_dvp1 = -1./(dx_i * dxbar)
             dfv_dvpN = -1./(dy_j * dybar)
 
@@ -225,8 +252,6 @@ def getFandJ(v, efn, efp, params):
             # currents and densities on the left side
             jnx = mu_s * get_jn(efn_s, efn_sp1, v_s, v_sp1, dx_i, params)
             jpx = mu_s * get_jp(efp_s, efp_sp1, v_s, v_sp1, dx_i, params)
-            n_s = get_n(efn_s, v_s, params)
-            p_s = get_p(efp_s, v_s, params)
  
             # a_n, a_p values, a_v
             vec[fn_row] = jnx - scn[0] * (n_s - nD)
@@ -277,8 +302,6 @@ def getFandJ(v, efn, efp, params):
             jpy_smN = mu_smN * get_jp(efp_smN, efp_s, v_smN, v_s, dy_j, params)
             jpx_s = jpx_sm1 + dxbar * (g[s] - r - (jpy_s - jpy_smN)/dybar)
 
-            n_s = get_n(efn_s, v_s, params)
-            p_s = get_p(efp_s, v_s, params)
  
             # b_n, b_p and b_v values
             vec[fn_row] = jnx_s + scn[1] * (n_s - exp(-eg) / nA)

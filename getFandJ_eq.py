@@ -59,7 +59,7 @@ def getFandJ_eq(v, params):
             if s in NGB:
                 fGB = (n + pGB) / (n + p + nGB + pGB)
                 rhoGB = NGB[s]/2. * (1 - 2*fGB)
-                drhoGB_dv = -NGB[s] * (n*(n+p+nGB+pGB) - (n+pGB)*n) / (n+p+nGB+pGB)**2
+                drhoGB_dv = -NGB[s] * (n*(n+p+nGB+pGB) - (n+pGB)*(n-p)) / (n+p+nGB+pGB)**2
             else:
                 rhoGB = 0
                 drhoGB_dv = 0
