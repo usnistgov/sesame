@@ -6,7 +6,10 @@ from sesame.observables import *
 
 def getFandJ(v, efn, efp, params):
 
-    bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho, NGB, tauGB, nGB, pGB, xpts, ypts = params
+    bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho,\
+    NGB, tauGB, nGB, pGB,\
+    n1, p1, xpts, ypts = params
+
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
     
@@ -89,9 +92,9 @@ def getFandJ(v, efn, efp, params):
                                   / (n_s+p_s+nGB+pGB)**2
             drhoGB_defp = NGB[s] * (n_s+pGB)*p_s / (n_s+p_s+nGB+pGB)**2
             # GB recombination rate
-            rGB = get_rrGB(efn_s, efp_s, v_s, tauGB[s], params)
+            rGB = get_rr(efn_s, efp_s, v_s, nGB, pGB, tauGB[s], params)
             drrGB_defp, drrGB_defn, drrGB_dv = \
-            get_rrGB_derivs(efn_s, efp_s, v_s, tauGB[s], params)
+            get_rr_derivs(efn_s, efp_s, v_s, nGB, pGB, tauGB[s], params)
         else:
             rhoGB = 0
             drhoGB_dv, drhoGB_defn, drhoGB_defp = 0, 0, 0
@@ -101,10 +104,10 @@ def getFandJ(v, efn, efp, params):
 
         ## recombination rate and its derivatives (needed everywhere)
         #################################################################
-        r = get_rr(efn_s, efp_s, v_s, tau[s], params) + rGB
+        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) + rGB
         
         drr_defp_s, drr_defn_s, drr_dv_s = \
-        get_rr_derivs(efn_s, efp_s, v_s, tau[s], params)\
+        get_rr_derivs(efn_s, efp_s, v_s, n1, p1, tau[s], params)\
 
         drr_defp_s += drrGB_defp
         drr_defn_s += drrGB_defn

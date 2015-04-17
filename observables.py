@@ -11,24 +11,13 @@ def get_p(efp, v, params):
     nV = params.nV
     return nV*exp(-eg+bl+efp-v)
 
-def get_rr(efn, efp, v, tau, params):
+def get_rr(efn, efp, v, n1, p1, tau, params):
     eg = params.eg
     n = get_n(efn, v, params)
     p = get_p(efp, v, params)
     ni = exp(-eg/2.)
 
-    r = (n*p-ni**2)/(n+p+2*ni) / tau
-    return r
-
-def get_rrGB(efn, efp, v, tau, params):
-    eg = params.eg
-    n = get_n(efn, v, params)
-    p = get_p(efp, v, params)
-    ni = exp(-eg/2.)
-    nGB = params.nGB
-    pGB = params.pGB
-
-    r = (n*p-ni**2)/(n+p+nGB+pGB) / tau
+    r = (n*p-ni**2)/(n+p+n1+p1) / tau
     return r
 
 def get_jn(efn, efnp1, v, vp1, dx, params):
@@ -106,28 +95,14 @@ def get_jp_derivs(efp_i, efp_ip1, v_i, v_ip1, dx_i, params):
         
     return nV*defp_i, nV*defp_ip1, nV*dv_i, nV*dv_ip1
 
-def get_rr_derivs(efn_i, efp_i, v_i, tau, params):
+def get_rr_derivs(efn_i, efp_i, v_i, n1, p1, tau, params):
     eg = params.eg
     n = get_n(efn_i, v_i, params)
     p = get_p(efp_i, v_i, params)
     ni = exp(-eg/2.)
 
-    defp_i = 1/tau * (n*p*(2*ni+n+p) - (n*p-ni**2)*p) / (2*ni+n+p)**2
-    defn_i = 1/tau * (n*p*(2*ni+n+p) - (n*p-ni**2)*n) / (2*ni+n+p)**2
-    dv_i = 1/tau * (n*p-ni**2) * (p-n) / (2*ni+n+p)**2
-
-    return defp_i, defn_i, dv_i
-
-def get_rrGB_derivs(efn, efp, v, tau, params):
-    eg = params.eg
-    n = get_n(efn, v, params)
-    p = get_p(efp, v, params)
-    ni = exp(-eg/2.)
-    nGB = params.nGB
-    pGB = params.pGB
-
-    defp_i = 1/tau * (n*p*(n+p+nGB+pGB) - (n*p-ni**2)*p) / (nGB+pGB+n+p)**2
-    defn_i = 1/tau * (n*p*(n+p+nGB+pGB) - (n*p-ni**2)*n) / (nGB+pGB+n+p)**2
-    dv_i = 1/tau * (n*p-ni**2) * (p-n) / (n+p+nGB+pGB)**2
+    defp_i = 1/tau * (n*p*(n1+p1+n+p) - (n*p-ni**2)*p) / (n1+p1+n+p)**2
+    defn_i = 1/tau * (n*p*(n1+p1+n+p) - (n*p-ni**2)*n) / (n1+p1+n+p)**2
+    dv_i = 1/tau * (n*p-ni**2) * (p-n) / (n1+p1+n+p)**2
 
     return defp_i, defn_i, dv_i

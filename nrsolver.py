@@ -3,7 +3,7 @@
 ####################################
 
 import numpy as np
-import scipy.sparse.linalg as lg
+from scipy.sparse.linalg import spsolve
 
 from sesame.getFandJ_eq import getFandJ_eq
 from sesame.getFandJ import getFandJ
@@ -34,7 +34,7 @@ def solver(guess, tolerance, params, max_step=300, info=0):
     converged = False
     while converged != True:
         cc = cc + 1
-        new = lg.spsolve(J, -f)
+        new = spsolve(J, -f, use_umfpack=True)
         new = new.transpose()
         # getting the error of the guess
         error = max(np.abs(new))
