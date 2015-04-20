@@ -3,12 +3,12 @@
 ####################################
 
 import numpy as np
-from scipy.sparse.linalg import spsolve
 
 from sesame.getFandJ_eq import getFandJ_eq
 from sesame.getFandJ import getFandJ
 
-import mumps
+# from scipy.sparse.linalg import spsolve
+from mumps import spsolve
 
 def solver(guess, tolerance, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm
@@ -35,20 +35,9 @@ def solver(guess, tolerance, params, max_step=300, info=0):
     clamp = 5.
     converged = False
 
-    # create mumps context and set the arrays
-    # ctx = mumps.DMumpsContext(sym=0, par=1)
-    # ctx.set_silent()
-    
     while converged != True:
         cc = cc + 1
-        # new = -f
-        # ctx.set_shape(new.shape[0])
-        # ctx.set_centralized_sparse(J)
-        # ctx.set_rhs(new)
-        # ctx.run(job=6)
-        new = mumps.spsolve(J, -f)
-
-        # new = spsolve(J, -f, use_umfpack=True)
+        new = spsolve(J, -f)
         new = new.transpose()
         # getting the error of the guess
         error = max(np.abs(new))

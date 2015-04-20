@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import exp
-from scipy.sparse import csr_matrix
 from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 from sesame.observables import *
 
@@ -420,6 +420,6 @@ def getFandJ(v, efn, efp, params):
             columns += [v_s_col, v_spN_col]
             data += [1, -1]
 
+    J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
     # J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny))
-    J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny))
     return vec, J

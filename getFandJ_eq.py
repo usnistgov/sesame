@@ -1,7 +1,7 @@
 import numpy as np
 from numpy import exp
-from scipy.sparse import csr_matrix
 from scipy.sparse import coo_matrix
+from scipy.sparse import csr_matrix
 
 # remember that efn and efp are zero at equilibrium
 
@@ -22,7 +22,7 @@ def getFandJ_eq(v, params):
     Nx = xpts.shape[0]
     Ny = ypts.shape[0]
 
-    f = np.zeros((Nx*Ny,), dtype=float)
+    f = np.zeros((Nx*Ny,), dtype=np.float64)
 
     rows = []
     columns = []
@@ -103,6 +103,6 @@ def getFandJ_eq(v, params):
             data += [1, -1]
             f[fv_row] = 0
 
-    J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny))
-    # J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny))
+    J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
+    # J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     return f, J
