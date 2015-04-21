@@ -12,10 +12,9 @@ def get_p(efp, v, params):
     return nV*exp(-eg+bl+efp-v)
 
 def get_rr(efn, efp, v, n1, p1, tau, params):
-    eg = params.eg
+    ni = params.ni
     n = get_n(efn, v, params)
     p = get_p(efp, v, params)
-    ni = exp(-eg/2.)
 
     r = (n*p-ni**2)/(n+p+n1+p1) / tau
     return r
@@ -96,10 +95,9 @@ def get_jp_derivs(efp_i, efp_ip1, v_i, v_ip1, dx_i, params):
     return nV*defp_i, nV*defp_ip1, nV*dv_i, nV*dv_ip1
 
 def get_rr_derivs(efn_i, efp_i, v_i, n1, p1, tau, params):
-    eg = params.eg
+    ni = params.ni
     n = get_n(efn_i, v_i, params)
     p = get_p(efp_i, v_i, params)
-    ni = exp(-eg/2.)
 
     defp_i = 1/tau * (n*p*(n1+p1+n+p) - (n*p-ni**2)*p) / (n1+p1+n+p)**2
     defn_i = 1/tau * (n*p*(n1+p1+n+p) - (n*p-ni**2)*n) / (n1+p1+n+p)**2

@@ -9,7 +9,7 @@ def getFandJ(v, efn, efp, params):
 
     bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho,\
     NGB, tauGB, nGB, pGB,\
-    n1, p1, xpts, ypts = params
+    n1, p1, ni, xpts, ypts = params
 
     dx = xpts[1:] - xpts[:-1]
     dy = ypts[1:] - ypts[:-1]
@@ -259,7 +259,7 @@ def getFandJ(v, efn, efp, params):
  
             # a_n, a_p values, a_v
             vec[fn_row] = jnx - scn[0] * (n_s - nD)
-            vec[fp_row] = jpx + scp[0] * (p_s - exp(-eg)/nD)
+            vec[fp_row] = jpx + scp[0] * (p_s - ni**2 / nD)
             vec[fv_row] = 0 # Dirichlet BC for v
 
             ## a_n derivatives on the left boundary
@@ -308,7 +308,7 @@ def getFandJ(v, efn, efp, params):
 
  
             # b_n, b_p and b_v values
-            vec[fn_row] = jnx_s + scn[1] * (n_s - exp(-eg) / nA)
+            vec[fn_row] = jnx_s + scn[1] * (n_s - ni**2 / nA)
             vec[fp_row] = jpx_s - scp[1] * (p_s - nA)
             vec[fv_row] = 0
 
