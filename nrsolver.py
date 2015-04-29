@@ -5,11 +5,12 @@
 import numpy as np
 
 from sesame.getFandJ_eq import getFandJ_eq
-from sesame.getFandJ import getFandJ
+from jacobian import getJ
+from getF import getF
 
-# from scipy.sparse.linalg import spsolve
+from scipy.sparse.linalg import spsolve
 # from mumps import spsolve
-import mumps
+# import mumps
 
 def solver(guess, tolerance, comm, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm
@@ -32,7 +33,8 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
     else:
         thermal_eq = False
         efn, efp, v = guess
-        f, J = getFandJ(v, efn, efp, params)
+        f = getF(v, efn, efp, params)
+        J = getJ(v, efn, efp, params)
         solution = {'v': v, 'efn': efn, 'efp': efp}
 
     cc = 0
@@ -41,28 +43,28 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
 
     while converged != True:
         cc = cc + 1
-        # new = spsolve(J, -f, comm=comm)
+        new = spsolve(J, -f)
 
-        ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
-        if ctx.myid == 0:
-            ctx.set_centralized_sparse(J.tocoo())
-            x = (-f).copy()
-            ctx.set_rhs(x)
-
-        # Silence most messages
-        ctx.set_silent()
-
-        ctx.set_icntl(7, 3)
-
-        # Analysis + Factorization + Solve
-        ctx.run(job=6)
-        ctx.destroy()
-        
-        if rank == 0:
-            new = x
-        else:
-            new = None
-        new = comm.bcast(new, root=0)
+        # ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
+        # if ctx.myid == 0:
+        #     ctx.set_centralized_sparse(J.tocoo())
+        #     x = (-f).copy()
+        #     ctx.set_rhs(x)
+        #
+        # # Silence most messages
+        # ctx.set_silent()
+        #
+        # ctx.set_icntl(7, 3)
+        #
+        # # Analysis + Factorization + Solve
+        # ctx.run(job=6)
+        # ctx.destroy()
+        #
+        # if rank == 0:
+        #     new = x
+        # else:
+        #     new = None
+        # new = comm.bcast(new, root=0)
 
         new = new.transpose()
         # getting the error of the guess
@@ -100,7 +102,8 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
             efn += defn
             efp += defp
             v += dv
-            f, J = getFandJ(v, efn, efp, params)
+            f = getF(v, efn, efp, params)
+            J = getJ(v, efn, efp, params)
         
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
