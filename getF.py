@@ -1,246 +1,233 @@
 import numpy as np
-from numpy import exp
-from scipy.sparse import coo_matrix
-from scipy.sparse import csr_matrix
 
 from sesame.observables import *
 
-def getFandJ(v, efn, efp, params):
+def getF(v, efn, efp, params):
 
     bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho,\
-    NGB, tauGB, nGB, pGB,\
+    NGB, SGB, nGB, pGB,\
     n1, p1, ni, xpts, ypts = params
 
-    dx = xpts[1:] - xpts[:-1]
-    dy = ypts[1:] - ypts[:-1]
-    
     Nx = xpts.shape[0]
     Ny = ypts.shape[0]
-    vec = np.zeros((3*Nx*Ny,), dtype=float)
 
-    rows = []
-    columns = []
-    data = []
+    delta_x = xpts[1:] - xpts[:-1]
+    delta_y = ypts[1:] - ypts[:-1]
+
+    # expand dx and dy in y and x respectively
+    dx = np.tile(delta_x, (Ny, 1)).T
+    dy = np.tile(delta_y, (Nx, 1))
 
     # reshape the vectors to conform to [x,y] coordinates
     v_xy = v.reshape(Ny, Nx).T
     efn_xy = efn.reshape(Ny, Nx).T
     efp_xy = efp.reshape(Ny, Nx).T
+    g_xy = g.reshape(Ny, Nx).T
     mu = mu.reshape(Ny, Nx).T
+    S_xy = (1/tau).reshape(Ny, Nx).T
+    rho_xy = rho.reshape(Ny, Nx).T
+    SGB_xy = SGB.reshape(Ny, Nx).T
+    NGB_xy = NGB.reshape(Ny, Nx).T
+    n_xy = get_n(efn_xy, v_xy, params)
+    p_xy = get_p(efp_xy, v_xy, params)
 
-    # currents in the x-direction at all sites but the last column
-    jn_x = mu * get_jn(efn_xy[:-1,:], efn_xy[1:,:], v_xy[:-1,:], v[1:,:], dx, params)
-    jp_x = mu * get_jp(efp_xy[:-1,:], efp_xy[1:,:], v_xy[:-1,:], v[1:,:], dx, params)
-    # currents in the y-direction at all sites but the last row
-    jn_y = mu * get_jn(efn_xy[:,:-1], efn_xy[:,1:], v_xy[:,:-1], v[:,1:], dx, params)
-    jp_y = mu * get_jp(efp_xy[:,:-1], efp_xy[:,1:], v_xy[:,:-1], v[:,1:], dx, params)
-    # current derivatives
-    djn_x = mu * get_jn_derivs(efn_xy[:-1,:], efn_xy[1:,:], v_xy[:-1,:], v[1:,:], dx, params)
-    djp_x = mu * get_jp_derivs(efp_xy[:-1,:], efp_xy[1:,:], v_xy[:-1,:], v[1:,:], dx, params)
-    djn_y = mu * get_jn_derivs(efn_xy[:,:-1], efn_xy[:,1:], v_xy[:,:-1], v[:,1:], dx, params)
-    djp_y = mu * get_jp_derivs(efp_xy[:,:-1], efp_xy[:,1:], v_xy[:,:-1], v[:,1:], dx, params)
+    # right hand side vector
+    vec = np.zeros((3*Nx*Ny,))
 
-    # for c in range(1, xpts.shape[0]-1, 1):
-    for s in range(Nx*Ny):
-        j = s//Nx
-        i = s - j*Nx
+    ###########################################################################
+    #               organization of the right hand side vector                #
+    ###########################################################################
+    # A site with coordinates (i,j) corresponds to a site number s as follows:
+    # j = s//Nx
+    # i = s - j*Nx
+    #
+    # Rows for (efn_s, efp_s, v_s)
+    # ----------------------------
+    # fn_row = 3*s
+    # fp_row = 3*s+1
+    # fv_row = 3*s+2
+    
 
-        # rows
-        fn_row = 3*s
-        fp_row = 3*s+1
-        fv_row = 3*s+2
-        
-        # columns
-        efn_smN_col = 3*(s-Nx)
-        efn_sm1_col = 3*(s-1)
-        efn_s_col = 3*s
-        efn_sp1_col = 3*(s+1)
-        efn_spN_col = 3*(s+Nx)
-        
-        efp_smN_col = 3*(s-Nx)+1
-        efp_sm1_col = 3*(s-1)+1
-        efp_s_col = 3*s+1
-        efp_sp1_col = 3*(s+1)+1
-        efp_spN_col = 3*(s+Nx)+1
-        
-        v_smN_col = 3*(s-Nx)+2
-        v_sm1_col = 3*(s-1)+2
-        v_s_col = 3*s+2
-        v_sp1_col = 3*(s+1)+2
-        v_spN_col = 3*(s+Nx)+2
+    ###########################################################################
+    #       inside the system: 0 < i < Nx-1 and 0 < j < Ny-1                  #
+    ###########################################################################
+    # We compute fn, fp, fv. Those functions are only defined on the
+    # inner part of the system. All the edges containing boundary conditions.
 
-        # values of the guess for efn, efp, v
-        efn_s = efn[s]
-        efp_s = efp[s]
-        v_s = v[s]
-        mu_s = mu[s]
+    # list of the sites inside the system
+    sites = [i + j*Nx for i in range(1,Nx-1) for j in range(1,Ny-1)]
 
-        if s-Nx > 0:
-            efn_smN = efn[s-Nx]
-            efp_smN = efp[s-Nx]
-            v_smN = v[s-Nx]
-            mu_smN = mu[s-Nx]
+    # dxbar and dybar
+    dxbar = (dx[1:,1:-1] + dx[:-1,1:-1]) / 2.
+    dybar = (dy[1:-1,1:] + dy[1:-1,:-1]) / 2.
 
-        if s > 0:
-            efn_sm1 = efn[s-1]
-            efp_sm1 = efp[s-1]
-            v_sm1 = v[s-1]
-            mu_sm1 = mu[s-1]
+    # gether efn, efp, v for all relevant sites
+    efn_smN = efn_xy[1:-1,:-2]
+    efn_sm1 = efn_xy[:-2,1:-1]
+    efn_s = efn_xy[1:-1,1:-1]
+    efn_sp1 = efn_xy[2:,1:-1]
+    efn_spN = efn_xy[1:-1,2:]
 
-        if s+1 < Nx*Ny:
-            efn_sp1 = efn[s+1]
-            efp_sp1 = efp[s+1]
-            v_sp1 = v[s+1]
+    efp_smN = efp_xy[1:-1,:-2]
+    efp_sm1 = efp_xy[:-2,1:-1]
+    efp_s = efp_xy[1:-1,1:-1]
+    efp_sp1 = efp_xy[2:,1:-1]
+    efp_spN = efp_xy[1:-1,2:]
 
-        if s+Nx < Nx*Ny:
-            efn_spN = efn[s+Nx]
-            efp_spN = efp[s+Nx]
-            v_spN = v[s+Nx]
+    v_smN = v_xy[1:-1,:-2]
+    v_sm1 = v_xy[:-2,1:-1]
+    v_s = v_xy[1:-1,1:-1]
+    v_sp1 = v_xy[2:,1:-1]
+    v_spN = v_xy[1:-1,2:]
 
+    # compute the currents
+    jnx_s = mu[1:-1,1:-1] * get_jn(efn_s, efn_sp1, v_s, v_sp1, dx[1:,1:-1], params)
+    jnx_sm1 = mu[:-2,1:-1] * get_jn(efn_sm1, efn_s, v_sm1, v_s, dx[:-1,1:-1], params)
+    jny_s = mu[1:-1,1:-1] * get_jn(efn_s, efn_spN, v_s, v_spN, dy[1:-1,1:], params)
+    jny_smN = mu[1:-1,:-2] * get_jn(efn_smN, efn_s, v_smN, v_s, dy[1:-1,:-1], params)
 
-        n_s = get_n(efn_s, v_s, params)
-        p_s = get_p(efp_s, v_s, params)
-        
-        if s in NGB:
-            # GB charge density
-            fGB = (n_s + pGB) / (n_s + p_s + nGB + pGB)
-            rhoGB = NGB[s]/2. * (1 - 2*fGB)
-            drhoGB_dv = -NGB[s] * (n_s*(n_s+p_s+nGB+pGB)-(n_s+pGB)*(n_s-p_s))\
-                                / (n_s+p_s+nGB+pGB)**2
-            drhoGB_defn = -NGB[s] * (n_s*(n_s+p_s+nGB+pGB)-(n_s+pGB)*n_s)\
-                                  / (n_s+p_s+nGB+pGB)**2
-            drhoGB_defp = NGB[s] * (n_s+pGB)*p_s / (n_s+p_s+nGB+pGB)**2
-            # GB recombination rate
-            rGB = get_rr(efn_s, efp_s, v_s, nGB, pGB, tauGB[s], params)
-            drrGB_defp, drrGB_defn, drrGB_dv = \
-            get_rr_derivs(efn_s, efp_s, v_s, nGB, pGB, tauGB[s], params)
-        else:
-            rhoGB = 0
-            drhoGB_dv, drhoGB_defn, drhoGB_defp = 0, 0, 0
-            rGB = 0
-            drrGB_defp, drrGB_defn, drrGB_dv = 0, 0, 0
+    jpx_s = mu[1:-1,1:-1] * get_jp(efp_s, efp_sp1, v_s, v_sp1, dx[1:,1:-1], params)
+    jpx_sm1 = mu[:-2,1:-1] * get_jp(efp_sm1, efp_s, v_sm1, v_s, dx[:-1,1:-1], params)
+    jpy_s = mu[1:-1,1:-1] * get_jp(efp_s, efp_spN, v_s, v_spN, dy[1:-1,1:], params)
+    jpy_smN = mu[1:-1,:-2] * get_jp(efp_smN, efp_s, v_smN, v_s, dy[1:-1,:-1], params)
+
+    # recombination rates
+    r = get_rr(n_xy[1:-1,1:-1], p_xy[1:-1,1:-1], n1, p1, S_xy[1:-1,1:-1], params)
+    rGB = get_rr(n_xy[1:-1,1:-1], p_xy[1:-1,1:-1], nGB, pGB, SGB_xy[1:-1,1:-1], params)
 
 
-        ## recombination rate and its derivatives (needed everywhere)
-        #################################################################
-        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) + rGB
-        
-        drr_defp_s, drr_defn_s, drr_dv_s = \
-        get_rr_derivs(efn_s, efp_s, v_s, n1, p1, tau[s], params)\
+    #--------------------------------------------------------------------------
+    #------------------------------ fn ----------------------------------------
+    #--------------------------------------------------------------------------
+    fn = (jnx_s - jnx_sm1) / dxbar + (jny_s - jny_smN) / dybar +\
+         g_xy[1:-1,1:-1] - r - rGB
 
-        drr_defp_s += drrGB_defp
-        drr_defn_s += drrGB_defn
-        drr_dv_s += drrGB_dv
+    # reshape the arrays as 1D arrays
+    fn = (fn.T).reshape((Nx-2)*(Ny-2))
 
+    # update the vector rows for the inner part of the system
+    fn_rows = [3*s for s in sites]
+    vec[fn_rows] = fn
 
-        ## inside the grid
-        if 0 < i < Nx-1 and 0 < j < Ny-1:
-            # spacing
-            dx_i = dx[i]
-            dy_j = dy[j]
-            dx_im1 = dx[i-1]
-            dxbar = (dx_i + dx_im1)/2.
-            dy_jm1 = dy[j-1]
-            dybar = (dy_j + dy_jm1)/2.
+    #--------------------------------------------------------------------------
+    #------------------------------ fp ----------------------------------------
+    #--------------------------------------------------------------------------
+    fp = (jpx_s - jpx_sm1) / dxbar + (jpy_s - jpy_smN) / dybar +\
+         r + rGB - g_xy[1:-1,1:-1]
 
-            ## f values for equations governing efn, efp, v.
-            ########################################################################
-            fn = (g[s] - r)\
-                 + mu_s / dxbar * get_jn(efn_s, efn_sp1, v_s, v_sp1, dx_i, params)\
-                 - mu_sm1 / dxbar * get_jn(efn_sm1, efn_s, v_sm1, v_s, dx_im1, params)\
-                 + mu_s / dybar * get_jn(efn_s, efn_spN, v_s, v_spN, dy_j, params)\
-                 - mu_smN / dybar * get_jn(efn_smN, efn_s, v_smN, v_s, dy_jm1, params)
+    # reshape the arrays as 1D arrays
+    fp = (fp.T).reshape((Nx-2)*(Ny-2))
 
-            fp = (r - g[s])\
-                 + mu_s / dxbar * get_jp(efp_s, efp_sp1, v_s, v_sp1, dx_i, params)\
-                 - mu_sm1 / dxbar * get_jp(efp_sm1, efp_s, v_sm1, v_s, dx_im1, params)\
-                 + mu_s / dybar * get_jp(efp_s, efp_spN, v_s, v_spN, dy_j, params)\
-                 - mu_smN / dybar * get_jp(efp_smN, efp_s, v_smN, v_s, dy_jm1, params)
+    # update the vector rows for the inner part of the system
+    fp_rows = [3*s+1 for s in sites]
+    vec[fp_rows] = fp
 
-            fv = 1./dxbar * ((v_s-v_sm1)/dx_im1 - (v_sp1-v_s)/dx_i)\
-                 + 1./dybar * ((v_s-v_smN)/dy_jm1 - (v_spN-v_s)/dy_j)\
-                 - (rho[s] + rhoGB + nV*exp(bl-eg+efp_s-v_s) - nC*exp(-bl+efn_s+v_s))
+    #--------------------------------------------------------------------------
+    #------------------------------ fv ----------------------------------------
+    #--------------------------------------------------------------------------
+    # local charge density
+    fGB = (n_xy[1:-1,1:-1] + pGB) / (n_xy[1:-1,1:-1] + p_xy[1:-1,1:-1] + nGB + pGB)
+    rhoGB = NGB_xy[1:-1,1:-1] / 2. * (1 - 2*fGB)
 
-                        
-            ## right-hand side vector
-            ##################################
-            vec[fn_row] = fn
-            vec[fp_row] = fp
-            vec[fv_row] = fv
-        # inside the grid completed
+    fv = ((v_xy[1:-1, 1:-1] - v_xy[:-2, 1:-1]) / dx[:-1,1:-1]\
+         -(v_xy[2:, 1:-1] - v_xy[1:-1, 1:-1]) / dx[1:,1:-1]) / dxbar\
+         +((v_xy[1:-1, 1:-1] - v_xy[1:-1, :-2]) / dy[1:-1,:-1]\
+         -(v_xy[1:-1, 2:] - v_xy[1:-1, 1:-1]) / dy[1:-1,1:]) / dybar\
+         -(rho_xy[1:-1, 1:-1] + rhoGB + p_xy[1:-1, 1:-1] - n_xy[1:-1, 1:-1])
 
-        # left boundary
-        elif i == 0 and 0 < j < Ny-1:
-            # spacing
-            dx_i = dx[i]
+    # reshape the arrays as 1D arrays
+    fv = (fv.T).reshape((Nx-2)*(Ny-2))
 
-            # currents and densities on the left side
-            jnx = mu_s * get_jn(efn_s, efn_sp1, v_s, v_sp1, dx_i, params)
-            jpx = mu_s * get_jp(efp_s, efp_sp1, v_s, v_sp1, dx_i, params)
- 
-            # a_n, a_p values, a_v
-            vec[fn_row] = jnx - scn[0] * (n_s - nD)
-            vec[fp_row] = jpx + scp[0] * (p_s - ni**2 / nD)
-            vec[fv_row] = 0 # Dirichlet BC for v
+    # update the vector rows for the inner part of the system
+    fv_rows = [3*s+2 for s in sites]
+    vec[fv_rows] = fv
 
-            
-        # right boundary
-        elif i == Nx-1 and 0 < j < Ny-1:
-            # spacing
-            dx_im1 = dx[-1]
-            dxbar = dx_im1
-            dy_jm1 = dy[-1]
-            dy_j = dy[j]
-            dybar = (dy_j + dy_jm1)/2.
+    ###########################################################################
+    #                  left boundary: i = 0 and 0 < j < Ny-1                  #
+    ###########################################################################
+    # list of the sites on the left side
+    sites = [j*Nx for j in range(1,Ny-1)]
 
-            # currents and densities on the right side
-            jnx_sm1 = mu_sm1 * get_jn(efn_sm1, efn_s, v_sm1, v_s, dx_im1, params)
-            jny_s = mu_s * get_jn(efn_s, efn_spN, v_s, v_spN, dy_j, params)
-            jny_smN = mu_smN * get_jn(efn_smN, efn_s, v_smN, v_s, dy_jm1, params)
-            jnx_s = jnx_sm1 + dxbar * (r - g[s] - (jny_s - jny_smN)/dybar)
+    # compute the currents
+    jnx = mu[0,1:-1] * get_jn(efn_xy[0,1:-1], efn_xy[1,1:-1], v_xy[0,1:-1],
+                              v_xy[1,1:-1], dx[0,1:-1], params)
+    jpx = mu[0,1:-1] * get_jp(efp_xy[0,1:-1], efp_xy[1,1:-1], v_xy[0,1:-1],
+                              v_xy[1,1:-1], dx[0,1:-1], params)
 
-            jpx_sm1 = mu_sm1 * get_jp(efp_sm1, efp_s, v_sm1, v_s, dx_im1, params)
-            jpy_s = mu_s * get_jp(efp_s, efp_spN, v_s, v_spN, dy_j, params)
-            jpy_smN = mu_smN * get_jp(efp_smN, efp_s, v_smN, v_s, dy_j, params)
-            jpx_s = jpx_sm1 + dxbar * (g[s] - r - (jpy_s - jpy_smN)/dybar)
+    # compute an, ap, av
+    an = jnx - scn[0] * (n_xy[0,1:-1] - nD)
+    ap = jpx + scp[0] * (p_xy[0,1:-1] - ni**2/nD)
+    av = 0 # to ensure Dirichlet BCs
 
- 
-            # b_n, b_p and b_v values
-            vec[fn_row] = jnx_s + scn[1] * (n_s - ni**2 / nA)
-            vec[fp_row] = jpx_s - scp[1] * (p_s - nA)
-            vec[fv_row] = 0
+    # update the vector rows
+    an_rows = [3*s for s in sites]
+    ap_rows = [3*s+1 for s in sites]
+    av_rows = [3*s+2 for s in sites]
+    vec[an_rows] = an
+    vec[ap_rows] = ap
+    vec[av_rows] = av
 
-           
-        # top boundary
-        if j == Ny-1:
-            # I want Jy=0 => defn = defp = 0
-            vec[fn_row] = 0
-            vec[fp_row] = 0
-            vec[fv_row] = 0
+    ###########################################################################
+    #                right boundary: i = Nx-1 and 0 < j < Ny-1                #
+    ###########################################################################
+    # list of the sites on the right side
+    sites = [Nx-1 + j*Nx for j in range(1,Ny-1)]
 
-            # top_n
-            ######################################
-            rows += [fn_row, fn_row]
-            columns += [efn_smN_col, efn_s_col]
-            data += [1, -1]
+    # dxbar and dybar
+    dxbar = dx[-1,1:-1]
+    dybar = (dy[-1,1:] + dy[-1,:-1]) / 2.
 
-            # top_p
-            ######################################
-            rows += [fp_row, fp_row]
-            columns += [efp_smN_col, efp_s_col]
-            data += [1, -1]
+    # gather efn, efp, v
+    v_sm1 = v_xy[-2,1:-1] 
+    v_smN = v_xy[-1,:-2] 
+    v_s = v_xy[-1,1:-1]
+    v_spN = v_xy[-1,2:] 
 
-            ## top_v
-            ######################################
-            rows += [fv_row, fv_row]
-            columns += [v_smN_col, v_s_col]
-            data += [1, -1]
+    efn_sm1 = efn_xy[-2,1:-1] 
+    efn_smN = efn_xy[-1,:-2] 
+    efn_s = efn_xy[-1,1:-1]
+    efn_spN = efn_xy[-1,2:] 
 
-        # bottom boundary
-        if j == 0:
-            # I want Jy=0 => defn = defp = 0
-            vec[fn_row] = 0
-            vec[fp_row] = 0
-            vec[fv_row] = 0
+    efp_sm1 = efp_xy[-2,1:-1] 
+    efp_smN = efp_xy[-1,:-2] 
+    efp_s = efp_xy[-1,1:-1]
+    efp_spN = efp_xy[-1,2:] 
+
+    # recombination rates
+    r = get_rr(n_xy[Nx-1,1:-1], p_xy[Nx-1,1:-1], n1, p1, S_xy[Nx-1,1:-1], params)
+    rGB = get_rr(n_xy[Nx-1,1:-1], p_xy[Nx-1,1:-1], nGB, pGB, SGB_xy[Nx-1,1:-1], params)
+
+    # compute the currents
+    jnx_sm1 = mu[-2,1:-1] * get_jn(efn_sm1, efn_s, v_sm1, v_s, dx[-1,1:-1], params)
+    jny_s = mu[-1,1:-1] * get_jn(efn_s, efn_spN, v_s, v_spN, dy[-1,1:], params)
+    jny_smN = mu[-1,:-2] * get_jn(efn_smN, efn_s, v_smN, v_s, dy[-1,:-1], params)
+    jnx_s = jnx_sm1 + dxbar * (r + rGB - g_xy[-1,1:-1] - (jny_s - jny_smN)/dybar)
+
+    jpx_sm1 = mu[-2,1:-1] * get_jp(efp_sm1, efp_s, v_sm1, v_s, dx[-1,1:-1], params)
+    jpy_s = mu[-1,1:-1] * get_jp(efp_s, efp_spN, v_s, v_spN, dy[-1,1:], params)
+    jpy_smN = mu[-1,:-2] * get_jp(efp_smN, efp_s, v_smN, v_s, dy[-1,:-1], params)
+    jpx_s = jpx_sm1 + dxbar * (g_xy[-1,1:-1] - r - rGB - (jpy_s - jpy_smN)/dybar)
+
+    # b_n, b_p and b_v values
+    bn = jnx_s + scn[1] * (n_xy[-1,1:-1] - ni**2 / nA)
+    bp = jpx_s - scp[1] * (p_xy[-1,1:-1] - nA)
+    bv = 0 # Dirichlet BC
+
+    # update the vector rows
+    bn_rows = [3*s for s in sites]
+    bp_rows = [3*s+1 for s in sites]
+    bv_rows = [3*s+2 for s in sites]
+    vec[bn_rows] = bn
+    vec[bp_rows] = bp
+    vec[bv_rows] = bv      
+
+    ###########################################################################
+    #                         top and bottom boundaries                       #
+    ###########################################################################
+    # I want Jy=0 => defn = defp = 0. In addition, a zero is needed in vec for
+    # v_s to ensure that the last 2 rows are equal.
+
+    # The same applied for the bottom layer. Since vec is created with zeros in
+    # it, there is nothing to do.
 
     return vec

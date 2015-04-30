@@ -5,12 +5,12 @@
 import numpy as np
 
 from sesame.getFandJ_eq import getFandJ_eq
-from jacobian import getJ
-from getF import getF
+from sesame.getF import getF
+from sesame.jacobian import getJ
 
-from scipy.sparse.linalg import spsolve
-# from mumps import spsolve
-# import mumps
+# from scipy.sparse.linalg import spsolve
+from mumps import spsolve
+import mumps
 
 def solver(guess, tolerance, comm, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm
@@ -43,28 +43,28 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
 
     while converged != True:
         cc = cc + 1
-        new = spsolve(J, -f)
+        # new = spsolve(J, -f)
 
-        # ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
-        # if ctx.myid == 0:
-        #     ctx.set_centralized_sparse(J.tocoo())
-        #     x = (-f).copy()
-        #     ctx.set_rhs(x)
-        #
-        # # Silence most messages
-        # ctx.set_silent()
-        #
-        # ctx.set_icntl(7, 3)
-        #
-        # # Analysis + Factorization + Solve
-        # ctx.run(job=6)
-        # ctx.destroy()
-        #
-        # if rank == 0:
-        #     new = x
-        # else:
-        #     new = None
-        # new = comm.bcast(new, root=0)
+        ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
+        if ctx.myid == 0:
+            ctx.set_centralized_sparse(J.tocoo())
+            x = (-f).copy()
+            ctx.set_rhs(x)
+
+        # Silence most messages
+        ctx.set_silent()
+
+        ctx.set_icntl(7, 3)
+
+        # Analysis + Factorization + Solve
+        ctx.run(job=6)
+        ctx.destroy()
+
+        if rank == 0:
+            new = x
+        else:
+            new = None
+        new = comm.bcast(new, root=0)
 
         new = new.transpose()
         # getting the error of the guess
