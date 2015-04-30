@@ -94,7 +94,7 @@ def getJ(v, efn, efp, params):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx for i in range(1,Nx-1) for j in range(1,Ny-1)]
+    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
 
     # dxbar and dybar
     dxbar = (dx[1:,1:-1] + dx[:-1,1:-1]) / 2.

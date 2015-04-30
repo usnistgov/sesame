@@ -66,7 +66,7 @@ def getFandJ_eq(v, params):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx for i in range(1,Nx-1) for j in range(1,Ny-1)]
+    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
 
     # dxbar and dybar
     dxbar = (dx[1:,1:-1] + dx[:-1,1:-1]) / 2.
@@ -100,7 +100,6 @@ def getFandJ_eq(v, params):
     fv_rows = [s for s in sites]
     vec[fv_rows] = fv
 
-
     #--------------------------------------------------------------------------
     #-------------------------- fv derivatives --------------------------------
     #--------------------------------------------------------------------------
@@ -108,7 +107,7 @@ def getFandJ_eq(v, params):
     dvmN = -1./(dy[1:-1,:-1] * dybar)
     dvm1 = -1./(dx[:-1,1:-1] * dxbar)
     dv = 2./(dx[1:,1:-1] * dx[:-1,1:-1]) + 2./(dy[1:-1,1:] * dy[1:-1,:-1])\
-         + p_xy + n_xy - drhoGB_dv
+          + p_xy + n_xy - drhoGB_dv
     dvp1 = -1./(dx[1:,1:-1] * dxbar)
     dvpN = -1./(dy[1:-1,1:] * dybar)
 
@@ -134,7 +133,7 @@ def getFandJ_eq(v, params):
     #                  left boundary: i = 0 and 0 < j < Ny-1                  #
     ###########################################################################
     # list of the sites on the left side
-    sites = [j*Nx for j in range(1,Ny-1)]
+    sites = [j*Nx for j in range(Ny)]
 
     # update vector
     av_rows = [s for s in sites]
@@ -153,7 +152,7 @@ def getFandJ_eq(v, params):
     #                right boundary: i = Nx-1 and 0 < j < Ny-1                #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx for j in range(1,Ny-1)]
+    sites = [Nx-1 + j*Nx for j in range(Ny)]
 
     # update vector
     bv_rows = [s for s in sites]
@@ -174,14 +173,14 @@ def getFandJ_eq(v, params):
     # We want the last 2 rows to be equal
 
     # list of the sites in the top row
-    sites = [i + (Ny-1)*Nx for i in range(Nx)]
+    sites = [i + (Ny-1)*Nx for i in range(1,Nx-1)]
 
     # update vector
     # we want zeros in the vector, so nothing to do
 
     # update Jacobian
     dtv_rows = [[s, s] for s in sites]
-    dtv_cols = [[s-Nx, s] for s in sites]
+    dtv_cols = [[s, s-Nx] for s in sites]
     dtv_data = [[1, -1] for s in sites]
 
     rows += list(chain.from_iterable(dtv_rows))
@@ -194,7 +193,7 @@ def getFandJ_eq(v, params):
     # We want the first 2 rows to be equal
 
     # list of the sites in the bottom row
-    sites = [i for i in range(Nx)]
+    sites = [i for i in range(1,Nx-1)]
 
     # update vector
     # we want zeros in the vector, so nothing to do
