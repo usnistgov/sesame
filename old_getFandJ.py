@@ -3,6 +3,7 @@ from numpy import exp
 from scipy.sparse import coo_matrix
 from scipy.sparse import csr_matrix
 
+# from sesame.observables_back import *
 from sesame.observables import *
 
 def getFandJ(v, efn, efp, params):
@@ -22,7 +23,6 @@ def getFandJ(v, efn, efp, params):
     columns = []
     data = []
 
-    # for c in range(1, xpts.shape[0]-1, 1):
     for s in range(Nx*Ny):
         j = s//Nx
         i = s - j*Nx
