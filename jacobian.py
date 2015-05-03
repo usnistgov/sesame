@@ -149,7 +149,7 @@ def getJ(v, efn, efp, params):
     defp_s = - dr_defp_s[1:-1,1:-1] - drGB_defp_s[1:-1,1:-1]
     dv_s = (djx_s_dv_s - djx_sm1_dv_s) / dxbar + \
            (djy_s_dv_s - djy_smN_dv_s) / dybar - dr_dv_s[1:-1,1:-1]\
-           - drGB_dv_s[1:-1,1:-1]
+            - drGB_dv_s[1:-1,1:-1]
            
     defn_sp1 = djx_s_defn_sp1 / dxbar
     dv_sp1 = djx_s_dv_sp1 / dxbar
@@ -199,6 +199,7 @@ def getJ(v, efn, efp, params):
     djy_smN_defp_smN, djy_smN_defp_s, djy_smN_dv_smN, djy_smN_dv_s = \
     mu[1:-1,:-2] * get_jp_derivs(efp_smN, efp_s, v_smN, v_s, dy[1:-1,:-1], params)
 
+
     # compute the derivatives of fp
     defp_smN = - djy_smN_defp_smN / dybar
     dv_smN = - djy_smN_dv_smN / dybar
@@ -209,10 +210,10 @@ def getJ(v, efn, efp, params):
     defn_s = dr_defn_s[1:-1,1:-1] + drGB_defn_s[1:-1,1:-1]
     defp_s = (djx_s_defp_s - djx_sm1_defp_s) / dxbar + \
              (djy_s_defp_s - djy_smN_defp_s) / dybar + dr_defp_s[1:-1,1:-1]\
-             + drGB_defp_s[1:-1,1:-1]
+              + drGB_defp_s[1:-1,1:-1]
     dv_s = (djx_s_dv_s - djx_sm1_dv_s) / dxbar + \
            (djy_s_dv_s - djy_smN_dv_s) / dybar - dr_dv_s[1:-1,1:-1]\
-           - drGB_dv_s[1:-1,1:-1]
+            - drGB_dv_s[1:-1,1:-1]
            
     defp_sp1 = djx_s_defp_sp1 / dxbar
     dv_sp1 = djx_s_dv_sp1 / dxbar

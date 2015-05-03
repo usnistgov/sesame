@@ -3,8 +3,7 @@ from numpy import exp
 from scipy.sparse import coo_matrix
 from scipy.sparse import csr_matrix
 
-# from sesame.observables_back import *
-from sesame.observables import *
+from sesame.old_observables import *
 
 def getFandJ(v, efn, efp, params):
 
@@ -105,7 +104,7 @@ def getFandJ(v, efn, efp, params):
 
         ## recombination rate and its derivatives (needed everywhere)
         #################################################################
-        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) + rGB
+        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) #+ rGB
         
         drr_defp_s, drr_defn_s, drr_dv_s = \
         get_rr_derivs(efn_s, efp_s, v_s, n1, p1, tau[s], params)\
@@ -164,12 +163,12 @@ def getFandJ(v, efn, efp, params):
             defn_sm1 = -mu_sm1 / dxbar * djx_sm1_defn_sm1
             dv_sm1 = -mu_sm1 / dxbar * djx_sm1_dv_sm1
             defn_s = mu_s * (djx_s_defn_s / dxbar + djy_s_defn_s / dybar)\
-                     - mu_sm1 / dxbar * djx_sm1_defn_s - mu_smN / dybar * djy_smN_defn_s\
-                     - drr_defn_s
+                      - mu_sm1 / dxbar * djx_sm1_defn_s - mu_smN / dybar * djy_smN_defn_s\
+                      - drr_defn_s
             defp_s = -drr_defp_s
             dv_s = mu_s * (djx_s_dv_s / dxbar + djy_s_dv_s / dybar)\
                      - mu_sm1 / dxbar * djx_sm1_dv_s - mu_smN / dybar * djy_smN_dv_s\
-                     - drr_dv_s
+                      - drr_dv_s
             defn_sp1 = mu_s / dxbar * djx_s_defn_sp1
             dv_sp1 = mu_s / dxbar * djx_s_dv_sp1
             defn_spN = mu_s / dybar * djy_s_defn_spN
@@ -199,6 +198,7 @@ def getFandJ(v, efn, efp, params):
             djy_smN_defp_smN, djy_smN_defp_s, djy_smN_dv_smN, djy_smN_dv_s =  \
             get_jp_derivs(efp_smN, efp_s, v_smN, v_s, dy_jm1, params)
 
+
             # compute the derivatives of fp
             defp_smN = -mu_smN / dybar * djy_smN_defp_smN
             dv_smN = -mu_smN / dybar * djy_smN_dv_smN
@@ -207,10 +207,10 @@ def getFandJ(v, efn, efp, params):
             defn_s = drr_defn_s
             defp_s = mu_s * (djx_s_defp_s / dxbar + djy_s_defp_s / dybar)\
                      - mu_sm1 / dxbar * djx_sm1_defp_s - mu_smN / dybar * djy_smN_defp_s\
-                     + drr_defp_s
+                      + drr_defp_s
             dv_s = mu_s * (djx_s_dv_s / dxbar + djy_s_dv_s / dybar)\
                      - mu_sm1 / dxbar * djx_sm1_dv_s - mu_smN / dybar * djy_smN_dv_s\
-                     + drr_dv_s
+                      + drr_dv_s
             defp_sp1 = mu_s / dxbar * djx_s_defp_sp1
             dv_sp1 = mu_s / dxbar * djx_s_dv_sp1
             defp_spN = mu_s / dybar * djy_s_defp_spN
@@ -230,7 +230,7 @@ def getFandJ(v, efn, efp, params):
             dfv_dvmN = -1./(dy_jm1 * dybar )
             dfv_dvm1 = -1./(dx_im1 * dxbar)
             dfv_dv = 2./(dx_i * dx_im1) + 2./(dy_j * dy_jm1) + p_s + n_s -\
-                     drhoGB_dv
+                      drhoGB_dv
             dfv_defn = n_s - drhoGB_defn
             dfv_defp = -p_s - drhoGB_defp
             dfv_dvp1 = -1./(dx_i * dxbar)

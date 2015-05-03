@@ -20,7 +20,7 @@ def get_jn(efn, efnp1, v, vp1, dx, params):
     bl = params.bl
     nC = params.nC
 
-    h = 1e-10
+    h = 1e-30
     lim = - exp(v)
 
     jn = exp(-bl) * (exp(efnp1) - exp(efn)) / dx * \
@@ -32,7 +32,7 @@ def get_jp(efp, efpp1, v, vp1, dx, params):
     eg = params.eg
     nV = params.nV
 
-    h = 1e-10
+    h = 1e-30
     lim = - exp(-v)
     
     jp = exp(-eg + bl) * (exp(efpp1) - exp(efp)) / dx *\
@@ -44,7 +44,7 @@ def get_jn_derivs(efn_i, efn_ip1, v_i, v_ip1, dx_i, params):
     bl = params.bl
     nC = params.nC
 
-    h = 1e-10
+    h = 1e-30
     lim1 = - exp(v_i)
     lim2 = - exp(v_i)/2
     lim3 = - exp(v_i)/2
@@ -53,7 +53,7 @@ def get_jn_derivs(efn_i, efn_ip1, v_i, v_ip1, dx_i, params):
              / (exp(-v_ip1)*(1 - exp(-v_i+v_ip1) + h/exp(-v_ip1)))
 
     defn_ip1 = -1./dx_i * exp(-bl+efn_ip1) * v_ip1*(1 - v_i/v_ip1 + h*lim1/v_ip1)\
-               / (exp(-v_ip1) * (1 - exp(-v_i+v_ip1) + h*lim1/exp(-v_ip1)))
+               / (exp(-v_ip1) * (1 - exp(-v_i+v_ip1) + h/exp(-v_ip1)))
 
     dv_i = -1./dx_i * exp(-bl) * (exp(efn_ip1) - exp(efn_i))\
            * exp(-v_i)*(1+v_i-v_ip1 - exp(-v_ip1+v_i) + h*lim2/exp(-v_i))\
@@ -70,7 +70,7 @@ def get_jp_derivs(efp_i, efp_ip1, v_i, v_ip1, dx_i, params):
     eg = params.eg
     nV = params.nV
 
-    h = 1e-10
+    h = 1e-30
     lim1 = exp(-v_i)
     lim2 = - exp(-v_i)/2
     lim3 = - exp(-v_i)/2

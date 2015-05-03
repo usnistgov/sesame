@@ -12,6 +12,14 @@ from sesame.jacobian import getJ
 from mumps import spsolve
 import mumps
 
+def refine(dv):
+    for sdx, s in enumerate(dv):
+        if 1 < abs(s) < 3.7:
+            dv[sdx] = np.sign(s) * abs(s)**(0.2)
+        elif abs(s) >= 3.7:
+            dv[sdx] = np.sign(s) * np.log(abs(s))
+    return dv
+
 def solver(guess, tolerance, comm, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm
     # tolerance: max error accepted for delta u
@@ -43,8 +51,7 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
 
     while converged != True:
         cc = cc + 1
-        # new = spsolve(J, -f)
-
+        #-------- solve linear system ---------------------
         ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
         if ctx.myid == 0:
             ctx.set_centralized_sparse(J.tocoo())
@@ -61,16 +68,16 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
         ctx.destroy()
 
         if rank == 0:
-            new = x
+            dx = x
         else:
-            new = None
-        new = comm.bcast(new, root=0)
+            dx = None
+        dx = comm.bcast(dx, root=0)
 
-        new = new.transpose()
-        # getting the error of the guess
-        error = max(np.abs(new))
+        dx = dx.transpose()
 
-        # if converged, then save data and break
+        #--------- choose the new step -----------------
+        error = max(np.abs(dx))
+
         if error < tolerance:
             converged = True
             if thermal_eq:
@@ -81,36 +88,60 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
                 solution['v'] = v
             break 
 
-        if thermal_eq:
-            dv = new / (1 + np.abs(new/clamp))
-            v += dv
-            f, J = getFandJ_eq(v, params)
+        # use the usual clamping once a proper direction has been found
+        elif error < 0.1:
+            if thermal_eq:
+                # new correction and trial
+                dv = dx / (1 + np.abs(dx/clamp))
+                v = v + dv
+                f, J = getFandJ_eq(v, params)
+            else:
+                # you can see how the variables are arranged: (efn, efp, v)
+                defn = dx[0::3]
+                defp = dx[1::3]
+                dv = dx[2::3]
 
+                defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
+                defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
+                dv = dv / (1 + np.abs(dv/clamp))
+
+                efn = efn + defn
+                efp = efp + defp
+                v = v + dv
+
+                f = getF(v, efn, efp, params)
+                J = getJ(v, efn, efp, params)
+
+        # Start slowly this refinement method found in a paper
         else:
-            # you can see how the variables are arranged: (efn, efp, v)
-            defn = new[0::3]
-            defp = new[1::3]
-            dv = new[2::3]
-            
-            # it's necessary to "clamp" the size of the correction to improve
-            # convergence
-            defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
-            defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
-            dv = dv / (1 + np.abs(dv/clamp))
+            if thermal_eq:
+                dv = refine(dx)
+                v = v + dv
+                f, J = getFandJ_eq(v, params)
+            else:
+                # you can see how the variables are arranged: (efn, efp, v)
+                defn = dx[0::3]
+                defp = dx[1::3]
+                dv = dx[2::3]
 
-            # constructing the new Jacobian, and evaluation of f
-            efn += defn
-            efp += defp
-            v += dv
-            f = getF(v, efn, efp, params)
-            J = getJ(v, efn, efp, params)
-        
+                defn = refine(defn)
+                defp = refine(defp)
+                dv = refine(dv)
+
+                efn = efn + defn
+                efp = efp + defp
+                v = v + dv
+
+                f = getF(v, efn, efp, params)
+                J = getJ(v, efn, efp, params)
+
+
         # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0:
+        if info != 0 and np.mod(cc, info) == 0 and rank == 0:
             print('step = {0}, error = {1}'.format(cc, error), "\n")
 
         # if no solution found after maxiterations, break
-        if cc > max_step:
+        if cc > max_step and rank == 0:
             print('too many iterations\n')
             break
 
