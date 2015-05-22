@@ -14,10 +14,12 @@ import mumps
 
 def refine(dv):
     for sdx, s in enumerate(dv):
+        if abs(s) < 1:
+            dv[sdx] /= 2
         if 1 < abs(s) < 3.7:
-            dv[sdx] = np.sign(s) * abs(s)**(0.2)
+            dv[sdx] = np.sign(s) * abs(s)**(0.2)/2
         elif abs(s) >= 3.7:
-            dv[sdx] = np.sign(s) * np.log(abs(s))
+            dv[sdx] = np.sign(s) * np.log(abs(s))/2
     return dv
 
 def solver(guess, tolerance, comm, params, max_step=300, info=0):
@@ -41,6 +43,7 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
     else:
         thermal_eq = False
         efn, efp, v = guess
+        efno, efpo, vo = guess
         f = getF(v, efn, efp, params)
         J = getJ(v, efn, efp, params)
         solution = {'v': v, 'efn': efn, 'efp': efp}
@@ -52,26 +55,28 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
-        ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
-        if ctx.myid == 0:
-            ctx.set_centralized_sparse(J.tocoo())
-            x = (-f).copy()
-            ctx.set_rhs(x)
+        dx = spsolve(J, -f)
 
-        # Silence most messages
-        ctx.set_silent()
-
-        ctx.set_icntl(7, 3)
-
-        # Analysis + Factorization + Solve
-        ctx.run(job=6)
-        ctx.destroy()
-
-        if rank == 0:
-            dx = x
-        else:
-            dx = None
-        dx = comm.bcast(dx, root=0)
+        # ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
+        # if ctx.myid == 0:
+        #     ctx.set_centralized_sparse(J.tocoo())
+        #     x = (-f).copy()
+        #     ctx.set_rhs(x)
+        #
+        # # Silence most messages
+        # ctx.set_silent()
+        #
+        # ctx.set_icntl(7, 3)
+        #
+        # # Analysis + Factorization + Solve
+        # ctx.run(job=6)
+        # ctx.destroy()
+        #
+        # if rank == 0:
+        #     dx = x
+        # else:
+        #     dx = None
+        # dx = comm.bcast(dx, root=0)
 
         dx = dx.transpose()
 
@@ -89,7 +94,7 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
             break 
 
         # use the usual clamping once a proper direction has been found
-        elif error < 0.1:
+        elif error < 1e-3:
             if thermal_eq:
                 # new correction and trial
                 dv = dx / (1 + np.abs(dx/clamp))

@@ -104,7 +104,7 @@ def getFandJ(v, efn, efp, params):
 
         ## recombination rate and its derivatives (needed everywhere)
         #################################################################
-        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) #+ rGB
+        r = get_rr(efn_s, efp_s, v_s, n1, p1, tau[s], params) + rGB
         
         drr_defp_s, drr_defn_s, drr_dv_s = \
         get_rr_derivs(efn_s, efp_s, v_s, n1, p1, tau[s], params)\
@@ -240,7 +240,7 @@ def getFandJ(v, efn, efp, params):
             columns += [v_smN_col, v_sm1_col, efn_s_col, efp_s_col, v_s_col,\
                         v_sp1_col, v_spN_col]
             data += [dfv_dvmN, dfv_dvm1, dfv_defn, dfv_defp, dfv_dv, dfv_dvp1, dfv_dvpN]
-            
+
             ## right-hand side vector
             ##################################
             vec[fn_row] = fn
@@ -256,7 +256,7 @@ def getFandJ(v, efn, efp, params):
             # currents and densities on the left side
             jnx = mu_s * get_jn(efn_s, efn_sp1, v_s, v_sp1, dx_i, params)
             jpx = mu_s * get_jp(efp_s, efp_sp1, v_s, v_sp1, dx_i, params)
- 
+
             # a_n, a_p values, a_v
             vec[fn_row] = jnx - scn[0] * (n_s - nD)
             vec[fp_row] = jpx + scp[0] * (p_s - ni**2 / nD)
@@ -270,7 +270,7 @@ def getFandJ(v, efn, efp, params):
             columns += [efn_s_col, v_s_col, efn_sp1_col, v_sp1_col]
             data += [mu_s * defn_s - scn[0] * n_s, mu_s * dv_s - scn[0] * n_s,\
                      mu_s * defn_sp1, mu_s * dv_sp1]
-        
+
             ## a_p derivatives on the left boundary
             ##############################################
             defp_s, defp_sp1, dv_s, dv_sp1 = get_jp_derivs(efp_s, efp_sp1, v_s,
@@ -306,7 +306,6 @@ def getFandJ(v, efn, efp, params):
             jpy_smN = mu_smN * get_jp(efp_smN, efp_s, v_smN, v_s, dy_j, params)
             jpx_s = jpx_sm1 + dxbar * (g[s] - r - (jpy_s - jpy_smN)/dybar)
 
- 
             # b_n, b_p and b_v values
             vec[fn_row] = jnx_s + scn[1] * (n_s - ni**2 / nA)
             vec[fp_row] = jpx_s - scp[1] * (p_s - nA)
@@ -338,6 +337,7 @@ def getFandJ(v, efn, efp, params):
                      -mu_s * dxbar/dybar * djny_s_defn_spN, -mu_s * dxbar/dybar
                      * djny_s_dv_spN]
 
+
             ## b_p derivatives defined on the right boundary
             ######################################################
             djpx_sm1_defp_sm1, djpx_sm1_defp_s, djpx_sm1_dv_sm1, djpx_sm1_dv_s =\
@@ -348,6 +348,8 @@ def getFandJ(v, efn, efp, params):
 
             djpy_smN_defp_smN, djpy_smN_defp_s, djpy_smN_dv_smN, djpy_smN_dv_s = \
             get_jp_derivs(efp_smN, efp_s, v_smN, v_s, dy_jm1, params)
+
+
 
             rows += 9*[fp_row]
             columns += [efp_smN_col, v_smN_col, efp_sm1_col, v_sm1_col, efn_s_col,\
@@ -363,6 +365,7 @@ def getFandJ(v, efn, efp, params):
                      - mu_smN * djpy_smN_dv_s)/ dybar) + scp[1] * p_s, \
                      -mu_s * dxbar/dybar * djpy_s_defp_spN, -mu_s * dxbar/dybar
                      * djpy_s_dv_spN]
+
 
             ## b_v derivative
             #######################
@@ -422,4 +425,4 @@ def getFandJ(v, efn, efp, params):
 
     J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
     # J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny))
-    return vec, J
+    return  J
