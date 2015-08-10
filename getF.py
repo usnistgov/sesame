@@ -154,8 +154,17 @@ def getF(v, efn, efp, params):
                               v_xy[1,1:-1], dx[0,1:-1], params)
 
     # compute an, ap, av
-    an = jnx - scn[0] * (n_xy[0,1:-1] - nD)
-    ap = jpx + scp[0] * (p_xy[0,1:-1] - ni**2/nD)
+    n_eq = 0
+    p_eq = 0
+    if rho_xy[0, 1] < 0: # p doped
+        p_eq = -rho_xy[0, 1]
+        n_eq = ni**2 / p_eq
+    else: # n doped
+        n_eq = rho_xy[0, 1]
+        p_eq = ni**2 / n_eq
+        
+    an = jnx - scn[0] * (n_xy[0,1:-1] - n_eq)
+    ap = jpx + scp[0] * (p_xy[0,1:-1] - p_eq)
     av = 0 # to ensure Dirichlet BCs
 
     # update the vector rows
@@ -208,8 +217,17 @@ def getF(v, efn, efp, params):
     jpx_s = jpx_sm1 + dxbar * (g_xy[-1,1:-1] - r - rGB - (jpy_s - jpy_smN)/dybar)
 
     # b_n, b_p and b_v values
-    bn = jnx_s + scn[1] * (n_xy[-1,1:-1] - ni**2 / nA)
-    bp = jpx_s - scp[1] * (p_xy[-1,1:-1] - nA)
+    n_eq = 0
+    p_eq = 0
+    if rho_xy[-1, 1] < 0: # p doped
+        p_eq = -rho_xy[-1, 1]
+        n_eq = ni**2 / p_eq
+    else: # n doped
+        n_eq = rho_xy[-1, 1]
+        p_eq = ni**2 / n_eq
+        
+    bn = jnx_s + scn[1] * (n_xy[-1,1:-1] - n_eq)
+    bp = jpx_s - scp[1] * (p_xy[-1,1:-1] - p_eq)
     bv = 0 # Dirichlet BC
 
     # update the vector rows
