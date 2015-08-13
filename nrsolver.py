@@ -22,31 +22,22 @@ def refine(dv):
             dv[sdx] = np.sign(s) * np.log(abs(s))/2
     return dv
 
-def solver(guess, tolerance, comm, params, max_step=300, info=0):
-    # guess: initial guess passed to Newton Raphson algorithm
-    # tolerance: max error accepted for delta u
-    # comm: global communicator for parallel sparse solver
-    # params: all physical parameters to pass to other functions
-    # max_step: maximum number of step allowed before declaring 'no solution
-    # found'
-    # info: integer, the program will print out the step number every 'info'
-    # steps. If info is 0, no output is pronted out
+def poisson_solver(tolerance, params, guess=None, max_step=300, info=0):
+    # initial guess for electrostatic potential (linear)
+    if guess == None:
+        v00 = np.log(params.nD/params.nC)
+        vL0 = -params.eg - np.log(params.nA/params.nV)
 
-    rank = comm.Get_rank()
-
-    if len(guess) == 1:
-        thermal_eq = True
-        v = guess[0]
-        f, J = getFandJ_eq(v, params)
-        solution = {'v': v}
-
+        nx = len(params.xpts)
+        ny = len(params.ypts)
+        v = np.empty((nx*ny,), dtype=float)
+        for i in range(0, nx*(ny-1)+1, nx):
+            v[i:i+nx] = np.linspace(v00, vL0, nx)
     else:
-        thermal_eq = False
-        efn, efp, v = guess
-        efno, efpo, vo = guess
-        f = getF(v, efn, efp, params)
-        J = getJ(v, efn, efp, params)
-        solution = {'v': v, 'efn': efn, 'efp': efp}
+        v = guess
+ 
+    # first step of the Newton Raphson solver
+    f, J = getFandJ_eq(v, params)
 
     cc = 0
     clamp = 5.
@@ -56,28 +47,6 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
         cc = cc + 1
         #-------- solve linear system ---------------------
         dx = spsolve(J, -f)
-
-        # ctx = mumps.DMumpsContext(sym=0, par=1, comm=comm)
-        # if ctx.myid == 0:
-        #     ctx.set_centralized_sparse(J.tocoo())
-        #     x = (-f).copy()
-        #     ctx.set_rhs(x)
-        #
-        # # Silence most messages
-        # ctx.set_silent()
-        #
-        # ctx.set_icntl(7, 3)
-        #
-        # # Analysis + Factorization + Solve
-        # ctx.run(job=6)
-        # ctx.destroy()
-        #
-        # if rank == 0:
-        #     dx = x
-        # else:
-        #     dx = None
-        # dx = comm.bcast(dx, root=0)
-
         dx = dx.transpose()
 
         #--------- choose the new step -----------------
@@ -85,64 +54,123 @@ def solver(guess, tolerance, comm, params, max_step=300, info=0):
 
         if error < tolerance:
             converged = True
-            if thermal_eq:
-                solution['v'] = v
-            else:
-                solution['efn'] = efn
-                solution['efp'] = efp
-                solution['v'] = v
+            v_final = v
             break 
 
         # use the usual clamping once a proper direction has been found
         elif error < 1e-3:
-            if thermal_eq:
-                # new correction and trial
-                dv = dx / (1 + np.abs(dx/clamp))
-                v = v + dv
-                f, J = getFandJ_eq(v, params)
-            else:
-                # you can see how the variables are arranged: (efn, efp, v)
-                defn = dx[0::3]
-                defp = dx[1::3]
-                dv = dx[2::3]
-
-                defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
-                defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
-                dv = dv / (1 + np.abs(dv/clamp))
-
-                efn = efn + defn
-                efp = efp + defp
-                v = v + dv
-
-                f = getF(v, efn, efp, params)
-                J = getJ(v, efn, efp, params)
-
+            # new correction and trial
+            dv = dx / (1 + np.abs(dx/clamp))
+            v = v + dv
+            f, J = getFandJ_eq(v, params)
+            
         # Start slowly this refinement method found in a paper
         else:
-            if thermal_eq:
-                dv = refine(dx)
-                v = v + dv
-                f, J = getFandJ_eq(v, params)
-            else:
-                # you can see how the variables are arranged: (efn, efp, v)
-                defn = dx[0::3]
-                defp = dx[1::3]
-                dv = dx[2::3]
+            dv = refine(dx)
+            v = v + dv
+            f, J = getFandJ_eq(v, params)
+            
+        # outputing status of solution procedure every so often
+        if info != 0 and np.mod(cc, info) == 0:
+            print('step = {0}, error = {1}'.format(cc, error), "\n")
 
-                defn = refine(defn)
-                defp = refine(defp)
-                dv = refine(dv)
+        # if no solution found after maxiterations, break
+        if cc > max_step:
+            print('Poisson solver failed: too many iterations\n')
+            break
 
-                efn = efn + defn
-                efp = efp + defp
-                v = v + dv
+    if converged:
+        return v_final
+    else:
+        print("No solution found!\n")
+        return None
 
-                f = getF(v, efn, efp, params)
-                J = getJ(v, efn, efp, params)
+
+
+def solver(tolerance, params, guess=None, max_step=300, info=0):
+    # guess: initial guess passed to Newton Raphson algorithm: list containing
+    # efn, efp, v in this order
+    # tolerance: max error accepted for delta u
+    # params: all physical parameters to pass to other functions
+    # max_step: maximum number of step allowed before declaring 'no solution
+    # found'
+    # info: integer, the program will print out the step number every 'info'
+    # steps. If info is 0, no output is pronted out
+
+    if guess == None:
+        # initial guess
+        nx = len(params.xpts)
+        ny = len(params.ypts)
+        efn = np.ones((nx*ny,), dtype=float)
+        efp = 2*np.ones((nx*ny,), dtype=float)
+        v = poisson_solver(tolerance, params, guess=None, max_step=max_step, info=0)
+
+    else:
+        efn, efp, v = guess
+
+    f = getF(v, efn, efp, params)
+    J = getJ(v, efn, efp, params)
+    solution = {'v': v, 'efn': efn, 'efp': efp}
+
+    cc = 0
+    clamp = 5.
+    converged = False
+
+    while converged != True:
+        cc = cc + 1
+        #-------- solve linear system ---------------------
+        dx = spsolve(J, -f)
+        dx = dx.transpose()
+
+        #--------- choose the new step -----------------
+        error = max(np.abs(dx))
+
+        if error < tolerance:
+            converged = True
+            solution['efn'] = efn
+            solution['efp'] = efp
+            solution['v'] = v
+            break 
+
+        # use the usual clamping once a proper direction has been found
+        elif error < 1e-3:
+            # you can see how the variables are arranged: (efn, efp, v)
+            defn = dx[0::3]
+            defp = dx[1::3]
+            dv = dx[2::3]
+
+            defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
+            defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
+            dv = dv / (1 + np.abs(dv/clamp))
+
+            efn = efn + defn
+            efp = efp + defp
+            v = v + dv
+
+            f = getF(v, efn, efp, params)
+            J = getJ(v, efn, efp, params)
+
+        # Start slowly with this refinement method found in a paper
+        else:
+            # you can see how the variables are arranged: (efn, efp, v)
+            defn = dx[0::3]
+            defp = dx[1::3]
+            dv = dx[2::3]
+
+            defn = refine(defn)
+            defp = refine(defp)
+            dv = refine(dv)
+
+            efn = efn + defn
+            efp = efp + defp
+            v = v + dv
+
+            f = getF(v, efn, efp, params)
+            J = getJ(v, efn, efp, params)
 
 
         # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0 and rank == 0:
+        if info != 0 and np.mod(cc, info) == 0:
             print('step = {0}, error = {1}'.format(cc, error), "\n")
 
         # if no solution found after maxiterations, break
