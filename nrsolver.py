@@ -87,7 +87,7 @@ def poisson_solver(tolerance, params, guess=None, max_step=300, info=0):
 
 
 
-def solver(tolerance, params, guess=None, max_step=300, info=0):
+def solver(guess, tolerance, params, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm: list containing
     # efn, efp, v in this order
     # tolerance: max error accepted for delta u
@@ -97,17 +97,7 @@ def solver(tolerance, params, guess=None, max_step=300, info=0):
     # info: integer, the program will print out the step number every 'info'
     # steps. If info is 0, no output is pronted out
 
-    if guess == None:
-        # initial guess
-        nx = len(params.xpts)
-        ny = len(params.ypts)
-        efn = np.ones((nx*ny,), dtype=float)
-        efp = 2*np.ones((nx*ny,), dtype=float)
-        v = poisson_solver(tolerance, params, guess=None, max_step=max_step, info=0)
-
-    else:
-        efn, efp, v = guess
-
+    efn, efp, v = guess
     f = getF(v, efn, efp, params)
     J = getJ(v, efn, efp, params)
     solution = {'v': v, 'efn': efn, 'efp': efp}
