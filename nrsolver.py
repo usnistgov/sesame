@@ -164,7 +164,7 @@ def solver(guess, tolerance, params, max_step=300, info=0):
             print('step = {0}, error = {1}'.format(cc, error), "\n")
 
         # if no solution found after maxiterations, break
-        if cc > max_step and rank == 0:
+        if cc > max_step:
             print('too many iterations\n')
             break
 

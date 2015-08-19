@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 
 
-def integrator(xpts, ypts, v, efn, efp, params):
+def integrator(xpts, ypts, v, efn, efp, params, integrate=True):
     # return the current in the x-direction, summed along the y-axis
     nx = len(xpts)
     idx = nx//2 # let's compute the current in the middle of the system
@@ -19,11 +19,14 @@ def integrator(xpts, ypts, v, efn, efp, params):
         jp = mu[s] * get_jp(efp[s],efp[s+1],v[s],v[s+1],dx[idx],params)
         c.append(jn+jp)
 
-    # integrate over y
-    c = spline(ypts, c).integral(ypts[0], ypts[-1])
+    # integrate over y if 2d only
+    if integrate:
+        c = spline(ypts, c).integral(ypts[0], ypts[-1])
+    else:
+        c = c[0]
     return c
 
-def current(files, vapplist, params, output=None, Voc=False, Pm=False):
+def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=False):
     # output is printed on screen if set to None, otherwise data are stored in a
     # txt file with the name given by output
     if len(files) != len(vapplist):
@@ -43,9 +46,7 @@ def current(files, vapplist, params, output=None, Voc=False, Pm=False):
         c = []
         for fdx, f in enumerate(files):
             d = np.load(f)
-            c.append(integrator(d[0], d[1], d[2], d[3], d[4], params) / (gtot))
-            if output == None:
-                print(vapplist[fdx], c[-1])
+            c.append(integrator(d[0], d[1], d[2], d[3], d[4], params, integrate) / (gtot))
         if type(output) == str:
             np.savetxt(output, np.column_stack((vapplist, c)))
 
@@ -62,6 +63,7 @@ def current(files, vapplist, params, output=None, Voc=False, Pm=False):
             Vm = brentq(lambda x: dsp(x), 0, vapplist[-1])
             Jm = sp(Vm)
             print('Maximum power at Vm={0}, Jm={1}'.format(Vm, Jm))
+        return c
 
 def maps3D(xpts, ypts, data, cmap='gnuplot', alpha=1):
     nx, ny = len(xpts), len(ypts)
