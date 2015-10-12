@@ -153,12 +153,6 @@ def solver(sys, guess, tolerance, max_step=300, info=0):
             f = getF(sys, v, efn, efp)
             J = getJ(sys, v, efn, efp)
 
-            A=J.todense()
-            # print(A[10,:])
-            # print(f)
-            # print(np.dot(A,f))
-
-
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
             print('step = {0}, error = {1}'.format(cc, error), "\n")
