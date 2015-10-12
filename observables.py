@@ -26,6 +26,7 @@ def get_jn(efn, efnp1, v, vp1, dx, params):
 
     jn = exp(-bl) * (exp(efnp1) - exp(efn)) / dx * \
          dv / (-exp(-v)*(1 - exp(dv)))
+
     return jn * nC
 
 def get_jp(efp, efpp1, v, vp1, dx, params):

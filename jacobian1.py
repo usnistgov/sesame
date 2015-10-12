@@ -1,0 +1,339 @@
+import numpy as np
+from numpy import exp
+from scipy.sparse import coo_matrix
+from itertools import chain
+
+from sesame.observables2 import *
+
+def getJ(sys, v, efn, efp):
+    ###########################################################################
+    #                     organization of the Jacobian matrix                 #
+    ###########################################################################
+    # A site with coordinates (i) corresponds to a site number s as follows:
+    # i = s
+    #
+    # Rows for (efn_s, efp_s, v_s)
+    # ----------------------------
+    # fn_row = 3*s
+    # fp_row = 3*s+1
+    # fv_row = 3*s+2
+    #
+    # Columns for (efn_s, efp_s, v_s)
+    # -------------------------------
+    # efn_sm1_col = 3*(s-1)
+    # efn_s_col = 3*s
+    # efn_sp1_col = 3*(s+1)
+    #
+    # efp_sm1_col = 3*(s-1)+1
+    # efp_s_col = 3*s+1
+    # efp_sp1_col = 3*(s+1)+1
+    #
+    # v_sm1_col = 3*(s-1)+2
+    # v_s_col = 3*s+2
+    # v_sp1_col = 3*(s+1)+2
+
+    Nx = sys.xpts.shape[0]
+    dx = sys.dx
+
+    # lists of rows, columns and data that will create the sparse Jacobian
+    rows = []
+    columns = []
+    data = []
+
+    ###########################################################################
+    #                     For all sites in the system                         #
+    ###########################################################################
+    sites = [i for i in range(Nx)]
+
+    # carrier densities
+    n = get_n(sys, efn, v, sites)
+    p = get_p(sys, efp, v, sites)
+
+    # bulk charges
+    drho_defn_s = - n
+    drho_defp_s = p
+    drho_dv_s = - n - p
+
+    # derivatives of the bulk recombination rates
+    dr_defn_s, dr_defp_s, dr_dv_s = \
+    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)\
+
+    # extra charge density
+    if hasattr(sys, 'Nextra'): 
+        # find sites containing extra charges
+        matches = [s for s in sites if s in sys.extra_charge_sites]
+
+        nextra = sys.nextra[matches]
+        pextra = sys.pextra[matches]
+        _n = n[matches]
+        _p = p[matches]
+
+        # extra charge density
+        drho_defn_s[matches] += - sys.Nextra[matches] \
+                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*_n)\
+                                / (_n+_p+nextra+pextra)**2
+        drho_defp_s[matches] += sys.Nextra[matches] * (_n+pextra)*_p \
+                              / (_n+_p+nextra+pextra)**2
+        drho_dv[matches] += - sys.Nextra[matches]\
+                            * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
+                            / (_n+_p+nextra+pextra)**2
+
+        # extra charge recombination
+        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Sextra[matches], 
+                                        1/Sextra[matches], matches)
+        dr_defn_s[matches] += defn
+        dr_defp_s[matches] += defp
+        dr_dv_s[matches] += dv
+
+    # charge is divided by epsilon
+    drho_defn_s /= sys.epsilon[sites]
+    drho_defp_s /= sys.epsilon[sites]
+    drho_dv_s /= sys.epsilon[sites]
+
+    ###########################################################################
+    #                  inside the system: 0 < i < Nx-1                        #
+    ###########################################################################
+    # We compute fn, fp, fv derivatives. Those functions are only defined on the
+    # inner part of the system. All the edges containing boundary conditions.
+
+    # list of the sites inside the system
+    sites = [i for i in range(1,Nx-1)]
+    sites = np.asarray(sites)
+
+    # dxbar
+    dxbar = (dx[sites] + dx[sites-1]) / 2.
+
+    # gather all relevant pairs of sites to compute the currents derivatives
+    sm1_s = [i for i in zip(sites - 1, sites)]
+    s_sp1 = [i for i in zip(sites, sites + 1)]
+
+    #--------------------------------------------------------------------------
+    #------------------------ fn derivatives ----------------------------------
+    #--------------------------------------------------------------------------
+    # get the derivatives of jx_s, jx_sm1
+    djx_s_defn_s, djx_s_defn_sp1, djx_s_dv_s, djx_s_dv_sp1 = \
+    get_jn_derivs(sys, efn, v, s_sp1)
+
+    djx_sm1_defn_sm1, djx_sm1_defn_s, djx_sm1_dv_sm1, djx_sm1_dv_s = \
+    get_jn_derivs(sys, efn, v, sm1_s)
+
+    # compute the derivatives of fn
+    defn_sm1 = - djx_sm1_defn_sm1 / dxbar
+    dv_sm1 = - djx_sm1_dv_sm1 / dxbar
+
+    defn_s = (djx_s_defn_s - djx_sm1_defn_s) / dxbar - dr_defn_s[sites]
+    defp_s = - dr_defp_s[sites]
+    dv_s = (djx_s_dv_s - djx_sm1_dv_s) / dxbar - dr_dv_s[sites]
+
+    defn_sp1 = djx_s_defn_sp1 / dxbar
+    dv_sp1 = djx_s_dv_sp1 / dxbar
+
+    # update the sparse matrix row and columns for the inner part of the system
+    dfn_rows = [7*[3*s] for s in sites]
+
+    dfn_cols = [[3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
+                3*(s+1), 3*(s+1)+2] for s in sites]
+
+    dfn_data = zip(defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_sp1, dv_sp1)
+
+    rows += list(chain.from_iterable(dfn_rows))
+    columns += list(chain.from_iterable(dfn_cols))
+    data += list(chain.from_iterable(dfn_data))
+
+    #--------------------------------------------------------------------------
+    #------------------------ fp derivatives ----------------------------------
+    #--------------------------------------------------------------------------
+    # get the derivatives of jx_s, jx_sm1
+    djx_s_defp_s, djx_s_defp_sp1, djx_s_dv_s, djx_s_dv_sp1 = \
+    get_jp_derivs(sys, efp, v, s_sp1)
+
+    djx_sm1_defp_sm1, djx_sm1_defp_s, djx_sm1_dv_sm1, djx_sm1_dv_s = \
+    get_jp_derivs(sys, efp, v, sm1_s)
+
+    # compute the derivatives of fp
+    defp_sm1 = - djx_sm1_defp_sm1 / dxbar
+    dv_sm1 = - djx_sm1_dv_sm1 / dxbar
+
+    defn_s = dr_defn_s[sites]
+    defp_s = (djx_s_defp_s - djx_sm1_defp_s) / dxbar + dr_defp_s[sites]
+    dv_s = (djx_s_dv_s - djx_sm1_dv_s) / dxbar + - dr_dv_s[sites]
+
+    defp_sp1 = djx_s_defp_sp1 / dxbar
+    dv_sp1 = djx_s_dv_sp1 / dxbar
+
+    # update the sparse matrix row and columns for the inner part of the system
+    dfp_rows = [7*[3*s+1] for s in sites]
+
+    dfp_cols = [[3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
+                 3*s+2, 3*(s+1)+1, 3*(s+1)+2] 
+                 for s in sites]
+
+    dfp_data = zip( defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1)
+
+    rows += list(chain.from_iterable(dfp_rows))
+    columns += list(chain.from_iterable(dfp_cols))
+    data += list(chain.from_iterable(dfp_data))
+
+    #--------------------------------------------------------------------------
+    #---------------- fv derivatives inside the system ------------------------
+    #--------------------------------------------------------------------------
+    # compute the derivatives
+    dvm1 = -1./(dx[sites-1] * dxbar)
+    dv = 2./(dx[sites] * dx[sites-1]) - drho_dv_s[sites]
+    defn = - drho_defn_s[sites]
+    defp = - drho_defp_s[sites]
+    dvp1 = -1./(dx[sites] * dxbar)
+
+    # update the sparse matrix row and columns for the inner part of the system
+    dfv_rows = [5*[3*s+2] for s in sites]
+
+    dfv_cols = [[3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+2] for s in sites]
+
+    dfv_data = zip(dvm1, defn, defp, dv, dvp1)
+
+    rows += list(chain.from_iterable(dfv_rows))
+    columns += list(chain.from_iterable(dfv_cols))
+    data += list(chain.from_iterable(dfv_data))
+
+
+    ###########################################################################
+    #                           left boundary: i = 0                          #
+    ###########################################################################
+    # We compute an, ap, av derivatives. Those functions are only defined on the
+    # left boundary of the system.
+
+    #--------------------------------------------------------------------------
+    #-------------------------- an derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    s_sp1 = [(0, 1)]
+    defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, s_sp1)
+
+    defn_s -= sys.Scn[0] * n[0]
+    dv_s -= sys.Scn[0] * n[0]
+
+    # update the sparse matrix row and columns
+    dan_rows = [0, 0, 0, 0]
+    dan_cols = [0, 2, 3, 3+2]
+    dan_data = [defn_s[0], dv_s[0], defn_sp1[0], dv_sp1[0]]
+
+    rows += dan_rows
+    columns += dan_cols
+    data += dan_data
+
+    # rows += list(chain.from_iterable(dan_rows))
+    # columns += list(chain.from_iterable(dan_cols))
+    # data += list(chain.from_iterable(dan_data))
+
+    #--------------------------------------------------------------------------
+    #-------------------------- ap derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    defp_s, defp_sp1, dv_s, dv_sp1 = get_jp_derivs(sys, efp, v, s_sp1)
+
+    defp_s += sys.Scp[0] * p[0]
+    dv_s -= sys.Scp[0] * p[0]
+
+    # update the sparse matrix row and columns
+    dap_rows = [1, 1, 1, 1]
+    dap_cols = [1, 2, 3+1, 3+2]
+    dap_data = [defp_s[0], dv_s[0], defp_sp1[0], dv_sp1[0]]
+
+    rows += dap_rows
+    columns += dap_cols
+    data += dap_data
+    # rows += list(chain.from_iterable(dap_rows))
+    # columns += list(chain.from_iterable(dap_cols))
+    # data += list(chain.from_iterable(dap_data))
+
+    #--------------------------------------------------------------------------
+    #-------------------------- av derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    dav_rows = [2]
+    dav_cols = [2]
+    dav_data = [1]
+
+    rows += dav_rows
+    columns += dav_cols
+    data += dav_data
+
+    ###########################################################################
+    #                       right boundary: i = Nx-1                          #
+    ###########################################################################
+    # We compute bn, bp, bv derivatives. Those functions are only defined on the
+    # right boundary of the system.
+
+    # dxbar
+    dxbar = dx[-1]
+
+    # compute the currents
+    sm1_s = [(Nx-1 - 1, Nx-1)]
+
+    #--------------------------------------------------------------------------
+    #-------------------------- bn derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    # compute the currents derivatives
+    djnx_sm1_defn_sm1, djnx_sm1_defn_s, djnx_sm1_dv_sm1, djnx_sm1_dv_s =\
+    get_jn_derivs(sys, efn, v, sm1_s)
+
+    # compute bn derivatives
+    defn_sm1 = djnx_sm1_defn_sm1
+    dv_sm1 = djnx_sm1_dv_sm1
+
+    defn_s = djnx_sm1_defn_s + dxbar * dr_defn_s + sys.Scn[1] * n[Nx-1]
+    defp_s = dxbar * dr_defp_s[Nx-1]
+    dv_s = djnx_sm1_dv_s + dxbar * dr_dv_s[Nx-1] + sys.Scn[1] * n[Nx-1]
+
+    # update the sparse matrix row and columns
+    dbn_rows = [3*(Nx-1), 3*(Nx-1), 3*(Nx-1), 3*(Nx-1), 3*(Nx-1)]
+    dbn_cols = [3*(Nx-1-1), 3*(Nx-1-1)+2, 3*(Nx-1), 3*(Nx-1)+1, 3*(Nx-1)+2]
+    dbn_data = [defn_sm1[0], dv_sm1[0], defn_s[0], defp_s, dv_s[0]]
+
+    rows += dbn_rows
+    columns += dbn_cols
+    data += dbn_data
+
+    # rows += list(chain.from_iterable(dbn_rows))
+    # columns += list(chain.from_iterable(dbn_cols))
+    # data += list(chain.from_iterable(dbn_data))
+    # print(list(chain.from_iterable(dbn_data)))
+
+    #--------------------------------------------------------------------------
+    #-------------------------- bp derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    # compute the currents derivatives
+    djpx_sm1_defp_sm1, djpx_sm1_defp_s, djpx_sm1_dv_sm1, djpx_sm1_dv_s =\
+    get_jp_derivs(sys, efp, v, sm1_s)
+
+    # compute bn derivatives
+    defp_sm1 = djpx_sm1_defp_sm1
+    dv_sm1 = djpx_sm1_dv_sm1
+
+    defn_s = - dxbar * dr_defn_s[Nx-1]
+    defp_s = djpx_sm1_defp_s - dxbar * dr_defp_s[Nx-1] - sys.Scp[1] * p[Nx-1]
+    dv_s = djpx_sm1_dv_s - dxbar * dr_dv_s[Nx-1] + sys.Scp[1] * p[Nx-1]
+
+    # update the sparse matrix row and columns
+    dbp_rows = [3*(Nx-1)+1, 3*(Nx-1)+1, 3*(Nx-1)+1, 3*(Nx-1)+1, 3*(Nx-1)+1]
+    dbp_cols = [3*(Nx-1-1)+1, 3*(Nx-1-1)+2, 3*(Nx-1), 3*(Nx-1)+1, 3*(Nx-1)+2]
+    dbp_data = [defp_sm1[0], dv_sm1[0], defn_s, defp_s[0], dv_s[0]]
+
+    rows += dbp_rows
+    columns += dbp_cols
+    data += dbp_data
+
+    # rows += list(chain.from_iterable(dbp_rows))
+    # columns += list(chain.from_iterable(dbp_cols))
+    # data += list(chain.from_iterable(dbn_data))
+
+    #--------------------------------------------------------------------------
+    #-------------------------- bv derivatives --------------------------------
+    #--------------------------------------------------------------------------
+    dbv_rows = [3*(Nx-1)+2]
+    dbv_cols = [3*(Nx-1)+2]
+    dbv_data = [1] # dv_s = 0
+
+    rows += dbv_rows
+    columns += dbv_cols
+    data += dbv_data
+
+    J = coo_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)
+    return J

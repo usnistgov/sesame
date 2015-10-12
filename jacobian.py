@@ -551,5 +551,6 @@ def getJ(v, efn, efp, params):
     columns += list(chain.from_iterable(dbv_cols))
     data += list(chain.from_iterable(dbv_data))
 
+
     J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
     return J
