@@ -4,11 +4,11 @@
 import sesame
 import numpy as np
 
-# from scipy.sparse.linalg import spsolve
 from mumps import spsolve
-import mumps
 
 def refine(dv):
+    # This damping procedure was taken from Solid-State Electronics, vol. 19,
+    # pp. 991-992 (1976).
     for sdx, s in enumerate(dv):
         if abs(s) < 1:
             dv[sdx] /= 2
@@ -18,14 +18,17 @@ def refine(dv):
             dv[sdx] = np.sign(s) * np.log(abs(s))/2
     return dv
 
-def poisson_solver(sys, tolerance, guess, max_step=300, info=0):
+def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     # import the module that create F and J
-    m = __import__('sesame.getFandJ_eq{0}'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
+    if periodic_bcs == False and sys.dimension != 1:
+        m = __import__('sesame.getFandJ_eq{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
+    else:
+        m = __import__('sesame.getFandJ_eq{0}'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
+
     getFandJ_eq = m.getFandJ_eq
 
-    v = guess
- 
     # first step of the Newton Raphson solver
+    v = guess
     f, J = getFandJ_eq(sys, v)
 
     cc = 0
@@ -52,17 +55,17 @@ def poisson_solver(sys, tolerance, guess, max_step=300, info=0):
             dv = dx / (1 + np.abs(dx/clamp))
             v = v + dv
             f, J = getFandJ_eq(sys, v)
+
             
         # Start slowly this refinement method found in a paper
         else:
             dv = refine(dx)
             v = v + dv
             f, J = getFandJ_eq(sys, v)
-            
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
-            print('step = {0}, error = {1}'.format(cc, error), "\n")
+            print('step = {0}, error = {1}'.format(cc, error))
 
         # if no solution found after maxiterations, break
         if cc > max_step:
@@ -77,7 +80,7 @@ def poisson_solver(sys, tolerance, guess, max_step=300, info=0):
 
 
 
-def solver(sys, guess, tolerance, max_step=300, info=0):
+def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     # guess: initial guess passed to Newton Raphson algorithm
     # tolerance: max error accepted for delta u
     # max_step: maximum number of step allowed before declaring 'no solution
@@ -86,10 +89,16 @@ def solver(sys, guess, tolerance, max_step=300, info=0):
     # steps. If info is 0, no output is pronted out
 
     # import the module that create F and J
-    m = __import__('sesame.getF{0}'.format(sys.dimension), globals(), locals(), ['getF'], 0)
-    getF = m.getF
-    m = __import__('sesame.jacobian{0}'.format(sys.dimension), globals(), locals(), ['getJ'], 0)
-    getJ = m.getJ
+    if periodic_bcs == False and sys.dimension == 2:
+        F = __import__('sesame.getF2_abrupt', globals(), locals(), ['getF'], 0)
+        J = __import__('sesame.jacobian2_abrupt', globals(), locals(), ['getJ'], 0)
+
+    else:
+        F = __import__('sesame.getF{0}'.format(sys.dimension), globals(), locals(), ['getF'], 0)
+        J = __import__('sesame.jacobian{0}'.format(sys.dimension), globals(), locals(), ['getJ'], 0)
+
+    getF = F.getF
+    getJ = J.getJ
 
     efn, efp, v = guess
 
@@ -109,7 +118,7 @@ def solver(sys, guess, tolerance, max_step=300, info=0):
 
         #--------- choose the new step -----------------
         error = max(np.abs(dx))
-
+        
         if error < tolerance:
             converged = True
             solution['efn'] = efn
@@ -118,7 +127,8 @@ def solver(sys, guess, tolerance, max_step=300, info=0):
             break 
 
         # use the usual clamping once a proper direction has been found
-        elif error < 1e-3:
+        elif error < 1e-2:
+            if error < 10: clamp = 10.
             # you can see how the variables are arranged: (efn, efp, v)
             defn = dx[0::3]
             defp = dx[1::3]
@@ -155,10 +165,10 @@ def solver(sys, guess, tolerance, max_step=300, info=0):
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
-            print('step = {0}, error = {1}'.format(cc, error), "\n")
+            print('step = {0}, error = {1}'.format(cc, error))
 
         # if no solution found after maxiterations, break
-        if cc > max_step:
+        if cc >= max_step:
             print('too many iterations\n')
             break
 

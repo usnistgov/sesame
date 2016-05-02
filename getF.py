@@ -3,10 +3,9 @@ import numpy as np
 from sesame.observables import *
 
 def getF(v, efn, efp, params):
-
     bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho,\
     NGB, SGB, nGB, pGB,\
-    n1, p1, ni, xpts, ypts = params
+    n1, p1, ni, xpts, ypts, eps = params
 
     Nx = xpts.shape[0]
     Ny = ypts.shape[0]
@@ -95,6 +94,7 @@ def getF(v, efn, efp, params):
     r = get_rr(n_xy[1:-1,1:-1], p_xy[1:-1,1:-1], n1, p1, S_xy[1:-1,1:-1], params)
     rGB = get_rr(n_xy[1:-1,1:-1], p_xy[1:-1,1:-1], nGB, pGB, SGB_xy[1:-1,1:-1], params)
 
+    
     #--------------------------------------------------------------------------
     #------------------------------ fn ----------------------------------------
     #--------------------------------------------------------------------------
@@ -112,7 +112,7 @@ def getF(v, efn, efp, params):
     #------------------------------ fp ----------------------------------------
     #--------------------------------------------------------------------------
     fp = (jpx_s - jpx_sm1) / dxbar + (jpy_s - jpy_smN) / dybar +\
-         r + rGB - g_xy[1:-1,1:-1]
+           r + rGB - g_xy[1:-1,1:-1]
 
     # reshape the arrays as 1D arrays
     fp = (fp.T).reshape((Nx-2)*(Ny-2))
@@ -132,7 +132,8 @@ def getF(v, efn, efp, params):
          -(v_xy[2:, 1:-1] - v_xy[1:-1, 1:-1]) / dx[1:,1:-1]) / dxbar\
          +((v_xy[1:-1, 1:-1] - v_xy[1:-1, :-2]) / dy[1:-1,:-1]\
          -(v_xy[1:-1, 2:] - v_xy[1:-1, 1:-1]) / dy[1:-1,1:]) / dybar\
-         -(rho_xy[1:-1, 1:-1] + rhoGB + p_xy[1:-1, 1:-1] - n_xy[1:-1, 1:-1])
+         -(rho_xy[1:-1, 1:-1] + rhoGB + p_xy[1:-1, 1:-1] - n_xy[1:-1, 1:-1])/eps
+
 
     # reshape the arrays as 1D arrays
     fv = (fv.T).reshape((Nx-2)*(Ny-2))
@@ -171,6 +172,7 @@ def getF(v, efn, efp, params):
     an_rows = [3*s for s in sites]
     ap_rows = [3*s+1 for s in sites]
     av_rows = [3*s+2 for s in sites]
+
     vec[an_rows] = an
     vec[ap_rows] = ap
     vec[av_rows] = av
@@ -234,6 +236,7 @@ def getF(v, efn, efp, params):
     bn_rows = [3*s for s in sites]
     bp_rows = [3*s+1 for s in sites]
     bv_rows = [3*s+2 for s in sites]
+
     vec[bn_rows] = bn
     vec[bp_rows] = bp
     vec[bv_rows] = bv      
@@ -246,5 +249,4 @@ def getF(v, efn, efp, params):
 
     # The same applied for the bottom layer. Since vec is created with zeros in
     # it, there is nothing to do.
-
     return vec

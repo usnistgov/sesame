@@ -16,6 +16,7 @@ def getFandJ_eq(v, params):
     NGB = params.NGB
     nGB = params.nGB
     pGB = params.pGB
+    eps = params.epsilon
 
     Nx = xpts.shape[0]
     Ny = ypts.shape[0]
@@ -82,7 +83,7 @@ def getFandJ_eq(v, params):
 
     # GB charge density derivatives
     drhoGB_dv = -NGB_xy[1:-1,1:-1] * (n_xy*(n_xy+p_xy+nGB+pGB)-(n_xy+pGB)*(n_xy-p_xy))\
-                                   / (n_xy+p_xy+nGB+pGB)**2
+                                    / (n_xy+p_xy+nGB+pGB)**2
 
     #--------------------------------------------------------------------------
     #------------------------------ fv ----------------------------------------
@@ -91,9 +92,8 @@ def getFandJ_eq(v, params):
          -(v_xy[2:, 1:-1] - v_xy[1:-1, 1:-1]) / dx[1:,1:-1]) / dxbar\
          +((v_xy[1:-1, 1:-1] - v_xy[1:-1, :-2]) / dy[1:-1,:-1]\
          -(v_xy[1:-1, 2:] - v_xy[1:-1, 1:-1]) / dy[1:-1,1:]) / dybar\
-         -(rho_xy[1:-1, 1:-1] + rhoGB + p_xy - n_xy)
+         -(rho_xy[1:-1, 1:-1] + rhoGB + p_xy - n_xy) / eps
 
-    # reshape the arrays as 1D arrays
     fv = (fv.T).reshape((Nx-2)*(Ny-2))
 
     # update the vector rows for the inner part of the system
@@ -107,7 +107,7 @@ def getFandJ_eq(v, params):
     dvmN = -1./(dy[1:-1,:-1] * dybar)
     dvm1 = -1./(dx[:-1,1:-1] * dxbar)
     dv = 2./(dx[1:,1:-1] * dx[:-1,1:-1]) + 2./(dy[1:-1,1:] * dy[1:-1,:-1])\
-          + p_xy + n_xy - drhoGB_dv
+            + (p_xy + n_xy - drhoGB_dv) / eps
     dvp1 = -1./(dx[1:,1:-1] * dxbar)
     dvpN = -1./(dy[1:-1,1:] * dybar)
 
@@ -209,4 +209,5 @@ def getFandJ_eq(v, params):
 
 
     J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
+
     return vec, J

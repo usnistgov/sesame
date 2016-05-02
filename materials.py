@@ -17,6 +17,6 @@ def define_material(Nc, Nv, Eg, epsilon, mu_e, mu_h, tau_e, tau_h,
            'RCenergy':RCenergy}
     return mat
 
-Si = {'Nc':1, 'Nv':1, 'Eg':1, 'epsilon':1,
-      'mu_e':1, 'mu_p':1, 'tau_e':1, 'tau_p':1, 'RCenergy':1}
+Si = {'Nc':3.2e19*1e6, 'Nv':1.8e19*1e6, 'Eg':1.1, 'epsilon':11.7,
+      'mu_e':1400, 'mu_h':450, 'tau_e':1e-6, 'tau_h':1e-6, 'RCenergy':0}
 

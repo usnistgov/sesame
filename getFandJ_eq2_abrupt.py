@@ -159,9 +159,6 @@ def getFandJ_eq(sys, v):
     ###########################################################################
     #                  boundary: 0 < i < Nx-1 and j = Ny-1                    #
     ###########################################################################
-    # We want periodic boundary conditions. This means that we can apply Poisson
-    # equation assuming that the potential outside the system is the same as the
-    # one on the opposite edge.
 
     # list of sites
     sites = np.asarray([i + (Ny-1)*Nx for i in range(1,Nx-1)])
@@ -169,20 +166,15 @@ def getFandJ_eq(sys, v):
     # lattice distances
     dx = sys.dx[1:]
     dxm1 = sys.dx[:-1]
-    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2, Nx-2)
+    dy = 0
     dym1 = np.repeat(sys.dy[-1], Nx-2)
     dxbar = (dx + dxm1) / 2.
-    dybar = (dy + dym1) / 2.
+    dybar = dym1
 
     #---------------------------------- fv -------------------------------------
-    vsmN = v[sites-Nx]
-    vsm1 = v[sites-1]
-    vs = v[sites]
-    vsp1 = v[sites+1]
-    vspN = v[sites - Nx*(Ny-1)]
-
-    fv = laplacian(vsmN, vsm1, vs, vsp1, vspN, dxm1, dx, \
-                   dym1, dy, dxbar, dybar) - rho[sites]
+    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
+       + ((v[sites]-v[sites-Nx]) / dym1) / dybar\
+       - rho[sites]
 
     # update the vector rows for the inner part of the system
     vec[sites] = fv
@@ -190,14 +182,13 @@ def getFandJ_eq(sys, v):
     #-------------------------- fv derivatives --------------------------------
     dvmN = -1./(dym1 * dybar)
     dvm1 = -1./(dxm1 * dxbar)
-    dv = 2./(dx * dxm1) + (1/dy + 1/dym1)/dybar - drho_dv[sites]
+    dv = 2./(dx * dxm1) + 1/(dym1*dybar) - drho_dv[sites]
     dvp1 = -1./(dx * dxbar)
-    dvmNN = -1./(dy * dybar)
 
     # update the sparse matrix row and columns
-    dfv_rows = [5*[s] for s in sites]
-    dfv_cols = [[s-Nx*(Ny-1), s-Nx, s-1, s, s+1] for s in sites]
-    dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1)
+    dfv_rows = [4*[s] for s in sites]
+    dfv_cols = [[s-Nx, s-1, s, s+1] for s in sites]
+    dfv_data = zip(dvmN, dvm1, dv, dvp1)
 
     rows += list(chain.from_iterable(dfv_rows))
     columns += list(chain.from_iterable(dfv_cols))
@@ -206,7 +197,6 @@ def getFandJ_eq(sys, v):
     ###########################################################################
     #                     boundary: 0 < i < Nx-1 and j = 0                    #
     ###########################################################################
-
     # list of sites
     sites = np.asarray([i for i in range(1,Nx-1)])
 
@@ -214,34 +204,28 @@ def getFandJ_eq(sys, v):
     dx = sys.dx[1:]
     dxm1 = sys.dx[:-1]
     dy = np.repeat(sys.dy[0], Nx-2)
-    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2, Nx-2)
+    dym1 = 0
     dxbar = (dx + dxm1) / 2.
-    dybar = (dy + dym1) / 2.
+    dybar = dy
 
     #---------------------------------- fv -------------------------------------
-    vsmN = v[sites + Nx*(Ny-1)]
-    vsm1 = v[sites-1]
-    vs = v[sites]
-    vsp1 = v[sites+1]
-    vspN = v[sites+Nx]
-
-    fv = laplacian(vsmN, vsm1, vs, vsp1, vspN, dxm1, dx, \
-                   dym1, dy, dxbar, dybar) - rho[sites]
+    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
+       + (-(v[sites+Nx]-v[sites]) / dy) / dybar\
+       - rho[sites]
 
     # update the vector rows for the inner part of the system
     vec[sites] = fv
 
     #-------------------------- fv derivatives --------------------------------
-    dvpNN = -1./(dym1 * dybar)
     dvm1 = -1./(dxm1 * dxbar)
-    dv = 2./(dx * dxm1) + (1/dym1 + 1/dy)/dybar - drho_dv[sites]
+    dv = 2./(dx * dxm1) + 1/(dy*dybar) - drho_dv[sites]
     dvp1 = -1./(dx * dxbar)
     dvpN = -1./(dy * dybar)
 
     # update the sparse matrix row and columns
-    dfv_rows = [5*[s] for s in sites]
-    dfv_cols = [[s-1, s, s+1, s+Nx, s+Nx*(Ny-1)] for s in sites]
-    dfv_data = zip(dvm1, dv, dvp1, dvpN, dvpNN)
+    dfv_rows = [4*[s] for s in sites]
+    dfv_cols = [[s-1, s, s+1, s+Nx] for s in sites]
+    dfv_data = zip(dvm1, dv, dvp1, dvpN)
 
     rows += list(chain.from_iterable(dfv_rows))
     columns += list(chain.from_iterable(dfv_cols))

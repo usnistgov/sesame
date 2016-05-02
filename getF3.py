@@ -25,9 +25,9 @@ def getF(sys, v, efn, efp):
     vec = np.zeros((3*Nx*Ny*Nz,))
     def update(fn, fp, fv, sites):
         global vec
-        vec[[3*s for s in sites]] = fn
-        vec[[3*s+1 for s in sites]] = fp
-        vec[[3*s+2 for s in sites]] = fv
+        vec[3*sites] = fn
+        vec[3*sites+1] = fp
+        vec[3*sites+2] = fv
 
 
     ###########################################################################
@@ -48,7 +48,7 @@ def getF(sys, v, efn, efp):
     # extra charge density
     if hasattr(sys, 'Nextra'): 
         # find sites containing extra charges
-        matches = [s for s in sites if s in sys.extra_charge_sites]
+        matches = sys.extra_charge_sites
 
         nextra = sys.nextra[matches]
         pextra = sys.pextra[matches]
@@ -60,11 +60,11 @@ def getF(sys, v, efn, efp):
         rho[matches] += sys.Nextra[matches] / 2. * (1 - 2*f)
 
         # extra charge recombination
-        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Sextra[matches],
-                             1/Sextra[matches], matches)
+        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/sys.Sextra[matches],
+                             1/sys.Sextra[matches], matches)
 
     # charge devided by epsilon
-    rho /= sys.epsilon[sites]
+    rho = rho / sys.epsilon[sites]
 
     # Drift-diffusion equation that determines fn and fp
     def drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -137,17 +137,17 @@ def getF(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], (Ny-2)*(Nz-2))
-    dy = np.tile(sys.dy[1:], (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], (Ny-2)*(Nz-2))
-    dym1 = np.tile(sys.dy[:-1], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -172,7 +172,7 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # compute the currents
-    s_sp1 = [i for i in zip(sites, sites + 1)]
+    s_sp1 = [sites, sites + 1]
     jnx = get_jn(sys, efn, v, s_sp1)
     jpx = get_jp(sys, efp, v, s_sp1)
 
@@ -205,7 +205,7 @@ def getF(sys, v, efn, efp):
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
         dzbar = (dz + dzm1) / 2.
-        sm1_s = [i for i in zip(sites - 1, sites)]
+        sm1_s = [sites - 1, sites]
 
         # currents
         jnx_sm1  = get_jn(sys, efn, v, sm1_s)
@@ -251,16 +251,16 @@ def getF(sys, v, efn, efp):
     # lattice distances
     dx = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
     dxm1 = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
-    dy = np.tile(sys.dy[1:], Nz-2)
-    dym1 = np.tile(sys.dy[:-1], Nz-2)
-    dz = np.tile(sys.dz[1:], Ny-2)
-    dzm1 = np.tile(sys.dz[:-1], Ny-2)
+    dy = np.repeat(sys.dy[1:], Nz-2)
+    dym1 = np.repeat(sys.dy[:-1], Nz-2)
+    dz = np.repeat(sys.dz[1:], Ny-2)
+    dzm1 = np.repeat(sys.dz[:-1], Ny-2)
 
     # sites for the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -276,16 +276,16 @@ def getF(sys, v, efn, efp):
     # lattice distances
     dx = np.tile(sys.dx[-1], Nz-2)
     dxm1 = np.tile(sys.dx[-1], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
-    dym1 = np.tile(sys.dy[-1], Nz-2) 
+    dy = np.repeat((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
+    dym1 = np.repeat(sys.dy[-1], Nz-2) 
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -299,16 +299,16 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[-1], Nz-2)
-    dym1 =  np.tile((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
+    dy = np.repeat(sys.dy[-1], Nz-2)
+    dym1 =  np.repeat((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -326,14 +326,14 @@ def getF(sys, v, efn, efp):
     dxm1 = np.tile(sys.dx[-1], Ny-2)
     dy = sys.dy[1:]
     dym1 = sys.dy[:-1]
-    dz = np.tile((sys.dz[-1] + sys.dz[0])/2., Ny-2)
-    dzm1 = np.tile(sys.dz[-1], Ny-2)
+    dz = np.repeat((sys.dz[-1] + sys.dz[0])/2., Ny-2)
+    dzm1 = np.repeat(sys.dz[-1], Ny-2)
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -349,14 +349,14 @@ def getF(sys, v, efn, efp):
     # lattice distances
     dy = sys.dy[1:]
     dym1 = sys.dy[:-1]
-    dz = np.tile(sys.dz[0], Ny-2)
-    dzm1 = np.tile((sys.dz[-1] + sys.dz[0])/2., Ny-2)
+    dz = np.repeat(sys.dz[0], Ny-2)
+    dzm1 = np.repeat((sys.dz[-1] + sys.dz[0])/2., Ny-2)
 
     # compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -378,10 +378,10 @@ def getF(sys, v, efn, efp):
     dzm1 = (sys.dz[-1] + sys.dz[0])/2.
 
     # compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -401,10 +401,10 @@ def getF(sys, v, efn, efp):
     dzm1 = sys.dz[-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -424,10 +424,10 @@ def getF(sys, v, efn, efp):
     dzm1 = sys.dz[-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -447,10 +447,10 @@ def getF(sys, v, efn, efp):
     dzm1 = (sys.dz[-1] + sys.dz[0])/2.
 
     # compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
     right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
@@ -473,17 +473,17 @@ def getF(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -509,17 +509,17 @@ def getF(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile(sys.dz[0], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat(sys.dz[0], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -545,17 +545,17 @@ def getF(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile(sys.dy[0], (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], (Nx-2))
+    dy = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], (Nx-2))
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -581,17 +581,17 @@ def getF(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], Nx-2)
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile(sys.dy[0], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dym1 = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -627,16 +627,16 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -660,16 +660,16 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -694,16 +694,16 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -728,16 +728,16 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     # compute fn, fp
     fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
@@ -753,19 +753,5 @@ def getF(sys, v, efn, efp):
 
     # update vector
     update(fn, fp, fv, sites)
-    
-    i=1
-    s=i
-    # print(vec[3*s+0])
-    # print("=============")
-    # print(vec)
-    # print("=============")
-    # s=i+Nx*Ny*(Nz-2)
-    # print(vec[3*s+0])
-    # s=i+Ny*Nx*(Nz-2)+Nx*(Ny-1)
-    # print(vec[3*s+0])
-    # s=i+Nx*(Ny-1)
-    # print(vec[3*s+0])
-
 
     return vec

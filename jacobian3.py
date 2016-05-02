@@ -88,16 +88,16 @@ def getJ(sys, v, efn, efp):
                             / (_n+_p+nextra+pextra)**2
 
         # extra charge recombination
-        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Sextra[matches], 
-                                        1/Sextra[matches], matches)
+        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/sys.Sextra[matches], 
+                                        1/sys.Sextra[matches], matches)
         dr_defn_s[matches] += defn
         dr_defp_s[matches] += defp
         dr_dv_s[matches] += dv
 
     # charge is divided by epsilon
-    drho_defn_s /= sys.epsilon[sites]
-    drho_defp_s /= sys.epsilon[sites]
-    drho_dv_s /= sys.epsilon[sites]
+    drho_defn_s = drho_defn_s / sys.epsilon[sites]
+    drho_defp_s = drho_defp_s / sys.epsilon[sites]
+    drho_dv_s = drho_dv_s / sys.epsilon[sites]
 
     def update(r, c, d):
         global rows, columns, data
@@ -216,7 +216,7 @@ def getJ(sys, v, efn, efp):
                  (djz_s_defp_s - djz_smNN_defp_s) / dzbar + dr_defp_s[sites]
         dv_s = (djx_s_dv_s - djx_sm1_dv_s) / dxbar + \
                (djy_s_dv_s - djy_smN_dv_s) / dybar + \
-               (djz_s_dv_s - djz_smNN_dv_s) / dzbar - dr_dv_s[sites]
+               (djz_s_dv_s - djz_smNN_dv_s) / dzbar + dr_dv_s[sites]
 
         defp_sp1 = djx_s_defp_sp1 / dxbar
         dv_sp1 = djx_s_dv_sp1 / dxbar
@@ -384,19 +384,19 @@ def getJ(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], (Ny-2)*(Nz-2))
-    dy = np.tile(sys.dy[1:], (Nx-2)*(Nz-2)) 
-    dz = np.tile(sys.dz[1:], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], (Nx-2)*(Nz-2)) 
+    dz = np.repeat(sys.dz[1:], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], (Ny-2)*(Nz-2))
-    dym1 = np.tile(sys.dy[:-1], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents derivatives
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    sm1_s = [i for i in zip(sites - 1, sites)]
-    s_sp1 = [i for i in zip(sites, sites + 1)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    sm1_s = [sites - 1, sites]
+    s_sp1 = [sites, sites + 1]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -405,11 +405,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), \
-                 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2, 3*(s+Nx),\
-                 3*(s+Nx)+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-Nx),\
+                   3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx),\
+                   3*(sites+Nx)+2, 3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dfn_data = zip(defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, \
                    defn_s, defp_s, dv_s, defn_sp1, dv_sp1, defn_spN, dv_spN,\
@@ -424,12 +425,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-Nx)+1, 3*(s-Nx)+2,\
-                 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2,\
-                 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2]\
-                 for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-Nx)+1, 3*(sites-Nx)+2,\
+                 3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                 3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2,\
+                 3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2)
 
     dfp_data = zip(defp_smNN, dv_smNN, defp_smN, dv_smN, defp_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defp_sp1, dv_sp1, defp_spN, dv_spN,\
@@ -443,10 +444,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny)+2, 3*(s-Nx)+2, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, \
-                 3*(s+1)+2, 3*(s+Nx)+2, 3*(s+Nx*Ny)+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*Ny)+2, 3*(sites-Nx)+2, 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+1)+2, 3*(sites+Nx)+2, 3*(sites+Nx*Ny)+2)
 
     dfv_data = zip(dvmNN, dvmN, dvm1, defn, defp, dv, dvp1, dvpN, dvpNN)
 
@@ -464,16 +465,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     #-------------------------- an derivatives --------------------------------
-    s_sp1 = [i for i in zip(sites, sites + 1)]
+    s_sp1 = [sites, sites + 1]
     defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, s_sp1)
 
     defn_s -= sys.Scn[0] * n[sites]
     dv_s -= sys.Scn[0] * n[sites]
 
     # update the sparse matrix row and columns
-    dan_rows = [4*[3*s] for s in sites]
+    dan_rows = np.reshape(np.repeat(3*sites, 4), (len(sites), 4)).tolist()
 
-    dan_cols = [[3*s, 3*s+2, 3*(s+1), 3*(s+1)+2] for s in sites]
+    dan_cols = zip(3*sites, 3*sites+2, 3*(sites+1), 3*(sites+1)+2)
 
     dan_data = zip(defn_s, dv_s, defn_sp1, dv_sp1)
 
@@ -486,17 +487,17 @@ def getJ(sys, v, efn, efp):
     dv_s -= sys.Scp[0] * p[sites]
 
     # update the sparse matrix row and columns
-    dap_rows = [4*[3*s+1] for s in sites]
+    dap_rows = np.reshape(np.repeat(3*sites+1, 4), (len(sites), 4)).tolist()
 
-    dap_cols = [[3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2] for s in sites]
+    dap_cols = zip(3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
 
     dap_data = zip(defp_s, dv_s, defp_sp1, dv_sp1)
     
     update(dap_rows, dap_cols, dap_data)
 
     #-------------------------- av derivatives --------------------------------
-    dav_rows = [3*s+2 for s in sites]
-    dav_cols = [3*s+2 for s in sites]
+    dav_rows = (3*sites+2).tolist()
+    dav_cols = (3*sites+2).tolist()
     dav_data = [1 for s in sites]
 
     rows += dav_rows
@@ -516,16 +517,16 @@ def getJ(sys, v, efn, efp):
     # dxbar and dybar
     dx = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
     dxm1 = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
-    dy = np.tile(sys.dy[1:], Nz-2)
-    dym1 = np.tile(sys.dy[:-1], Nz-2)
-    dz = np.tile(sys.dz[1:], Ny-2)
-    dzm1 = np.tile(sys.dz[:-1], Ny-2)
+    dy = np.repeat(sys.dy[1:], Nz-2)
+    dym1 = np.repeat(sys.dy[:-1], Nz-2)
+    dz = np.repeat(sys.dz[1:], Ny-2)
+    dzm1 = np.repeat(sys.dz[:-1], Ny-2)
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -534,11 +535,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1),\
-                 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx), 3*(s+Nx)+2,\
-                 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-Nx),
+                   3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx), 3*(sites+Nx)+2,\
+                   3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dbn_data = zip(defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defn_spN, dv_spN, defn_spNN, dv_spNN)
@@ -552,11 +554,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-Nx)+1, 3*(s-Nx)+2, \
-                 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx)+1, \
-                 3*(s+Nx)+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-Nx)+1,
+                   3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2)
 
     dbp_data = zip(defp_smNN, dv_smNN, defp_smN, dv_smN, defp_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defp_spN, dv_spN, defp_spNN, dv_spNN)
@@ -576,16 +579,16 @@ def getJ(sys, v, efn, efp):
     # lattice distances
     dx = np.tile(sys.dx[-1], Nz-2)
     dxm1 = np.tile(sys.dx[-1], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
-    dym1 = np.tile(sys.dy[-1], Nz-2) 
+    dy = np.repeat((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
+    dym1 = np.repeat(sys.dy[-1], Nz-2) 
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s =[sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN =[sites, sites + Nx*Ny]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -594,11 +597,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2,\
-                 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, \
-                 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1)),
+                   3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx), 3*(sites-Nx)+2,\
+                   3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                   3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dbn_data = zip(defn_smNN, dv_smNN, defn_spN, dv_spN, defn_smN, dv_smN,\
                    defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_spNN, dv_spNN)
@@ -612,11 +616,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2,\
-                 3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+1,
+                   3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+1, 3*(sites-Nx)+2,\
+                   3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2)
 
     dbp_data = zip(defp_smNN, dv_smNN, defp_spN, dv_spN, defp_smN, dv_smN,\
                    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_spNN, dv_spNN)
@@ -634,16 +639,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[-1], Nz-2)
-    dym1 =  np.tile((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
+    dy = np.repeat(sys.dy[-1], Nz-2)
+    dym1 =  np.repeat((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -652,11 +657,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*(Ny-1)), 3*(s+Nx*(Ny-1))+2, 
-                 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-1),
+                   3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx),\
+                   3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1)), 3*(sites+Nx*(Ny-1))+2,\
+                   3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dbn_data = zip(defn_smNN, dv_smNN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defn_spN, dv_spN, defn_smN, dv_smN, defn_spNN, dv_spNN)
@@ -670,11 +676,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+1,\
-                 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-1)+1,\
+                   3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx)+1,\
+                   3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+1, 3*(sites+Nx*(Ny-1))+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2)
 
     dbp_data = zip(defp_smNN, dv_smNN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defp_spN, dv_spN, defp_smN, dv_smN, defp_spNN, dv_spNN)
@@ -696,14 +703,14 @@ def getJ(sys, v, efn, efp):
     dxm1 = np.tile(sys.dx[-1], Ny-2)
     dy = sys.dy[1:]
     dym1 = sys.dy[:-1]
-    dz = np.tile((sys.dz[-1] + sys.dz[0])/2., Ny-2)
-    dzm1 = np.tile(sys.dz[-1], Ny-2)
+    dz = np.repeat((sys.dz[-1] + sys.dz[0])/2., Ny-2)
+    dzm1 = np.repeat(sys.dz[-1], Ny-2)
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -712,11 +719,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny),\
-                 3*(s-Nx*Ny)+2, 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s,\
-                 3*s+1, 3*s+2, 3*(s+Nx), 3*(s+Nx)+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny),\
+                 3*(sites-Nx*Ny)+2, 3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1),
+                 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx),\
+                 3*(sites+Nx)+2)
 
     dbn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_smN, dv_smN,\
                    defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_spN, dv_spN)
@@ -730,11 +738,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2,\
-                 3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+Nx)+1, 3*(s+Nx)+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2,
+                   3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-Nx)+1,\
+                   3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2)
 
     dbp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_smN, dv_smN,\
                    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_spN, dv_spN)
@@ -754,14 +763,14 @@ def getJ(sys, v, efn, efp):
     # lattice distances
     dy = sys.dy[1:]
     dym1 = sys.dy[:-1]
-    dz = np.tile(sys.dz[0], Ny-2)
-    dzm1 = np.tile((sys.dz[-1] + sys.dz[0])/2., Ny-2)
+    dz = np.repeat(sys.dz[0], Ny-2)
+    dzm1 = np.repeat((sys.dz[-1] + sys.dz[0])/2., Ny-2)
 
     # compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -770,11 +779,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1)),
-                 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2,
+                   3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx), 3*(sites+Nx)+2,\
+                   3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1)),\
+                   3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbn_data = zip(defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defn_spN, dv_spN, defn_spNN, dv_spNN, defn_smNN, dv_smNN)
@@ -788,11 +798,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2,\
-                 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,
+                   3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2,\
+                   3*(sites+Nx*Ny*(Nz-1))+1, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbp_data = zip(defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defp_spN, dv_spN, defp_spNN, dv_spNN, defp_smNN, dv_smNN)
@@ -830,11 +841,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2, 3*(s-Nx), 3*(s-Nx)+2,\
-                 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2,\
-                 3*(s+Nx*Ny*(Nz-1)), 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*(Ny-1)), 3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx),
+                   3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2,\
+                   3*(sites+Nx*Ny*(Nz-1)), 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbn_data = zip(defn_spN, dv_spN, defn_smN, dv_smN, defn_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defn_spNN, dv_spNN, defn_smNN, dv_smNN)
@@ -848,11 +860,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2, 3*(s-Nx)+1, 3*(s-Nx)+2,\
-                 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx*Ny)+1,\
-                 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2,] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*(Ny-1))+1, 3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+1,
+                   3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx*Ny)+1,\
+                   3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+1, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbp_data = zip(defp_spN, dv_spN, defp_smN, dv_smN, defp_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defp_spNN, dv_spNN, defp_smNN, dv_smNN)
@@ -876,10 +889,10 @@ def getJ(sys, v, efn, efp):
     dzm1 = sys.dz[-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -888,12 +901,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny),\
-                 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2, 3*(s-Nx),\
-                 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, \
-                 ] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny),\
+                 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1)), 3*(sites-Nx*(Ny-1))+2,\
+                 3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1,
+                 3*sites+2)
 
     dbn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_spN, dv_spN,\
                    defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s)
@@ -907,11 +920,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1,\
-                 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2,3*(s-Nx)+1,\
-                 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+1,\
+                 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+1, 3*(sites-Nx*(Ny-1))+2, \
+                 3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites,
+                 3*sites+1, 3*sites+2)
 
     dbp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_spN, dv_spN,\
                    defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s)
@@ -935,10 +949,11 @@ def getJ(sys, v, efn, efp):
     dzm1 = sys.dz[-1]
 
     # compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s =[sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN =[sites, sites - Nx*Ny*(Nz-1)]
+
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
     dv_s, defn_spN, dv_spN, defn_spNN, dv_spNN = \
@@ -946,12 +961,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny),\
-                 3*(s-Nx*Ny)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*(Ny-1)), 3*(s+Nx*(Ny-1))+2,\
-                 ] for s in sites]
+    dbn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny),\
+                 3*(sites-Nx*Ny)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites,
+                 3*sites+1, 3*sites+2, 3*(sites+Nx), 3*(sites+Nx)+2,\
+                 3*(sites+Nx*(Ny-1)), 3*(sites+Nx*(Ny-1))+2)
 
     dbn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defn_spN, dv_spN, defn_smN, dv_smN)
@@ -965,12 +980,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1,\
-                 3*(s-Nx*Ny)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+1, 3*(s+Nx*(Ny-1))+2\
-                 ] for s in sites]
+    dbp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+1,\
+                   3*(sites-Nx*Ny)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites,\
+                   3*sites+1, 3*sites+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2,\
+                   3*(sites+Nx*(Ny-1))+1, 3*(sites+Nx*(Ny-1))+2)
 
     dbp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defp_spN, dv_spN, defp_smN, dv_smN)
@@ -994,10 +1009,10 @@ def getJ(sys, v, efn, efp):
     dzm1 = (sys.dz[-1] + sys.dz[0])/2.
 
     # compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s =[sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN =[sites, sites + Nx*Ny]
 
     #-------------------------- bn derivatives --------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1006,11 +1021,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [13*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
-    dbn_cols = [[3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx), 3*(s+Nx)+2,\
-                 3*(s+Nx*(Ny-1)), 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2,\
-                 3*(s+Nx*Ny*(Nz-1)), 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dbn_cols = zip(3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,
+                   3*(sites+Nx), 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1)),\
+                   3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2,\
+                   3*(sites+Nx*Ny*(Nz-1)), 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbn_data = zip(defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_spN, dv_spN,\
                    defn_smN, dv_smN, defn_spNN, dv_spNN, defn_smNN, dv_smNN)
@@ -1024,11 +1040,12 @@ def getJ(sys, v, efn, efp):
                    dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [13*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
-    dbp_cols = [[3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+Nx)+1, 3*(s+Nx)+2,\
-                 3*(s+Nx*(Ny-1))+1, 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2,\
-                 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dbp_cols = zip(3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,
+                   3*(sites+Nx)+1, 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+1,\
+                   3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2,\
+                   3*(sites+Nx*Ny*(Nz-1))+1, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dbp_data = zip(defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_spN, dv_spN,\
                    defp_smN, dv_smN, defp_spNN, dv_spNN, defp_smNN, dv_smNN)
@@ -1055,17 +1072,17 @@ def getJ(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1074,12 +1091,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny), \
-                 3*(s-Nx*Ny)+2, 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), \
-                 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2, 3*(s+Nx),\
-                 3*(s+Nx)+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny), \
+                 3*(sites-Nx*Ny)+2, 3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), \
+                 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx),\
+                 3*(sites+Nx)+2)
 
     dfn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_smN, dv_smN,\
                    defn_sm1, dv_sm1, defn_s, defp_s, dv_s, defn_sp1, dv_sp1,\
@@ -1094,12 +1111,11 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1, \
-                 3*(s-Nx*Ny)+2, 3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2,\
-                 3*s, 3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2, 3*(s+Nx)+1, 3*(s+Nx)+2]\
-                 for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+1, \
+                 3*(sites-Nx*Ny)+2, 3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,\
+                 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2)
 
     dfp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_smN, dv_smN, \
                    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1,\
@@ -1113,10 +1129,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+2, 3*(s-Nx)+2, 3*(s-1)+2,\
-                 3*s, 3*s+1, 3*s+2, 3*(s+1)+2, 3*(s+Nx)+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+2, 3*(sites-Nx)+2, 3*(sites-1)+2,\
+                 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2, 3*(sites+Nx)+2)
 
     dfv_data = zip(dvpNN, dvmNN, dvmN, dvm1, defn, defp, dv, dvp1, dvpN)
 
@@ -1131,17 +1147,17 @@ def getJ(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile(sys.dz[0], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat(sys.dz[0], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., (Nx-2)*(Ny-2))
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1150,11 +1166,11 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+1), 3*(s+1)+2, 3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*Ny),\
-                 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1)), 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                 3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx), 3*(sites+Nx)+2, 3*(sites+Nx*Ny),\
+                 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1)), 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfn_data = zip(defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defn_sp1, dv_sp1, defn_spN, dv_spN, defn_spNN, dv_spNN, defn_smNN, dv_smNN)
@@ -1168,11 +1184,11 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+1)+1, 3*(s+1)+2, 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*Ny)+1,\
-                 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfp_cols = zip(3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                 3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2, 3*(sites+Nx*Ny)+1,\
+                 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+1, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfp_data = zip(defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defp_sp1, dv_sp1, defp_spN, dv_spN, defp_spNN, dv_spNN, defp_smNN, dv_smNN)
@@ -1185,10 +1201,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx)+2, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+2, 3*(s+Nx)+2,\
-                 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx)+2, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2, 3*(sites+Nx)+2,\
+                 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfv_data = zip(dvmN, dvm1, defn, defp, dv, dvp1, dvpN, dvpNN, dvmNN)
 
@@ -1203,17 +1219,17 @@ def getJ(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile(sys.dy[0], (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], (Nx-2))
+    dy = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], (Nx-2))
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1222,11 +1238,11 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+1), 3*(s+1)+2, 3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*(Ny-1)),\
-                 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1,\
+                 3*sites+2, 3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx), 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1)),\
+                 3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dfn_data = zip(defn_smNN, dv_smNN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defn_sp1, dv_sp1, defn_spN, dv_spN, defn_smN, dv_smN,\
@@ -1241,12 +1257,11 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+1)+1, 3*(s+1)+2, 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+1,\
-                 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2]\
-                 for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1,\
+                 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+1,\
+                 3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2)
 
     dfp_data = zip(defp_smNN, dv_smNN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defp_sp1, dv_sp1, defp_spN, dv_spN, defp_smN, dv_smN,\
@@ -1260,10 +1275,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny)+2, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+2,\
-                 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny)+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*Ny)+2, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2,\
+                   3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny)+2)
 
     dfv_data = zip(dvmNN, dvm1, defn, defp, dv, dvp1, dvpN, dvmN, dvpNN)
 
@@ -1278,17 +1293,17 @@ def getJ(sys, v, efn, efp):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], Nx-2)
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile(sys.dy[0], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dym1 = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1297,11 +1312,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny), 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2,\
-                 3*(s-Nx), 3*(s-Nx)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-                 3*(s+1), 3*(s+1)+2, 3*(s+Nx*Ny), 3*(s+Nx*Ny)+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny), 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1)), \
+                   3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx), 3*(sites-Nx)+2, \
+                   3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                   3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx*Ny), 3*(sites+Nx*Ny)+2)
 
     dfn_data = zip(defn_smNN, dv_smNN, defn_spN, dv_spN, defn_smN, dv_smN,\
                    defn_sm1, dv_sm1,  defn_s, defp_s, dv_s, defn_sp1, dv_sp1,\
@@ -1316,12 +1332,13 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny)+1, 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2,\
-                 3*(s-Nx)+1, 3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1,\
-                 3*s+2, 3*(s+1)+1, 3*(s+1)+2, 3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2]\
-                 for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny)+1, 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+1,\
+                   3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+1, 3*(sites-Nx)+2, \
+                   3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1,\
+                   3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx*Ny)+1,\
+                   3*(sites+Nx*Ny)+2)
 
     dfp_data = zip(defp_smNN, dv_smNN, defp_spN, dv_spN, defp_smN, dv_smN,\
                    defp_sm1, dv_sm1, defn_s, defp_s, dv_s, defp_sp1, dv_sp1,\
@@ -1335,10 +1352,11 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+2, 3*(s-Nx)+2, 3*(s-1)+2, 3*s,\
-                 3*s+1, 3*s+2, 3*(s+1)+2, 3*(s+Nx*Ny)+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+2, \
+                   3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2,\
+                   3*(sites+Nx*Ny)+2)
 
     dfv_data = zip(dvmNN, dvpN, dvmN, dvm1, defn, defp, dv, dvp1, dvpNN)
 
@@ -1364,16 +1382,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1382,11 +1400,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny),\
-    3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2, 3*(s-Nx), 3*(s-Nx)+2,\
-    3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny),\
+                   3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1)), 3*(sites-Nx*(Ny-1))+2,\
+                   3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, \
+                   3*sites, 3*sites+1, 3*sites+2, 3*(sites+1), 3*(sites+1)+2)
 
     dfn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_spN, dv_spN,\
                    defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
@@ -1401,12 +1420,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1,
-    3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2, 3*(s-Nx)+1,\
-    3*(s-Nx)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2]\
-    for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+1,\
+                   3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+1, 3*(sites-Nx*(Ny-1))+2,\
+                   3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,\
+                   3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
 
     dfp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_spN, dv_spN,\
                    defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
@@ -1420,10 +1439,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+2, 3*(s-Nx*(Ny-1))+2,\
-    3*(s-Nx)+2, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+2, 3*(sites-Nx*(Ny-1))+2,\
+                   3*(sites-Nx)+2, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2)
 
     dfv_data = zip(dvpNN, dvmNN, dvpN, dvmN, dvm1, defn, defp, dv, dvp1)
 
@@ -1438,16 +1457,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites - Nx*Ny, sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites - Nx*Ny*(Nz-1))]
+    smNN_s = [sites - Nx*Ny, sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1456,11 +1475,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*Ny*(Nz-1)), 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny),\
-    3*(s-Nx*Ny)+2, 3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2,\
-    3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*(Ny-1)), 3*(s+Nx*(Ny-1))+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*Ny*(Nz-1)), 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny),\
+                   3*(sites-Nx*Ny)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites, \
+                   3*sites+1, 3*sites+2, 3*(sites+1), 3*(sites+1)+2,\
+                   3*(sites+Nx), 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1)), 3*(sites+Nx*(Ny-1))+2)
 
     dfn_data = zip(defn_spNN, dv_spNN, defn_smNN, dv_smNN, defn_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defn_sp1, dv_sp1, defn_spN, dv_spN,\
@@ -1475,12 +1495,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*Ny*(Nz-1))+1, 3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+1,\
-    3*(s-Nx*Ny)+2, 3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+1,\
-    3*(s+1)+2, 3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+1, 3*(s+Nx*(Ny-1))+2]\
-    for s in sites]
+    dfp_cols = zip(3*(sites-Nx*Ny*(Nz-1))+1, 3*(sites-Nx*Ny*(Nz-1))+2, 3*(sites-Nx*Ny)+1,\
+                   3*(sites-Nx*Ny)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites, \
+                   3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2, \
+                   3*(sites+Nx)+1, 3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+1, 3*(sites+Nx*(Ny-1))+2)
 
     dfp_data = zip(defp_spNN, dv_spNN, defp_smNN, dv_smNN, defp_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defp_sp1, dv_sp1, defp_spN, dv_spN,\
@@ -1494,10 +1514,10 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+2, 3*(s-1)+2, 3*s, 3*s+1,\
-    3*s+2, 3*(s+1)+2, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+2] for s in sites]
+    dfv_cols = zip(3*(s-Nx*Ny*(Nz-1))+2, 3*(s-Nx*Ny)+2, 3*(s-1)+2, 3*s, 3*s+1,\
+                   3*s+2, 3*(s+1)+2, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+2)
 
     dfv_data = zip(dvpNN, dvmNN, dvm1, defn, defp, dv, dvp1, dvpN, dvmN)
 
@@ -1511,16 +1531,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites - Nx, sites)]
-    s_spN = [i for i in zip(sites, sites - Nx*(Ny-1))]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites - Nx, sites]
+    s_spN = [sites, sites - Nx*(Ny-1)]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1529,11 +1549,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-Nx*(Ny-1)), 3*(s-Nx*(Ny-1))+2, 3*(s-Nx), 3*(s-Nx)+2,\
-    3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2, 3*(s+Nx*Ny),\
-    3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1)), 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfn_cols = zip(3*(sites-Nx*(Ny-1)), 3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx), 3*(sites-Nx)+2,\
+                   3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, \
+                   3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx*Ny),\
+                   3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1)), 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfn_data = zip(defn_spN, dv_spN, defn_smN, dv_smN, defn_sm1, dv_sm1,\
                    defn_s, defp_s, dv_s, defn_sp1, dv_sp1, defn_spNN, dv_spNN,\
@@ -1548,12 +1569,13 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-Nx*(Ny-1))+1, 3*(s-Nx*(Ny-1))+2, 3*(s-Nx)+1, 3*(s-Nx)+2,\
-    3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2,\
-    3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2]\
-    for s in sites]
+    dfp_cols = zip(3*(sites-Nx*(Ny-1))+1, 3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+1,\
+                   3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1,\
+                   3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+1,\
+                   3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfp_data = zip(defp_spN, dv_spN, defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s,\
     defp_s, dv_s, defp_sp1, dv_sp1, defp_spNN, dv_spNN, defp_smNN, dv_smNN)
@@ -1566,10 +1588,11 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-Nx*(Ny-1))+2, 3*(s-Nx)+2, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2,\
-    3*(s+1)+2, 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfv_cols = zip(3*(sites-Nx*(Ny-1))+2, 3*(sites-Nx)+2, 3*(sites-1)+2, \
+                   3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2, \
+                   3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfv_data = zip(dvpN, dvmN, dvm1, defn, defp, dv, dvp1, dvpNN, dvmNN)
 
@@ -1583,16 +1606,16 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
 
     # gather all relevant pairs of sites to compute the currents
-    smNN_s = [i for i in zip(sites + Nx*Ny*(Nz-1), sites)]
-    smN_s = [i for i in zip(sites + Nx*(Ny-1), sites)]
-    s_spN = [i for i in zip(sites, sites + Nx)]
-    s_spNN = [i for i in zip(sites, sites + Nx*Ny)]
+    smNN_s = [sites + Nx*Ny*(Nz-1), sites]
+    smN_s = [sites + Nx*(Ny-1), sites]
+    s_spN = [sites, sites + Nx]
+    s_spNN = [sites, sites + Nx*Ny]
 
     #------------------------ fn derivatives ----------------------------------
     defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
@@ -1601,11 +1624,12 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [15*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 15), (len(sites), 15)).tolist()
 
-    dfn_cols = [[3*(s-1), 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1), 3*(s+1)+2,\
-    3*(s+Nx), 3*(s+Nx)+2, 3*(s+Nx*(Ny-1)), 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny),\
-    3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1)), 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfn_cols = zip(3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                   3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx), 3*(sites+Nx)+2,\
+                   3*(sites+Nx*(Ny-1)), 3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny),\
+                   3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1)), 3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfn_data = zip(defn_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defn_sp1, dv_sp1, defn_spN, dv_spN, defn_smN, dv_smN,\
@@ -1620,12 +1644,13 @@ def getJ(sys, v, efn, efp):
     dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [15*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 15), (len(sites), 15)).tolist()
 
-    dfp_cols = [[3*(s-1)+1, 3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+1, 3*(s+1)+2,\
-    3*(s+Nx)+1, 3*(s+Nx)+2, 3*(s+Nx*(Ny-1))+1, 3*(s+Nx*(Ny-1))+2,\
-    3*(s+Nx*Ny)+1, 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+1, 3*(s+Nx*Ny*(Nz-1))+2]\
-    for s in sites]
+    dfp_cols = zip(3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
+                   3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2,\
+                   3*(sites+Nx*(Ny-1))+1, 3*(sites+Nx*(Ny-1))+2,\
+                   3*(sites+Nx*Ny)+1, 3*(sites+Nx*Ny)+2, 3*(sites+Nx*Ny*(Nz-1))+1,\
+                   3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfp_data = zip(defp_sm1, dv_sm1, defn_s, defp_s, dv_s,\
                    defp_sp1, dv_sp1, defp_spN, dv_spN, defp_smN, dv_smN,\
@@ -1639,10 +1664,11 @@ def getJ(sys, v, efn, efp):
     fv_derivatives(sys, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [9*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
 
-    dfv_cols = [[3*(s-1)+2, 3*s, 3*s+1, 3*s+2, 3*(s+1)+2, 3*(s+Nx)+2,\
-                 3*(s+Nx*(Ny-1))+2, 3*(s+Nx*Ny)+2, 3*(s+Nx*Ny*(Nz-1))+2] for s in sites]
+    dfv_cols = zip(3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2,\
+                   3*(sites+Nx)+2, 3*(sites+Nx*(Ny-1))+2, 3*(sites+Nx*Ny)+2,\
+                   3*(sites+Nx*Ny*(Nz-1))+2)
 
     dfv_data = zip(dvm1, defn, defp, dv, dvp1, dvpN, dvmN, dvpNN, dvmNN)
 

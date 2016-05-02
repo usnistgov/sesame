@@ -60,15 +60,15 @@ def getFandJ_eq(sys, v):
         pextra = sys.pextra[sites]
 
         f = (n + pextra) / (n + p + nextra + pextra)
-        rho += sys.Nextra[sites] / 2. * (1 - 2*f)
+        rho +=  sys.Nextra[sites] / 2. * (1 - 2*f)
 
         # GB charge density derivatives
         drho_dv += -sys.Nextra[sites] * (n*(n+p+nextra+pextra)-(n+pextra)*(n-p))\
                                        / (n+p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
-    rho /= sys.epsilon[sites]
-    drho_dv /= sys.epsilon[sites]
+    rho = rho / sys.epsilon[sites]
+    drho_dv = drho_dv / sys.epsilon[sites]
 
     #--------------------------------------------------------------------------
     #------------------------------ fv ----------------------------------------

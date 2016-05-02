@@ -69,8 +69,8 @@ def getFandJ_eq(sys, v):
                                        / (n+p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
-    rho /= sys.epsilon[sites]
-    drho_dv /= sys.epsilon[sites]
+    rho = rho / sys.epsilon[sites]
+    drho_dv = drho_dv / sys.epsilon[sites]
 
      
     ###########################################################################
@@ -86,11 +86,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], (Ny-2)*(Nz-2))
-    dy = np.tile(sys.dy[1:], (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], (Ny-2)*(Nz-2))
-    dym1 = np.tile(sys.dy[:-1], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], (Nx-2)*(Ny-2))
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -179,12 +179,12 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2, (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[:-1], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2, (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[:-1], Nx-2)
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile(sys.dy[-1], (Nx-2)*(Nz-2))
+    dym1 = np.repeat(sys.dy[-1], (Nx-2)*(Nz-2))
     dzm1 = np.zeros(Nz-1)
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -215,8 +215,8 @@ def getFandJ_eq(sys, v):
 
     # update the sparse matrix row and columns
     dfv_rows = [7*[s] for s in sites]
-    dfv_cols = [[s-Nx*Ny, s-Nx*(Ny-1), s-Nx, s-1, s, s+1, s+Nx*Ny] for s in sites]
-    dfv_data = zip(dvmNN, dvpN, dvmN, dvm1, dv, dvp1, dvpNN)
+    dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1, s-Nx*(Ny-1), s+Nx*Ny] for s in sites]
+    dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvpN, dvpNN)
 
 
     rows += list(chain.from_iterable(dfv_rows))
@@ -233,11 +233,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2, (Nx-2)*(Nz-2))
-    dz = np.tile(sys.dz[1:], Nx-2)
+    dy = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
+    dz = np.repeat(sys.dz[1:], Nx-2)
     dxm1 = np.tile(sys.dx[:-1], Nz-2)
-    dym1 = np.tile(sys.dy[0], (Nx-2)*(Nz-2))
-    dzm1 = np.tile(sys.dz[:-1], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2, (Nx-2)*(Nz-2))
+    dzm1 = np.repeat(sys.dz[:-1], Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -268,8 +268,8 @@ def getFandJ_eq(sys, v):
 
     # update the sparse matrix row and columns
     dfv_rows = [7*[s] for s in sites]
-    dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1,s+Nx*(Ny-1), s+Nx*Ny] for s in sites]
-    dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvmN, dvpNN)
+    dfv_cols = [[s-Nx*Ny, s+Nx*(Ny-1), s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
+    dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvpN, dvpNN)
 
     rows += list(chain.from_iterable(dfv_rows))
     columns += list(chain.from_iterable(dfv_cols))
@@ -283,11 +283,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile((sys.dz[-1] + sys.dz[0])/2., (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat((sys.dz[-1] + sys.dz[0])/2., (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], (Nx-2)*(Ny-2))
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -334,11 +334,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
-    dy = np.tile(sys.dy[1:], Nx-2)
-    dz = np.tile(sys.dz[0], (Nx-2)*(Ny-2))
+    dy = np.repeat(sys.dy[1:], Nx-2)
+    dz = np.repeat(sys.dz[0], (Nx-2)*(Ny-2))
     dxm1 = np.tile(sys.dx[:-1], Ny-2)
-    dym1 = np.tile(sys.dy[:-1], Nx-2)
-    dzm1 = np.tile((sys.dz[-1] + sys.dz[0])/2., (Nx-2)*(Ny-2))
+    dym1 = np.repeat(sys.dy[:-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[-1] + sys.dz[0])/2., (Nx-2)*(Ny-2))
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -384,11 +384,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = sys.dx[1:]
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
     dxm1 = sys.dx[:-1]
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -435,11 +435,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = sys.dx[1:]
-    dy = np.tile(sys.dy[0], Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat(sys.dy[0], Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
     dxm1 = sys.dx[:-1]
-    dym1 = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -486,11 +486,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = sys.dx[1:]
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile(sys.dz[0], Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat(sys.dz[0], Nx-2)
     dxm1 = sys.dx[:-1]
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
@@ -537,11 +537,11 @@ def getFandJ_eq(sys, v):
 
     # lattice distances
     dx = sys.dx[1:]
-    dy = np.tile((sys.dy[0] + sys.dy[-1])/2., Nx-2)
-    dz = np.tile((sys.dz[0] + sys.dz[-1])/2., Nx-2)
+    dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., Nx-2)
+    dz = np.repeat((sys.dz[0] + sys.dz[-1])/2., Nx-2)
     dxm1 = sys.dx[:-1]
-    dym1 = np.tile(sys.dy[-1], Nx-2)
-    dzm1 = np.tile(sys.dz[-1], Nx-2)
+    dym1 = np.repeat(sys.dy[-1], Nx-2)
+    dzm1 = np.repeat(sys.dz[-1], Nx-2)
     dxbar = (dx + dxm1) / 2.
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.

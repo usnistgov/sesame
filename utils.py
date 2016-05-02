@@ -44,6 +44,7 @@ def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=
             nx = len(xpts)
             g = params.g[:nx]
             gtot = spline(xpts, g).integral(xpts[0], xpts[-1]) * ypts[-1]
+            # gtot=1
         # compute current
         c = []
         for fdx, f in enumerate(files):

@@ -1,6 +1,5 @@
 from numpy import exp
 import numpy as np
-from sesame.utils2 import get_dl
 
 
 def get_n(sys, efn, v, sites):
@@ -18,29 +17,17 @@ def get_rr(sys, n, p, n1, p1, tau_e, tau_h, sites):
     r = (n*p - ni**2)/(tau_h * (n+n1) + tau_e*(p+p1))
     return r
 
-def get_jn(sys, efn, v, sites, dl=None):
+def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     # sites is a list of pairs of sites given in the folded representation
     bl = 0
 
-    sp0, sp1 = [], []
-    if dl is None:
-        dl = []
-    else:
-        dl = dl
-    for s in sites:
-        sp0.append(s[0])
-        sp1.append(s[1])
-        if type(dl) == list:
-            dl.append(get_dl(sys, s))
-    dl = np.asarray(dl)
+    vp0 = v[sites_i]
+    dv = vp0 - v[sites_ip1]
+    efnp0= efn[sites_i]
+    efnp1 = efn[sites_ip1]
 
-    vp0 = v[sp0]
-    dv = vp0 - v[sp1]
-    efnp0= efn[sp0]
-    efnp1 = efn[sp1]
-
-    Nc = sys.Nc[sp0]
-    mu = sys.mu_e[sp0]
+    Nc = sys.Nc[sites_i]
+    mu = sys.mu_e[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
@@ -49,29 +36,17 @@ def get_jn(sys, efn, v, sites, dl=None):
 
     return jn * Nc * mu
 
-def get_jp(sys, efp, v, sites, dl=None):
+def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     bl = 0
 
-    sp0, sp1 = [], []
-    if dl is None:
-        dl = []
-    else:
-        dl = dl
-    for s in sites:
-        sp0.append(s[0])
-        sp1.append(s[1])
-        if type(dl) == list:
-            dl.append(get_dl(sys, s))
-    dl = np.asarray(dl)
+    vp0 = v[sites_i]
+    dv = vp0 - v[sites_ip1]
+    efpp0= efp[sites_i]
+    efpp1 = efp[sites_ip1]
 
-    vp0 = v[sp0]
-    dv = vp0 - v[sp1]
-    efpp0= efp[sp0]
-    efpp1 = efp[sp1]
-
-    Nv = sys.Nv[sp0]
-    Eg = sys.Eg[sp0]
-    mu = sys.mu_h[sp0]
+    Nv = sys.Nv[sites_i]
+    Eg = sys.Eg[sites_i]
+    mu = sys.mu_h[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
@@ -80,86 +55,90 @@ def get_jp(sys, efp, v, sites, dl=None):
 
     return jp * Nv * mu
 
-def get_jn_derivs(sys, efn, v, sites, dl=None):
+def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     bl = 0
 
-    sp0, sp1 = [], []
-    if dl is None:
-        dl = []
-    else:
-        dl = dl
-    for s in sites:
-        sp0.append(s[0])
-        sp1.append(s[1])
-        if type(dl) == list:
-            dl.append(get_dl(sys, s))
-    dl = np.asarray(dl)
-
-    vp0 = v[sp0]
-    vp1 = v[sp1]
+    vp0 = v[sites_i]
+    vp1 = v[sites_ip1]
     dv = vp0 - vp1
-    efnp0= efn[sp0]
-    efnp1 = efn[sp1]
+    efnp0= efn[sites_i]
+    efnp1 = efn[sites_ip1]
 
-    Nc = sys.Nc[sp0]
-    mu = sys.mu_e[sp0]
+    Nc = sys.Nc[sites_i]
+    mu = sys.mu_e[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
-    defn_i = 1./dl * exp(-bl+efnp0) * (-dv)\
-             / (-exp(-vp0)*(1 - exp(dv)))
+    # defn_i = 1./dl * exp(-bl+efnp0) * (-dv)\
+    #          / (-exp(-vp0)*(1 - exp(dv)))
+    #
+    # defn_ip1 = -1./dl * exp(-bl+efnp1) * (-dv)\
+    #            / (-exp(-vp0) * (1 - exp(dv)))
+    #
+    # dv_i = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
+    #        * exp(-vp0)*(1 + dv - exp(dv))\
+    #        / (exp(-2*vp0) * (exp(dv)-1)**2)
+    #
+    # dv_ip1 = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
+    #         * exp(-vp1) * (1 - dv - exp(-dv))\
+    #         / (exp(-2*vp1) * (1-exp(-dv))**2)
 
-    defn_ip1 = -1./dl * exp(-bl+efnp1) * (-dv)\
-               / (-exp(-vp0) * (1 - exp(dv)))
+    ev0 = exp(-vp0)
+    ep1 = exp(-bl+efnp1)
+    ep0 = exp(-bl+efnp0)
 
-    dv_i = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
-           * exp(-vp0)*(1 + dv - exp(dv))\
-           / (exp(-2*vp0) * (exp(dv)-1)**2)
+    defn_i = 1./dl * ep0 * (-dv) / (-ev0*(1 - exp(dv)))
 
-    dv_ip1 = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
-            * exp(-vp1) * (1 - dv - exp(-dv))\
+    defn_ip1 = -1./dl * ep1 * (-dv) / (-ev0 * (1 - exp(dv)))
+
+    dv_i = -1./dl * (ep1 - ep0) * ev0*(1 + dv - exp(dv))\
+           / (ev0**2 * (exp(dv)-1)**2)
+
+    dv_ip1 = -1./dl * (ep1 - ep0) * exp(-vp1) * (1 - dv - exp(-dv))\
             / (exp(-2*vp1) * (1-exp(-dv))**2)
 
     return mu*Nc*defn_i, mu*Nc*defn_ip1, mu*Nc*dv_i, mu*Nc*dv_ip1   
 
-def get_jp_derivs(sys, efp, v, sites, dl=None):
+def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     bl = 0
 
-    sp0, sp1 = [], []
-    if dl is None:
-        dl = []
-    else:
-        dl = dl
-    for s in sites:
-        sp0.append(s[0])
-        sp1.append(s[1])
-        if type(dl) == list:
-            dl.append(get_dl(sys, s))
-    dl = np.asarray(dl)
-
-    vp0 = v[sp0]
-    vp1 = v[sp1]
+    vp0 = v[sites_i]
+    vp1 = v[sites_ip1]
     dv = vp0 - vp1
-    efpp0= efp[sp0]
-    efpp1 = efp[sp1]
+    efpp0= efp[sites_i]
+    efpp1 = efp[sites_ip1]
 
-    Nv = sys.Nv[sp0]
-    Eg = sys.Eg[sp0]
-    mu = sys.mu_h[sp0]
+    Nv = sys.Nv[sites_i]
+    Eg = sys.Eg[sites_i]
+    mu = sys.mu_h[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    defp_i = 1/dl * exp(bl-Eg+efpp0) * (-dv)\
-             / (-exp(vp0) * (1 - exp(-dv)))
+    # defp_i = 1/dl * exp(bl-Eg+efpp0) * (-dv)\
+    #          / (-exp(vp0) * (1 - exp(-dv)))
+    #
+    # defp_ip1 = 1/dl * exp(bl-Eg+efpp1) * (-dv)\
+    #            / (exp(vp0) * (1 - exp(-dv)))
+    #
+    # dv_i = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
+    #        * exp(vp0) * (1-dv - exp(-dv))\
+    #        / (exp(2*vp0)*((exp(-dv)-1)**2))
+    #
+    # dv_ip1 = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
+    #         * exp(vp1) * (1+dv - exp(dv))\
+    #         / (exp(2*vp1)*((1-exp(dv))**2))
 
-    defp_ip1 = 1/dl * exp(bl-Eg+efpp1) * (-dv)\
-               / (exp(vp0) * (1 - exp(-dv)))
+    ev0 = exp(vp0)
+    ep1 = exp(bl+efpp1-Eg)
+    ep0 = exp(bl+efpp0-Eg)
 
-    dv_i = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
-           * exp(vp0) * (1-dv - exp(-dv))\
-           / (exp(2*vp0)*((exp(-dv)-1)**2))
+    defp_i = 1/dl * ep0 * (-dv) / (-ev0 * (1 - exp(-dv)))
 
-    dv_ip1 = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
-            * exp(vp1) * (1+dv - exp(dv))\
+    defp_ip1 = 1/dl * ep1 * (-dv) / (ev0 * (1 - exp(-dv)))
+
+    dv_i = -1/dl * (ep1 - ep0) * ev0 * (1-dv - exp(-dv))\
+           / (ev0**2*((exp(-dv)-1)**2))
+
+    dv_ip1 = -1/dl * (ep1 - ep0) * exp(vp1) * (1+dv - exp(dv))\
             / (exp(2*vp1)*((1-exp(dv))**2))
 
     return mu*Nv*defp_i, mu*Nv*defp_ip1, mu*Nv*dv_i, mu*Nv*dv_ip1

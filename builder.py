@@ -1,24 +1,30 @@
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from sesame.utils2 import get_indices
+from sesame.utils2 import get_indices, get_xyz_from_s
 
 class Builder():
     def __init__(self, T=300):
-        # temperature
+        # temperature in Kelvin
         self.T = T
+
+        # q = 1.6e-19
+        # epsilon = 11 * (8.85 * 1e-12)
 
         # scalings for...
         # densities
         self.N = 1e19 * 1e6 # [m^-3]
+        # NN = self.N
         # energies
         self.vt = cts.k * T / cts.e
         # mobilities [m^2 / (V.s)]
-        self.mu = 1e-4
+        self.mu = 1 * 1e-4
         # time [s]
         self.t0 = cts.epsilon_0 / (self.mu * cts.e* self.N)
+        # self.t0 = (self.mu * q* NN / (epsilon))**(-1)
         # space [m]
         self.xscale = np.sqrt(cts.epsilon_0 * self.vt / (cts.e * self.N))
+        # self.xscale = (epsilon * self.vt / (q*NN))**.5
         # generation rate [m^-3]
         self.U = (self.N * self.mu * self.vt) / self.xscale**2 
         # recombination velocities
@@ -34,7 +40,7 @@ class Builder():
         self.charges = []
 
         # generation of carriers
-        self.illumination = None
+        self.g = 0 # no illumination by default 
         # length of mesh in x, y, z directions
         self.nx, self.ny, self.nz = 1, 1, 1
         self.dimension = 1
@@ -114,16 +120,24 @@ class Builder():
     def add_acceptor(self, location, density):
         self.doping_profile(location, -density)
 
-    def illumination(self, f):
+    def illumination(self, f, scale=True):
         """
         Illumination profile along x, assumed invariant along y
 
         Arguments
         ---------
         f: function for the generation rate [m^-3]
+        scale: Boolean that determines if scaling should be done here or not.
         """
+        if scale:
+            self.illumination = lambda x, y, z: f(x, y, z) / self.U
+        else:
+            self.illumination = lambda x, y, z: f(x, y, z)
+        self.g = 1
 
-        self.illumination = lambda x: f(x) / self.U
+    def generation(self, g):
+        self.g = g
+        
 
     def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """
@@ -174,6 +188,8 @@ class Builder():
         nx, ny, nz = self.nx, self.ny, self.nz
 
         def get_sites(xa, ya, za, xb, yb, zb):
+            if yb == self.ny: yb = self.ny-1
+            if zb == self.nz: yb = self.nz-1
             s = [i + j*nx + k*nx*ny for k in range(za, zb+1) 
                                     for j in range(ya, yb+1) 
                                     for i in range(xa, xb+1)]
@@ -214,7 +230,7 @@ class Builder():
             xa, ya, za = get_indices(self, (d.xa, d.ya, d.za))
             xb, yb, zb = get_indices(self, (d.xb, d.yb, d.zb))
             s = get_sites(xa, ya, za, xb, yb, zb)
-            self.rho[s] = d.density
+            self.rho[s] = d.density # divided by epsilon later
 
         # additional extra charges
         if len(self.charges) != 0:
@@ -226,26 +242,36 @@ class Builder():
             for c in self.charges:
                 xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
                 xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
-                if xa == xb: # parallel to the junction
-                    dl = xpts[xa+1] - xpts[xa]
-                elif ya == yb: # orthogonal to the junction
-                    dl = ypts[ya+1] - ypts[ya]
+                if xa == xb and xa != nx-1: # parallel to the junction
+                    dl = self.xpts[xa+1] - self.xpts[xa]
+                if xa == xb and xa == nx-1: # parallel to the junction
+                    dl = self.xpts[xa] - self.xpts[xa-1]
+                if ya == yb and ya != ny-1: # orthogonal to the junction
+                    dl = self.ypts[ya+1] - self.ypts[ya]
+                if ya == yb and ya == ny-1: # orthogonal to the junction
+                    dl = self.ypts[ya] - self.ypts[ya-1]
 
-                else:
-                    s = get_sites(xa, ya, za, xb, yb, zb)
-                    extra_charge_sites += s
-                    self.Nextra[s] = c.density
-                    self.Sextra[s] = c.S
-                    if nz == 1: # meaning not a 3D problem
-                        self.Nextra[s] = self.Nextra[s] / dl
-                        self.Sextra[s] = c.Sextra[s] / dl
-                    self.nextra[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.EGB)
-                    self.pextra[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.EGB)
+                s = get_sites(xa, ya, za, xb, yb, zb)
+                self.extra_charge_sites += s
+                self.Nextra[s] = c.density
+                self.Sextra[s] = c.S
+                if ny > 1 and nz == 1: # meaning a 2D problem
+                    self.Nextra[s] = self.Nextra[s] / dl
+                    self.Sextra[s] = self.Sextra[s] / dl
+                self.nextra[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
+                self.pextra[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
 
         # illumination
-        self.g = np.zeros((nx*ny*nz,), dtype=float)
-        if self.illumination != None:
-            self.g = self.illumination(self.xpts)
-
-
-
+        if self.g == 0:
+            self.g = np.zeros((nx*ny*nz,), dtype=float)
+        else:
+            if self.dimension == 1:
+                g = [self.illumination(x, 0, 0) for x in self.xpts*self.xscale]
+            elif self.dimension == 2:
+                g = [self.illumination(x, y, 0) for y in self.ypts*self.xscale 
+                                                for x in self.xpts*self.xscale]
+            elif self.dimension == 3:
+                g = [self.illumination(x, y, z) for z in self.zpts*self.xscale 
+                                                for y in self.ypts*self.xscale
+                                                for x in self.xpts*self.xscale]
+            self.g = np.asarray(g)

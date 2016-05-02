@@ -24,7 +24,7 @@ def refine(dv):
 
 def poisson_solver(tolerance, params, guess=None, max_step=300, info=0):
     # initial guess for electrostatic potential (linear)
-    if guess == None:
+    if guess is None:
         v00 = np.log(params.nD/params.nC)
         vL0 = -params.eg - np.log(params.nA/params.nV)
 
@@ -69,7 +69,6 @@ def poisson_solver(tolerance, params, guess=None, max_step=300, info=0):
             dv = refine(dx)
             v = v + dv
             f, J = getFandJ_eq(v, params)
-            
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
             print('step = {0}, error = {1}'.format(cc, error), "\n")
@@ -111,6 +110,7 @@ def solver(guess, tolerance, params, max_step=300, info=0):
         #-------- solve linear system ---------------------
         dx = spsolve(J, -f)
         dx = dx.transpose()
+
 
         #--------- choose the new step -----------------
         error = max(np.abs(dx))
@@ -164,7 +164,7 @@ def solver(guess, tolerance, params, max_step=300, info=0):
             print('step = {0}, error = {1}'.format(cc, error), "\n")
 
         # if no solution found after maxiterations, break
-        if cc > max_step:
+        if cc >= max_step:
             print('too many iterations\n')
             break
 

@@ -1,4 +1,4 @@
-from sesame.observables import get_jn, get_jp
+from sesame.observables2 import get_jn, get_jp
 from scipy.interpolate import InterpolatedUnivariateSpline as spline
 from scipy.optimize import brentq
 import matplotlib.pyplot as plt
@@ -6,25 +6,19 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 
 
-def integrator(xpts, ypts, v, efn, efp, params, integrate=True):
+def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl, integrate=True):
     # return the current in the x-direction, summed along the y-axis
-    nx = len(xpts)
-    idx = nx//2 # let's compute the current in the middle of the system
-    dx = xpts[1:] - xpts[:-1]
-    mu = params.mu
-    c = []
-    for j in range(len(ypts)):
-        s = idx + j*nx
-        jn = mu[s] * get_jn(efn[s],efn[s+1],v[s],v[s+1],dx[idx],params)
-        jp = mu[s] * get_jp(efp[s],efp[s+1],v[s],v[s+1],dx[idx],params)
-        c.append(jn+jp)
+    jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
+    jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
+    j = jn+jp
 
     # integrate over y if 2d only
     if integrate:
-        c = spline(ypts, c).integral(ypts[0], ypts[-1])
+        ypts = sys.ypts
+        j = spline(ypts, j).integral(ypts[0], ypts[-1])
     else:
-        c = c[0]
-    return c
+        j = j[0]
+    return j
 
 def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=False):
     # output is printed on screen if set to None, otherwise data are stored in a
@@ -66,7 +60,7 @@ def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=
         return c
 
 def maps3D(sys, data, cmap='gnuplot', alpha=1):
-    xpts, ypts = sys.xpts, sys.ypts
+    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
     nx, ny = len(xpts), len(ypts)
     data_xy = data.reshape(ny, nx).T
     X, Y = np.meshgrid(xpts, ypts)

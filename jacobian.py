@@ -9,7 +9,7 @@ def getJ(v, efn, efp, params):
 
     bl, eg, nC, nV, nA, nD, scn, scp, g, mu, tau, rho,\
     NGB, SGB, nGB, pGB,\
-    n1, p1, ni, xpts, ypts = params
+    n1, p1, ni, xpts, ypts, eps = params
 
     Nx = xpts.shape[0]
     Ny = ypts.shape[0]
@@ -43,9 +43,9 @@ def getJ(v, efn, efp, params):
 
     # GB charge density derivatives
     drhoGB_dv = -NGB_xy * (n_xy*(n_xy+p_xy+nGB+pGB)-(n_xy+pGB)*(n_xy-p_xy))\
-                        / (n_xy+p_xy+nGB+pGB)**2
+                         / (n_xy+p_xy+nGB+pGB)**2
     drhoGB_defn = -NGB_xy * (n_xy*(n_xy+p_xy+nGB+pGB)-(n_xy+pGB)*n_xy)\
-                          / (n_xy+p_xy+nGB+pGB)**2
+                           / (n_xy+p_xy+nGB+pGB)**2
     drhoGB_defp = NGB_xy * (n_xy+pGB)*p_xy / (n_xy+p_xy+nGB+pGB)**2
 
 
@@ -255,9 +255,9 @@ def getJ(v, efn, efp, params):
     dvmN = -1./(dy[1:-1,:-1] * dybar)
     dvm1 = -1./(dx[:-1,1:-1] * dxbar)
     dv = 2./(dx[1:,1:-1] * dx[:-1,1:-1]) + 2./(dy[1:-1,1:] * dy[1:-1,:-1])\
-         + p_xy[1:-1,1:-1] + n_xy[1:-1,1:-1] - drhoGB_dv[1:-1,1:-1]
-    defn = n_xy[1:-1,1:-1] - drhoGB_defn[1:-1,1:-1]
-    defp = -p_xy[1:-1,1:-1] - drhoGB_defp[1:-1,1:-1]
+         + (p_xy[1:-1,1:-1] + n_xy[1:-1,1:-1] - drhoGB_dv[1:-1,1:-1])/eps
+    defn = (n_xy[1:-1,1:-1] - drhoGB_defn[1:-1,1:-1])/eps
+    defp = (-p_xy[1:-1,1:-1] - drhoGB_defp[1:-1,1:-1])/eps
     dvp1 = -1./(dx[1:,1:-1] * dxbar)
     dvpN = -1./(dy[1:-1,1:] * dybar)
 

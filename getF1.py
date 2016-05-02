@@ -39,7 +39,7 @@ def getF(sys, v, efn, efp):
     # extra charge density
     if hasattr(sys, 'Nextra'): 
         # find sites containing extra charges
-        matches = [s for s in sites if s in sys.extra_charge_sites]
+        matches = sys.extra_charge_sites
 
         nextra = sys.nextra[matches]
         pextra = sys.pextra[matches]
@@ -55,7 +55,7 @@ def getF(sys, v, efn, efp):
                              1/Sextra[matches], matches)
 
     # charge devided by epsilon
-    rho /= sys.epsilon[sites]
+    rho = rho / sys.epsilon[sites]
 
     ###########################################################################
     #                   inside the system: 0 < i < Nx-1                       #
@@ -68,48 +68,40 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # dxbar
-    dxbar = (dx[sites] + dx[sites-1]) / 2.
-
-    # gather all relevant pairs of sites to compute the currents
-    sm1_s = [i for i in zip(sites - 1, sites)]
-    s_sp1 = [i for i in zip(sites, sites + 1)]
+    dx = sys.dx[1:]
+    dxm1 = sys.dx[:-1]
+    dxbar = (dx + dxm1) / 2.
 
     # compute the currents
-    jnx_s   = get_jn(sys, efn, v, s_sp1)
-    jnx_sm1 = get_jn(sys, efn, v, sm1_s)
+    jnx_s   = get_jn(sys, efn, v, sites, sites+1, dx)
+    jnx_sm1 = get_jn(sys, efn, v, sites-1, sites, dxm1)
 
-    jpx_s   = get_jp(sys, efp, v, s_sp1)
-    jpx_sm1 = get_jp(sys, efp, v, sm1_s)
+    jpx_s   = get_jp(sys, efp, v, sites, sites+1, dx)
+    jpx_sm1 = get_jp(sys, efp, v, sites-1, sites, dxm1)
 
-    #--------------------------------------------------------------------------
     #------------------------------ fn ----------------------------------------
-    #--------------------------------------------------------------------------
     fn = (jnx_s - jnx_sm1) / dxbar + sys.g[sites] - r[sites]
 
-    vec[[3*s for s in sites]] = fn
+    vec[3*sites] = fn
 
-    #--------------------------------------------------------------------------
     #------------------------------ fp ----------------------------------------
-    #--------------------------------------------------------------------------
     fp = (jpx_s - jpx_sm1) / dxbar + r[sites] - sys.g[sites]
 
-    vec[[3*s+1 for s in sites]] = fp
+    vec[3*sites+1] = fp
 
-    #--------------------------------------------------------------------------
     #------------------------------ fv ----------------------------------------
-    #--------------------------------------------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dx[sites-1] - (v[sites+1]-v[sites]) / dx[sites]) / dxbar\
+    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
        - rho[sites]
 
-    vec[[3*s+2 for s in sites]] = fv
+    vec[3*sites+2] = fv
 
     ###########################################################################
     #                       left boundary: i = 0                              #
     ###########################################################################
     # compute the currents
     s_sp1 = [(0, 1)]
-    jnx = get_jn(sys, efn, v, s_sp1)
-    jpx = get_jp(sys, efp, v, s_sp1)
+    jnx = get_jn(sys, efn, v, 0, 1, sys.dx[0])
+    jpx = get_jp(sys, efp, v, 0, 1, sys.dx[0])
 
     # compute an, ap, av
     n_eq = 0
@@ -137,12 +129,10 @@ def getF(sys, v, efn, efp):
     dxbar = dx[-1]
 
     # compute the currents
-    sm1_s = [(Nx-1 - 1, Nx-1)]
+    jnx_sm1 = get_jn(sys, efn, v, Nx-2, Nx-1, sys.dx[-1])
+    jpx_sm1 = get_jp(sys, efp, v, Nx-2, Nx-1, sys.dx[-1])
 
-    # compute the currents
-    jnx_sm1 = get_jn(sys, efn, v, sm1_s)
-    jpx_sm1 = get_jp(sys, efp, v, sm1_s)
-
+    sites = Nx-1
     jnx_s = jnx_sm1 + dxbar * (r[sites] - sys.g[sites])
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites])
 
@@ -163,11 +153,5 @@ def getF(sys, v, efn, efp):
     vec[[3*(Nx-1)]] = bn
     vec[[3*(Nx-1)+1]] = bp
     vec[[3*(Nx-1)+2]] = bv      
-
-    ###########################################################################
-    #                         top and bottom boundaries                       #
-    ###########################################################################
-    # I want periodic boundary conditions so, I have a bunch of zeros in the
-    # vector on the right hand side and place 1 and -1 values in the Jacobian.
 
     return vec
