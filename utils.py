@@ -1,4 +1,4 @@
-from sesame.observables2 import get_jn, get_jp
+from sesame.observables import get_jn, get_jp
 from scipy.interpolate import InterpolatedUnivariateSpline as spline
 from scipy.optimize import brentq
 import matplotlib.pyplot as plt
