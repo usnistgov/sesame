@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import coo_matrix
 from itertools import chain
 
-from sesame.observables2 import get_n, get_p
+from sesame.observables import get_n, get_p
 # remember that efn and efp are zero at equilibrium
 
 def getFandJ_eq(sys, v):

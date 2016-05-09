@@ -1,9 +1,8 @@
 import numpy as np
-from numpy import exp
 from scipy.sparse import coo_matrix
 from itertools import chain
 
-from sesame.observables2 import *
+from sesame.observables import *
 
 def getJ(sys, v, efn, efp):
     ###########################################################################

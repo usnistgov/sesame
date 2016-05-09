@@ -1,4 +1,4 @@
-from sesame.observables import get_jn, get_jp
+from sesame.observables2 import get_jn, get_jp
 from scipy.interpolate import InterpolatedUnivariateSpline as spline
 from scipy.optimize import brentq
 import matplotlib.pyplot as plt
@@ -6,27 +6,19 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 
 
-def integrator(xpts, ypts, v, efn, efp, params, integrate=True):
+def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl, integrate=True):
     # return the current in the x-direction, summed along the y-axis
-    nx = len(xpts)
-    idx = nx//2 # let's compute the current in the middle of the system
-    dx = xpts[1:] - xpts[:-1]
-    mu = params.mu
-    c = []
-    for j in range(len(ypts)):
-        s = idx + j*nx
-        # jn = mu[s] * get_jn(efn[s],efn[s+1],v[s],v[s+1],dx[idx],params)
-        # jp = mu[s] * get_jp(efp[s],efp[s+1],v[s],v[s+1],dx[idx],params)
-        jn = get_jn(efn[s],efn[s+1],v[s],v[s+1],dx[idx],params)
-        jp = get_jp(efp[s],efp[s+1],v[s],v[s+1],dx[idx],params)
-        c.append(jn+jp)
+    jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
+    jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
+    j = jn+jp
 
     # integrate over y if 2d only
     if integrate:
-        c = spline(ypts, c).integral(ypts[0], ypts[-1])
+        ypts = sys.ypts
+        j = spline(ypts, j).integral(ypts[0], ypts[-1])
     else:
-        c = c[0]
-    return c
+        j = j[0]
+    return j
 
 def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=False):
     # output is printed on screen if set to None, otherwise data are stored in a
@@ -44,7 +36,6 @@ def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=
             nx = len(xpts)
             g = params.g[:nx]
             gtot = spline(xpts, g).integral(xpts[0], xpts[-1]) * ypts[-1]
-            # gtot=1
         # compute current
         c = []
         for fdx, f in enumerate(files):
@@ -68,7 +59,8 @@ def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=
             print('Maximum power at Vm={0}, Jm={1}'.format(Vm, Jm))
         return c
 
-def maps3D(xpts, ypts, data, cmap='gnuplot', alpha=1):
+def maps3D(sys, data, cmap='gnuplot', alpha=1):
+    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
     nx, ny = len(xpts), len(ypts)
     data_xy = data.reshape(ny, nx).T
     X, Y = np.meshgrid(xpts, ypts)
@@ -79,21 +71,48 @@ def maps3D(xpts, ypts, data, cmap='gnuplot', alpha=1):
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
     plt.show()
 
-def get_coordinates(x, y, params, site=False):
-    # Return the discrete set of coordinates based on continous  coordinates
+def get_indices(sys, p, site=False):
+    # Return the indices of continous coordinates on the discrete lattice
     # If site is True, return the site number instead
-    xpts, ypts = params.xpts, params.ypts
-    nx, ny = len(xpts), len(ypts)
-    x, y = nx-len(xpts[xpts >= x]), ny-len(ypts[ypts >= y])
+    # Warning: for x=Lx, the site index will be the one before the last one, and
+    # the same goes for y=Ly and z=Lz.
+    # p: list containing x,y,z coordinates, use zeros for unused dimensions
+
+    x, y, z = p
+    xpts, ypts, zpts = sys.xpts, sys.ypts, sys.zpts
+    nx = len(xpts)
+    x = nx-len(xpts[xpts >= x])
+    s = x
+
+    if ypts is not None:
+        ny = len(ypts)
+        y = ny-len(ypts[ypts >= y])
+        s += nx*y
+
+    if zpts is not None:
+        nz = len(zpts)
+        z = nz-len(zpts[zpts >= z])
+        s += nx*ny*z
+
     if site:
-        s = x + nx * y
         return s
     else:
-        return x, y
+        return x, int(y), int(z)
 
-def get_indices(x, y, xpts, ypts):
-    # Return the discrete set of coordinates based on continous  coordinates
-    # If site is True, return the site number instead
-    nx, ny = len(xpts), len(ypts)
-    x, y = nx-len(xpts[xpts >= x]), ny-len(ypts[ypts >= y])
-    return x, y
+def get_xyz_from_s(sys, site):
+    nx, ny, nz = sys.nx, sys.ny, sys.nz
+    k = site // (nx * ny) * (nz > 1)
+    j = (site - k*nx*ny) // nx * (ny > 1)
+    i = site - j*nx - k*nx*ny
+    return i, j, k
+
+def get_dl(sys, sites):
+    sa, sb = sites
+    xa, ya, za = get_xyz_from_s(sys, sa)
+    xb, yb, zb = get_xyz_from_s(sys, sb)
+
+    if xa != xb: dl = sys.dx[xa]
+    if ya != yb: dl = sys.dy[ya]
+    if za != zb: dl = sys.dz[za]
+
+    return dl

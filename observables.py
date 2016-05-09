@@ -1,99 +1,155 @@
 from numpy import exp
 import numpy as np
 
-def get_n(efn, v, params):
-    bl = params.bl
-    nC = params.nC
-    return nC*exp(-bl+efn+v)
 
-def get_p(efp, v, params):
-    bl = params.bl
-    eg = params.eg
-    nV = params.nV
-    return nV*exp(-eg+bl+efp-v)
+def get_n(sys, efn, v, sites):
+    bl = 0
+    return sys.Nc[sites] * exp(-bl+efn[sites]+v[sites])
 
-def get_rr(n, p, n1, p1, S, params):
-    ni = params.ni
-    r = S * (n*p-ni**2)/(n+p+n1+p1)
+def get_p(sys, efp, v, sites):
+    bl = 0
+    Eg = sys.Eg[sites]
+    Nv = sys.Nv[sites]
+    return Nv * exp(-Eg+bl+efp[sites]-v[sites])
+
+def get_rr(sys, n, p, n1, p1, tau_e, tau_h, sites):
+    ni = sys.ni[sites]
+    r = (n*p - ni**2)/(tau_h * (n+n1) + tau_e*(p+p1))
     return r
 
-def get_jn(efn, efnp1, v, vp1, dx, params):
-    bl = params.bl
-    nC = params.nC
+def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
+    # sites is a list of pairs of sites given in the folded representation
+    bl = 0
 
-    dv = v - vp1
+    vp0 = v[sites_i]
+    dv = vp0 - v[sites_ip1]
+    efnp0= efn[sites_i]
+    efnp1 = efn[sites_ip1]
+
+    Nc = sys.Nc[sites_i]
+    mu = sys.mu_e[sites_i]
+
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    jn = exp(-bl) * (exp(efnp1) - exp(efn)) / dx * \
-         dv / (-exp(-v)*(1 - exp(dv)))
+    jn = exp(-bl) * (exp(efnp1) - exp(efnp0)) / dl * \
+         dv / (-exp(-vp0)*(1 - exp(dv)))
 
-    return jn * nC
+    return jn * Nc * mu
 
-def get_jp(efp, efpp1, v, vp1, dx, params):
-    bl = params.bl
-    eg = params.eg
-    nV = params.nV
+def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
+    bl = 0
 
-    dv = v - vp1
+    vp0 = v[sites_i]
+    dv = vp0 - v[sites_ip1]
+    efpp0= efp[sites_i]
+    efpp1 = efp[sites_ip1]
+
+    Nv = sys.Nv[sites_i]
+    Eg = sys.Eg[sites_i]
+    mu = sys.mu_h[sites_i]
+
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    jp = exp(-eg + bl) * (exp(efpp1) - exp(efp)) / dx *\
-         dv / (-exp(v)*(1 - exp(-dv)))
+    jp = exp(-Eg + bl) * (exp(efpp1) - exp(efpp0)) / dl *\
+         dv / (-exp(vp0)*(1 - exp(-dv)))
 
-    return jp * nV
+    return jp * Nv * mu
 
-def get_jn_derivs(efn_i, efn_ip1, v_i, v_ip1, dx_i, params):
-    bl = params.bl
-    nC = params.nC
+def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
+    bl = 0
 
-    dv = v_i - v_ip1
+    vp0 = v[sites_i]
+    vp1 = v[sites_ip1]
+    dv = vp0 - vp1
+    efnp0= efn[sites_i]
+    efnp1 = efn[sites_ip1]
+
+    Nc = sys.Nc[sites_i]
+    mu = sys.mu_e[sites_i]
+
+    dv = dv + (np.abs(dv) < 1e-5)*1e-5
+    # defn_i = 1./dl * exp(-bl+efnp0) * (-dv)\
+    #          / (-exp(-vp0)*(1 - exp(dv)))
+    #
+    # defn_ip1 = -1./dl * exp(-bl+efnp1) * (-dv)\
+    #            / (-exp(-vp0) * (1 - exp(dv)))
+    #
+    # dv_i = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
+    #        * exp(-vp0)*(1 + dv - exp(dv))\
+    #        / (exp(-2*vp0) * (exp(dv)-1)**2)
+    #
+    # dv_ip1 = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
+    #         * exp(-vp1) * (1 - dv - exp(-dv))\
+    #         / (exp(-2*vp1) * (1-exp(-dv))**2)
+
+    ev0 = exp(-vp0)
+    ep1 = exp(-bl+efnp1)
+    ep0 = exp(-bl+efnp0)
+
+    defn_i = 1./dl * ep0 * (-dv) / (-ev0*(1 - exp(dv)))
+
+    defn_ip1 = -1./dl * ep1 * (-dv) / (-ev0 * (1 - exp(dv)))
+
+    dv_i = -1./dl * (ep1 - ep0) * ev0*(1 + dv - exp(dv))\
+           / (ev0**2 * (exp(dv)-1)**2)
+
+    dv_ip1 = -1./dl * (ep1 - ep0) * exp(-vp1) * (1 - dv - exp(-dv))\
+            / (exp(-2*vp1) * (1-exp(-dv))**2)
+
+    return mu*Nc*defn_i, mu*Nc*defn_ip1, mu*Nc*dv_i, mu*Nc*dv_ip1   
+
+def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
+    bl = 0
+
+    vp0 = v[sites_i]
+    vp1 = v[sites_ip1]
+    dv = vp0 - vp1
+    efpp0= efp[sites_i]
+    efpp1 = efp[sites_ip1]
+
+    Nv = sys.Nv[sites_i]
+    Eg = sys.Eg[sites_i]
+    mu = sys.mu_h[sites_i]
+
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    defn_i = 1./dx_i * exp(-bl+efn_i) * (-dv)\
-             / (-exp(-v_i)*(1 - exp(dv)))
+    # defp_i = 1/dl * exp(bl-Eg+efpp0) * (-dv)\
+    #          / (-exp(vp0) * (1 - exp(-dv)))
+    #
+    # defp_ip1 = 1/dl * exp(bl-Eg+efpp1) * (-dv)\
+    #            / (exp(vp0) * (1 - exp(-dv)))
+    #
+    # dv_i = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
+    #        * exp(vp0) * (1-dv - exp(-dv))\
+    #        / (exp(2*vp0)*((exp(-dv)-1)**2))
+    #
+    # dv_ip1 = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
+    #         * exp(vp1) * (1+dv - exp(dv))\
+    #         / (exp(2*vp1)*((1-exp(dv))**2))
 
-    defn_ip1 = -1./dx_i * exp(-bl+efn_ip1) * (-dv)\
-               / (-exp(-v_i) * (1 - exp(dv)))
+    ev0 = exp(vp0)
+    ep1 = exp(bl+efpp1-Eg)
+    ep0 = exp(bl+efpp0-Eg)
 
-    dv_i = -1./dx_i * exp(-bl) * (exp(efn_ip1) - exp(efn_i))\
-           * exp(-v_i)*(1 + dv - exp(dv))\
-           / (exp(-2*v_i) * (exp(dv)-1)**2)
+    defp_i = 1/dl * ep0 * (-dv) / (-ev0 * (1 - exp(-dv)))
 
-    dv_ip1 = -1./dx_i * exp(-bl) * (exp(efn_ip1) - exp(efn_i))\
-            * exp(-v_ip1) * (1 - dv - exp(-dv))\
-            / (exp(-2*v_ip1) * (1-exp(-dv))**2)
+    defp_ip1 = 1/dl * ep1 * (-dv) / (ev0 * (1 - exp(-dv)))
 
-    return nC*defn_i, nC*defn_ip1, nC*dv_i, nC*dv_ip1   
+    dv_i = -1/dl * (ep1 - ep0) * ev0 * (1-dv - exp(-dv))\
+           / (ev0**2*((exp(-dv)-1)**2))
 
-def get_jp_derivs(efp_i, efp_ip1, v_i, v_ip1, dx_i, params):
-    bl = params.bl
-    eg = params.eg
-    nV = params.nV
+    dv_ip1 = -1/dl * (ep1 - ep0) * exp(vp1) * (1+dv - exp(dv))\
+            / (exp(2*vp1)*((1-exp(dv))**2))
 
-    dv = v_i - v_ip1
-    dv = dv + (np.abs(dv) < 1e-5)*1e-5
+    return mu*Nv*defp_i, mu*Nv*defp_ip1, mu*Nv*dv_i, mu*Nv*dv_ip1
 
-    defp_i = 1/dx_i * exp(bl-eg+efp_i) * (-dv)\
-             / (-exp(v_i) * (1 - exp(-dv)))
+def get_rr_derivs(sys, n, p, n1, p1, tau_e, tau_h, sites):
+    ni = sys.ni[sites]
 
-    defp_ip1 = 1/dx_i * exp(bl-eg+efp_ip1) * (-dv)\
-               / (exp(v_i) * (1 - exp(-dv)))
+    defn = (n*p*(tau_h*(n+n1) + tau_e*(p+p1)) - (n*p-ni**2)*n*tau_h)\
+         / (tau_h*(n+n1) + tau_e*(p+p1))**2
+    defp = (n*p*(tau_h*(n+n1) + tau_e*(p+p1)) - (n*p-ni**2)*p*tau_e)\
+         / (tau_h*(n+n1) + tau_e*(p+p1))**2
+    dv = (n*p-ni**2) * (tau_h*p - tau_e*n) / (tau_h*(n+n1) + tau_e*(p+p1))**2
 
-    dv_i = -1/dx_i * exp(bl-eg) * (exp(efp_ip1) - exp(efp_i))\
-           * exp(v_i) * (1-dv - exp(-dv))\
-           / (exp(2*v_i)*((exp(-dv)-1)**2))
-
-    dv_ip1 = -1/dx_i * exp(bl-eg) * (exp(efp_ip1) - exp(efp_i))\
-            * exp(v_ip1) * (1+dv - exp(dv))\
-            / (exp(2*v_ip1)*((1-exp(dv))**2))
-
-    return nV*defp_i, nV*defp_ip1, nV*dv_i, nV*dv_ip1
-
-def get_rr_derivs(n, p, n1, p1, S, params):
-    ni = params.ni
-
-    defp = S * (n*p*(n1+p1+n+p) - (n*p-ni**2)*p) / (n1+p1+n+p)**2
-    defn = S * (n*p*(n1+p1+n+p) - (n*p-ni**2)*n) / (n1+p1+n+p)**2
-    dv = S * (n*p-ni**2) * (p-n) / (n1+p1+n+p)**2
-
-    return defp, defn, dv
+    return defn, defp, dv

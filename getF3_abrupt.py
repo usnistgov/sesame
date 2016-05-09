@@ -1,6 +1,6 @@
 import numpy as np
 
-from sesame.observables2 import *
+from sesame.observables import *
 
 def getF(sys, v, efn, efp):
     ###########################################################################

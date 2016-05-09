@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from sesame.utils2 import get_indices, get_xyz_from_s
+from sesame.utils import get_indices, get_xyz_from_s
 
 class Builder():
     def __init__(self, T=300):

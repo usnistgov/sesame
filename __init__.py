@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-# __all__ = ['observables', 'nrsolver']
-
-__all__ = ['builder', 'observables', 'solvers', 'nrsolver']
+__all__ = ['builder', 'observables', 'solvers']
 for module in __all__:
     exec('from . import {0}'.format(module))
 
