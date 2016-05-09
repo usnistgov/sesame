@@ -3,6 +3,7 @@
 ####################################
 import sesame
 import numpy as np
+from mpi4py import MPI
 
 from mumps import spsolve
 
@@ -38,7 +39,7 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
-        dx = spsolve(J, -f)
+        dx = spsolve(J, -f, MPI.COMM_WORLD)
         dx = dx.transpose()
 
         #--------- choose the new step -----------------
@@ -89,9 +90,9 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     # steps. If info is 0, no output is pronted out
 
     # import the module that create F and J
-    if periodic_bcs == False and sys.dimension == 2:
-        F = __import__('sesame.getF2_abrupt', globals(), locals(), ['getF'], 0)
-        J = __import__('sesame.jacobian2_abrupt', globals(), locals(), ['getJ'], 0)
+    if periodic_bcs == False and sys.dimension != 1:
+        F = __import__('sesame.getF{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getF'], 0)
+        J = __import__('sesame.jacobian{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getJ'], 0)
 
     else:
         F = __import__('sesame.getF{0}'.format(sys.dimension), globals(), locals(), ['getF'], 0)
@@ -113,7 +114,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
-        dx = spsolve(J, -f)
+        dx = spsolve(J, -f, MPI.COMM_WORLD)
         dx = dx.transpose()
 
         #--------- choose the new step -----------------

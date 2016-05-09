@@ -106,15 +106,15 @@ def getJ(sys, v, efn, efp):
         data += list(chain.from_iterable(d))
 
     def current_derivs(get_j_derivs, sys, ef, v, dx, dxm1, dy, dym1, dz, dzm1, sites):
-        djx_s_defx_s, djx_s_defx_sp1, djx_s_dv_s, djx_s_dv_sp1 = 0, 0, 0, 0
-        djx_sm1_defx_sm1, djx_sm1_defx_s, djx_sm1_dv_sm1, djx_sm1_dv_s = \
+        djx_s_def_s, djx_s_def_sp1, djx_s_dv_s, djx_s_dv_sp1 = 0, 0, 0, 0
+        djx_sm1_def_sm1, djx_sm1_def_s, djx_sm1_dv_sm1, djx_sm1_dv_s = \
         0, 0, 0, 0
-        djy_s_defx_s, djy_s_defx_spN, djy_s_dv_s, djy_s_dv_spN = 0, 0, 0, 0
-        djy_smN_defx_smN, djy_smN_defx_s, djy_smN_dv_smN, djy_smN_dv_s = \
+        djy_s_def_s, djy_s_def_spN, djy_s_dv_s, djy_s_dv_spN = 0, 0, 0, 0
+        djy_smN_def_smN, djy_smN_def_s, djy_smN_dv_smN, djy_smN_dv_s = \
         0, 0, 0, 0
-        djz_s_defx_s, djz_s_defx_spNN, djz_s_dv_s, djz_s_dv_spNN = \
+        djz_s_def_s, djz_s_def_spNN, djz_s_dv_s, djz_s_dv_spNN = \
         0, 0, 0, 0
-        djz_smNN_defx_smNN, djz_smNN_defx_s, djz_smNN_dv_smNN,\
+        djz_smNN_def_smNN, djz_smNN_def_s, djz_smNN_dv_smNN,\
         djz_smNN_dv_s = 0, 0, 0, 0
 
         if dx.all() != 0:
@@ -127,7 +127,7 @@ def getJ(sys, v, efn, efp):
 
         if dy.all() != 0:
             djy_s_def_s, djy_s_def_spN, djy_s_dv_s, djy_s_dv_spN = \
-            get_jx_derivs(sys, ef, v, sites, sites+Nx, dy)
+            get_j_derivs(sys, ef, v, sites, sites+Nx, dy)
 
         if dym1.all() != 0:
             djy_smN_def_smN, djy_smN_def_s, djy_smN_dv_smN,\
@@ -211,7 +211,7 @@ def getJ(sys, v, efn, efp):
                def_spNN, dv_spNN
 
     def ddp_derivs(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites):
-        # fn derivatives
+        # fn derivatives -------------------------------------
         defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, \
         defn_s, defp_s, dv_s, defn_sp1, dv_sp1, defn_spN, dv_spN,\
         defn_spNN, dv_spNN =\
@@ -230,7 +230,7 @@ def getJ(sys, v, efn, efp):
  
         update(dfn_rows, dfn_cols, dfn_data)
 
-        # fp derivatives
+        # fp derivatives -------------------------------------
         defp_smNN, dv_smNN, defp_smN, dv_smN, defp_sm1, dv_sm1, \
         defn_s, defp_s, dv_s, defp_sp1, dv_sp1, defp_spN, dv_spN,\
         defp_spNN, dv_spNN =\
@@ -249,7 +249,7 @@ def getJ(sys, v, efn, efp):
  
         update(dfp_rows, dfp_cols, dfp_data)
 
-        # fv derivatives
+        # fv derivatives -------------------------------------
         # lattice distances
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
@@ -257,39 +257,62 @@ def getJ(sys, v, efn, efp):
 
         # compute differences of potentials
         dv_sm1, dv_sp1, dv_smN, dv_spN, dv_smNN, dv_spNN = 0, 0, 0, 0, 0, 0
-        dv = -drho_dv[sites]
+        dv = -drho_dv_s[sites]
         defn = - drho_defn_s[sites]
         defp = - drho_defp_s[sites]
 
+        global rows, columns, data
         if dx.all() != 0:
             dv_sp1 = -1 / (dx * dxbar)
             dv += -dv_sp1
+            rows += (3*sites+2).tolist()
+            columns += (3*(sites+1)+2).tolist()
+            data += dv_sp1.tolist()
         if dxm1.all() != 0:
             dv_sm1 = -1 / (dxm1 * dxbar)
             dv += -dv_sm1
+            rows += (3*sites+2).tolist()
+            columns += (3*(sites-1)+2).tolist()
+            data += dv_sm1.tolist()
         if dy.all() != 0:
             dv_spN = -1 / (dy * dybar)
             dv += -dv_spN
+            rows += (3*sites+2).tolist()
+            columns += (3*(sites+Nx)+2).tolist()
+            data += dv_spN.tolist()
         if dym1.all() != 0:
             dv_smN = 1 / (dym1 * dybar)
             dv += -dv_smN
+            rows += (3*sites+2).tolist()
+            columns += (3*(sites-Nx)+2).tolist()
+            data += dv_smN.tolist()
         if dz.all() != 0:
             dv_spNN = -1 / (dz * dzbar)
             dv += -dv_spNN
+            rows += (3*sites+2).tolist()
+            columns +=(3*(sites+Nx*Ny)+2).tolist()
+            data += dv_spNN.tolist()
         if dzm1.all() != 0:
             dv_smNN = -1 / (dzm1 * dzbar)
             dv += -dv_smNN
+            rows += (3*sites+2).tolist()
+            columns += (3*(sites-Nx*Ny)+2).tolist()
+            data += dv_smNN.tolist()
 
-        dfv_rows = np.reshape(np.repeat(3*sites+2, 9), (len(sites), 9)).tolist()
+        rows += (3*sites+2).tolist()
+        columns += (3*sites+2).tolist()
+        data += dv.tolist()
 
-        dfv_cols = zip(3*(sites-Nx*Ny)+2, 3*(sites-Nx)+2, 3*(sites-1)+2, 3*sites,\
-                       3*sites+1, 3*sites+2, 3*(sites+1)+2, 3*(sites+Nx)+2, 3*(sites+Nx*Ny)+2)
+        rows += (3*sites+2).tolist()
+        columns += (3*sites).tolist()
+        data += defn.tolist()
 
-        dfv_data = zip(dv_smNN, dv_smN, dv_sm1, defn, defp, dv, dv_sp1, dv_spN, dv_spNN)
+        rows += (3*sites+2).tolist()
+        columns += (3*sites+1).tolist()
+        data += defp.tolist()
 
-        update(dfv_rows, dfv_cols, dfv_data)
 
-    def bnp_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites):
+    def bnp_derivs(carriers, sys, ef, v, dy, dym1, dz, dzm1, sites):
     # Derivatives of the right hand side bn, bp
 
         # lattice distances
@@ -302,10 +325,8 @@ def getJ(sys, v, efn, efp):
         # derivatives of the currents
         if carriers == 'holes':
             get_j_derivs = get_jp_derivs
-            ef = efp
         if carriers == 'electrons':
             get_j_derivs = get_jn_derivs
-            ef = efn
 
         # compute the derivatives of the currents
         _, _, _, _,\
@@ -326,12 +347,12 @@ def getJ(sys, v, efn, efp):
         def_sm1 = djx_sm1_def_sm1
         dv_sm1 = djx_sm1_dv_sm1
 
-        def_s = djnx_sm1_def_s + dxbar * (\
-              - (djy_s_defn_s - djy_smN_def_s) / dybar\
-              - (djy_s_defn_s - djz_smNN_def_s) / dzbar))
-        dv_s = djnx_sm1_dv_s + dxbar * (dr_dv_s[sites]\
-             - (djny_s_dv_s  - djny_smN_dv_s) / dybar\
-             - (djnz_s_dv_s  - djnz_smNN_dv_s) / dzbar)
+        def_s = djx_sm1_def_s + dxbar * (\
+              - (djy_s_def_s - djy_smN_def_s) / dybar\
+              - (djy_s_def_s - djz_smNN_def_s) / dzbar)
+        dv_s = djx_sm1_dv_s + dxbar * (dr_dv_s[sites]\
+             - (djy_s_dv_s  - djy_smN_dv_s) / dybar\
+             - (djz_s_dv_s  - djz_smNN_dv_s) / dzbar)
         if carriers == 'electrons':
             defn_s = def_s +  dxbar * dr_defn_s[sites] + sys.Scn[1] * n[sites]
             defp_s = dxbar * dr_defp_s[sites]
@@ -351,12 +372,11 @@ def getJ(sys, v, efn, efp):
         return def_smNN, dv_smNN, def_smN, dv_smN, def_sm1, dv_sm1, defn_s,\
                defp_s, dv_s, def_spN, dv_spN, def_spNN, dv_spNN
 
-    def right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites):
-        # bn derivatives
+    def right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites):
+        # bn derivatives -------------------------------------
         defn_smNN, dv_smNN, defn_smN, dv_smN, defn_sm1, dv_sm1, defn_s, defp_s,\
         dv_s, defn_spN, dv_spN, defn_spNN, dv_spNN = \
-        bnp_derivs('electrons', sys, efn, v, smNN_s, smN_s, s_spN, s_spNN,\
-                   dy, dym1, dz, dzm1, sites)
+        bnp_derivs('electrons', sys, efn, v, dy, dym1, dz, dzm1, sites)
 
         dbn_rows = np.reshape(np.repeat(3*sites, 13), (len(sites), 13)).tolist()
 
@@ -370,11 +390,10 @@ def getJ(sys, v, efn, efp):
 
         update(dbn_rows, dbn_cols, dbn_data)
 
-        # bp derivatives
+        # bp derivatives -------------------------------------
         defp_smNN, dv_smNN, defp_smN, dv_smN, defp_sm1, dv_sm1, defn_s, defp_s,\
         dv_s, defp_spN, dv_spN, defp_spNN, dv_spNN = \
-        bnp_derivs('holes', sys, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                       dy, dym1, dz, dzm1, sites)
+        bnp_derivs('holes', sys, efp, v, dy, dym1, dz, dzm1, sites)
 
         dbp_rows = np.reshape(np.repeat(3*sites+1, 13), (len(sites), 13)).tolist()
 
@@ -388,7 +407,7 @@ def getJ(sys, v, efn, efp):
 
         update(dbp_rows, dbp_cols, dbp_data)
 
-        # bv derivatives
+        # bv derivatives -------------------------------------
         dbv_rows = [3*s+2 for s in sites]
         dbv_cols = [3*s+2 for s in sites]
         dbv_data = [1 for s in sites] # dv_s = 0
@@ -430,8 +449,7 @@ def getJ(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     #-------------------------- an derivatives --------------------------------
-    s_sp1 = [sites, sites + 1]
-    defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, s_sp1)
+    defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, sites, sites+1, sys.dx[0])
 
     defn_s -= sys.Scn[0] * n[sites]
     dv_s -= sys.Scn[0] * n[sites]
@@ -446,7 +464,7 @@ def getJ(sys, v, efn, efp):
     update(dan_rows, dan_cols, dan_data)
 
     #-------------------------- ap derivatives --------------------------------
-    defp_s, defp_sp1, dv_s, dv_sp1 = get_jp_derivs(sys, efp, v, s_sp1)
+    defp_s, defp_sp1, dv_s, dv_sp1 = get_jp_derivs(sys, efp, v, sites, sites+1, sys.dx[0])
 
     defp_s += sys.Scp[0] * p[sites]
     dv_s -= sys.Scp[0] * p[sites]
@@ -485,7 +503,7 @@ def getJ(sys, v, efn, efp):
     dz = np.repeat(sys.dz[1:], Ny-2)
     dzm1 = np.repeat(sys.dz[:-1], Ny-2)
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #           right boundary: i = Nx-1, j = Ny-1, 0 < k < Nz-1              #
@@ -500,7 +518,7 @@ def getJ(sys, v, efn, efp):
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #              right boundary: i = Nx-1, j = 0, 0 < k < Nz-1              #
@@ -515,7 +533,7 @@ def getJ(sys, v, efn, efp):
     dz = sys.dz[1:]
     dzm1 = sys.dz[:-1]
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #           right boundary: i = Nx-1, 0 < j < Ny-1, k = Nz-1              #
@@ -530,7 +548,7 @@ def getJ(sys, v, efn, efp):
     dz = np.array([0])
     dzm1 = np.repeat(sys.dz[-1], Ny-2)
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #              right boundary: i = Nx-1, 0 < j < Ny-1, k = 0              #
@@ -545,7 +563,7 @@ def getJ(sys, v, efn, efp):
     dz = np.repeat(sys.dz[0], Ny-2)
     dzm1 = np.array([0])
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = Ny-1, k = 0              #
@@ -560,7 +578,7 @@ def getJ(sys, v, efn, efp):
     dz = sys.dz[0]
     dzm1 = np.array([0])
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = Ny-1, k = Nz-1           #
@@ -575,7 +593,7 @@ def getJ(sys, v, efn, efp):
     dz = np.array([0])
     dzm1 = sys.dz[-1]
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = 0, k = 0                 #
@@ -590,7 +608,22 @@ def getJ(sys, v, efn, efp):
     dz = sys.dz[0]
     dzm1 = np.array([0])
 
-    right_bc_derivs(carriers, sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
+
+    ###########################################################################
+    #                  right boundary: i = Nx-1, j = 0, k = Nz-1              #
+    ###########################################################################
+    # list of the sites on the right side
+    sites = [Nx-1 + (Nz-1)*Nx*Ny]
+    sites = np.asarray(sites)
+
+    # lattice distances
+    dy = sys.dy[0]
+    dym1 = np.array([0])
+    dz = np.array([0])
+    dzm1 = sys.dz[0]
+
+    right_bc_derivs(sys, efn, efp, v, dy, dym1, dz, dzm1, sites)
 
 
 
@@ -739,6 +772,11 @@ def getJ(sys, v, efn, efp):
 
     ddp_derivs(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
+
+    # remove data that are outside the system
+    rows = [i for idx, i in enumerate(rows) if 0 <= columns[idx] < 3*Nx*Ny*Nz]
+    data = [i for idx, i in enumerate(data) if 0 <= columns[idx] < 3*Nx*Ny*Nz]
+    columns = [i for i in columns if 0 <= i < 3*Nx*Ny*Nz]
 
     J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
     return J

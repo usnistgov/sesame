@@ -105,13 +105,12 @@ def getF(sys, v, efn, efp):
         currents(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
         # drift diffusion
-        f = (jx_s - jx_sm1) / dxbar + (jy_s - jy_smN) / dybar \
-          + (jz_s - jz_smNN) / dzbar
         u = sys.g[sites] - r[sites]
+        fn = (jnx_s - jnx_sm1) / dxbar + (jny_s - jny_smN) / dybar \
+           + (jnz_s - jnz_smNN) / dzbar + u
+        fp = (jpx_s - jpx_sm1) / dxbar + (jpy_s - jpy_smN) / dybar \
+           + (jpz_s - jpz_smNN) / dzbar - u
           
-        fn = f + u
-        fp = f - u
-
         # Poisson
         dv_sm1, dv_sp1, dv_smN, dv_spN, dv_smNN, dv_spNN = 0, 0, 0, 0, 0, 0
         v_s = v[sites]
@@ -392,7 +391,7 @@ def getF(sys, v, efn, efp):
     dzm1 = np.repeat(sys.dz[-1], (Nx-2)*(Ny-2))
 
     # compute fn, fp, fv and update vector
-    ddp(sys, efn, efp, v, dx dxm1, dy, dym1, dz, dzm1, sites)
+    ddp(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #             z- face bottom: 0 < i < Nx-1, 0 < j < Ny-1, k = 0           #
@@ -500,7 +499,7 @@ def getF(sys, v, efn, efp):
     dy = np.array([0])
     dz = np.repeat(sys.dz[0], Nx-2)
     dym1 = np.repeat(sys.dy[-1], Nx-2)
-    dzm1 = np.([0])
+    dzm1 = np.array([0])
 
     # compute fn, fp, fv and update vector
     ddp(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites)

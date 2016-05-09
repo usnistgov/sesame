@@ -63,53 +63,57 @@ def getFandJ_eq(sys, v):
         return fv
 
     def poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites):
+
+        global rows, columns, data
+
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
         dzbar = (dz + dzm1) / 2.
 
         # compute differences of potentials
-        dv_sm1, dv_sp1, dv_smN, dv_spN, dv_smNN, dv_spNN = [0], [0], [0], [0], [0], [0]
+        dv_sm1, dv_sp1, dv_smN, dv_spN, dv_smNN, dv_spNN = 0, 0, 0, 0, 0, 0
         dv = -drho_dv[sites]
 
         if dx.all() != 0:
             dv_sp1 = -1 / (dx * dxbar)
             dv += -dv_sp1
+            rows += sites.tolist()
+            columns += (sites+1).tolist()
+            data += dv_sp1.tolist()
         if dxm1.all() != 0:
             dv_sm1 = -1 / (dxm1 * dxbar)
             dv += -dv_sm1
+            rows += sites.tolist()
+            columns += (sites-1).tolist()
+            data += dv_sm1.tolist()
         if dy.all() != 0:
             dv_spN = -1 / (dy * dybar)
             dv += -dv_spN
+            rows += sites.tolist()
+            columns += (sites+Nx).tolist()
+            data += dv_spN.tolist()
         if dym1.all() != 0:
             dv_smN = 1 / (dym1 * dybar)
             dv += -dv_smN
+            rows += sites.tolist()
+            columns += (sites-Nx).tolist()
+            data += dv_smN.tolist()
         if dz.all() != 0:
             dv_spNN = -1 / (dz * dzbar)
             dv += -dv_spNN
+            rows += sites.tolist()
+            columns += (sites+Nx*Ny).tolist()
+            data += dv_spNN.tolist()
         if dzm1.all() != 0:
             dv_smNN = -1 / (dzm1 * dzbar)
             dv += -dv_smNN
+            rows += sites.tolist()
+            columns += (sites-Nx*Ny).tolist()
+            data += dv_smNN.tolist()
 
-        dfv_rows = [7*[s] for s in sites]
-
-        dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
-
-        dfv_data = zip(dv_smNN, dv_smN, dv_sm1, dv, dv_sp1, dv_spN, dv_spNN)
-
-        global rows, columns, data
-        rows += list(chain.from_iterable(dfv_rows))
-        columns += list(chain.from_iterable(dfv_cols))
-        data += list(chain.from_iterable(dfv_data))
-        print(len(rows), len(columns), len(data))
-
-
-
-    # def laplacian(vsmNN, vsmN, vsm1, vs, vsp1, vspN, vspNN, dxm1, dx, dym1, dy, 
-    #               dzm1, dz, dxbar, dybar, dzbar):
-    #     res = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #         + ((vs - vsmN) / dym1 - (vspN - vs) / dy) / dybar\
-    #         + ((vs - vsmNN) / dzm1 - (vspNN - vs) / dz) / dzbar 
-    #     return res
+        rows += sites.tolist()
+        columns += sites.tolist()
+        data += dv.tolist()
 
     ###########################################################################
     #                     For all sites in the system                         #
@@ -163,33 +167,8 @@ def getFandJ_eq(sys, v):
     dybar = (dy + dym1) / 2.
     dzbar = (dz + dzm1) / 2.
 
-    #------------------------------ fv ----------------------------------------
-    # fv = laplacian(v[sites-Nx*Ny], v[sites-Nx], v[sites-1], v[sites], v[sites+1],
-    # v[sites+Nx], v[sites+Nx*Ny], dxm1, dx, dym1, dy, dzm1, dz, dxbar, dybar,\
-    # dzbar) - rho[sites]
-
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + 2./(dy * dym1) + 2./(dz * dzm1) - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    # dvpNN = -1./(dz * dzbar)
-    #
-    # # update the sparse matrix row and columns for the inner part of the system
-    # dfv_rows = [7*[s] for s in sites]
-    #
-    # dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
-    #
-    # dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvpN, dvpNN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
 
 
     ###########################################################################
@@ -254,41 +233,7 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    #---------------------------------- fv -------------------------------------
-    # vsmNN = v[sites-Nx*Ny]
-    # vsmN = v[sites-Nx]
-    # vsm1 = v[sites-1]
-    # vs = v[sites]
-    # vsp1 = v[sites+1]
-    # vspNN = v[sites + Nx*Ny]
-    #
-    # fv = ((v_s - v_sm1) / dxm1 - (v_sp1 - v_s) / dx) / dxbar\
-    #    + ((v_s - v_smN) / dym1) / dybar\
-    #    + ((v_s - v_smNN) / dzm1 - (v_spNN - v_s) / dz) / dzbar\
-    #    - rho[sites]
-    #
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + 1/(dym1*dybar) + 2/(dzm1*dzm1) - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpNN = -1./(dz * dzbar)
-
-    # update the sparse matrix row and columns
-    # dfv_rows = [6*[s] for s in sites]
-    # dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1, s+Nx*Ny] for s in sites]
-    # dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvpNN)
-    #
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
-
+    
 
     ###########################################################################
     #          bottom boundary: 0 < i < Nx-1, j = 0, 0 < k < Nz-1             #
@@ -310,37 +255,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    #---------------------------------- fv -------------------------------------
-    # vsmNN = v[sites-Nx*Ny]
-    # vsm1 = v[sites-1]
-    # vs = v[sites]
-    # vsp1 = v[sites+1]
-    # vspN = v[sites + Nx]
-    # vspNN = v[sites + Nx*Ny]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + (-(vspN - vs) / dy) / dybar\
-    #    + ((vs - vsmNN) / dzm1 - (vspNN - vs) / dz) / dzbar\
-    #    - rho[sites]
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + 1/(dy*dybar) + 2/(dz*dzm1) - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    # dvpNN = -1./(dz * dzbar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [6*[s] for s in sites]
-    # dfv_cols = [[s-Nx*Ny, s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
-    # dfv_data = zip(dvmNN, dvm1, dv, dvp1, dvpN, dvpNN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
 
     ###########################################################################
     #             boundary: 0 < i < Nx-1, 0 < j < Ny-1,  k = Nz-1             #
@@ -361,38 +275,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    #---------------------------------- fv -------------------------------------
-    # vsmNN = v[sites - Nx*Ny]
-    # vsmN = v[sites - Nx]
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    # vspN = v[sites + Nx]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + ((vs - vsmN) / dym1 - (vspN - vs) / dy) / dybar\
-    #    + ((vs - vsmNN) / dzm1) / dzbar - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + 2/(dy*dym1) + (1/dzm1)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [6*[s] for s in sites]
-    # dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1,s+Nx] for s in sites]
-    # dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1, dvpN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
-
 
     ###########################################################################
     #             boundary: 0 < i < Nx-1, 0 < j < Ny-1,  k = 0                #
@@ -413,37 +295,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    #---------------------------------- fv -------------------------------------
-    # vsmN = v[sites - Nx]
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    # vspN = v[sites + Nx]
-    # vspNN = v[sites + Nx*Ny]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + ((vs - vsmN) / dym1 - (vspN - vs) / dy) / dybar\
-    #    - ((vspNN - vs) / dz) / dzbar - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + 2/(dy*dym1) + (1/dz)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    # dvpNN = -1./(dz * dzbar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [6*[s] for s in sites]
-    # dfv_cols = [[s-Nx, s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
-    # dfv_data = zip(dvmN, dvm1, dv, dvp1, dvpN, dvpNN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
 
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = 0,  k = 0                 #
@@ -464,37 +315,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    # #---------------------------------- fv -------------------------------------
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    # vspN = v[sites + Nx]
-    # vspNN = v[sites + Nx*Ny]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + (-(vspN - vs) / dy) / dybar\
-    #    + (-(vspNN - vs) / dz) / dzbar\
-    #    - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + (1/dy)/dybar + (1/dz)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    # dvpNN = -1./(dz * dzbar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [5*[s] for s in sites]
-    # dfv_cols = [[s-1, s, s+1, s+Nx, s+Nx*Ny] for s in sites]
-    # dfv_data = zip(dvm1, dv, dvp1, dvpN, dvpNN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
-
 
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = 0,  k = Nz-1              #
@@ -515,36 +335,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    # #---------------------------------- fv -------------------------------------
-    # vsmNN = v[sites - Nx*Ny]
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    # vspN = v[sites + Nx]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + (- (vspN - vs) / dy) / dybar\
-    #    + ((vs - vsmNN) / dzm1) / dzbar - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + (1/dy)/dybar + (1/dzm1)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpN = -1./(dy * dybar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [5*[s] for s in sites]
-    # dfv_cols = [[s-Nx*Ny, s-1, s, s+1, s+Nx] for s in sites]
-    # dfv_data = zip(dvmNN, dvm1, dv, dvp1, dvpN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
-
 
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = Ny-1,  k = 0              #
@@ -565,36 +355,6 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    # #---------------------------------- fv -------------------------------------
-    # vsmN = v[sites - Nx]
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    # vspNN = v[sites + Nx*Ny]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + ((vs - vsmN) / dym1) / dybar\
-    #    + (- (vspNN - vs) / dz) / dzbar - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + (1/dym1)/dybar + (1/dz)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    # dvpNN = -1./(dz * dzbar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [5*[s] for s in sites]
-    # dfv_cols = [[s-Nx, s-1, s, s+1, s+Nx*Ny] for s in sites]
-    # dfv_data = zip(dvmN, dvm1, dv, dvp1, dvpNN)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
-
 
     ###########################################################################
     #                boundary: 0 < i < Nx-1, j = Ny-1,  k = Nz-1              #
@@ -615,37 +375,8 @@ def getFandJ_eq(sys, v):
 
     vec[sites] = poisson(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
-    # #---------------------------------- fv -------------------------------------
-    # vsmNN = v[sites - Nx*Ny]
-    # vsmN = v[sites - Nx]
-    # vsm1 = v[sites - 1]
-    # vs = v[sites]
-    # vsp1 = v[sites + 1]
-    #
-    # fv = ((vs - vsm1) / dxm1 - (vsp1 - vs) / dx) / dxbar\
-    #    + ((vs - vsmN) / dym1) / dybar\
-    #    + ((vs - vsmNN) / dzm1) / dzbar - rho[sites]
-    #
-    # # update the vector rows for the inner part of the system
-    # vec[sites] = fv
-    #
-    # #-------------------------- fv derivatives --------------------------------
-    # dvmNN = -1./(dzm1 * dzbar)
-    # dvmN = -1./(dym1 * dybar)
-    # dvm1 = -1./(dxm1 * dxbar)
-    # dv = 2./(dx * dxm1) + (1/dym1)/dybar + (1/dzm1)/dzbar - drho_dv[sites]
-    # dvp1 = -1./(dx * dxbar)
-    #
-    # # update the sparse matrix row and columns
-    # dfv_rows = [5*[s] for s in sites]
-    # dfv_cols = [[s-Nx*Ny, s-Nx, s-1, s, s+1] for s in sites]
-    # dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1)
-    #
-    # rows += list(chain.from_iterable(dfv_rows))
-    # columns += list(chain.from_iterable(dfv_cols))
-    # data += list(chain.from_iterable(dfv_data))
 
-
+    # create the sparse matrix
     J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny*Nz, Nx*Ny*Nz), dtype=np.float64)
 
     return vec, J

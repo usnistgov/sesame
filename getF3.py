@@ -66,62 +66,109 @@ def getF(sys, v, efn, efp):
     # charge devided by epsilon
     rho = rho / sys.epsilon[sites]
 
-    # Drift-diffusion equation that determines fn and fp
-    def drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                        dx, dxm1, dy, dym1, dz, dzm1, sites):
+    def currents(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
+                 dx, dxm1, dy, dym1, dz, dzm1, sites):
+        jnx_s, jnx_sm1, jny_s, jny_smN, jnz_s, jnz_smNN = 0, 0, 0, 0, 0, 0
+        jpx_s, jpx_sm1, jpy_s, jpy_smN, jpz_s, jpz_smNN = 0, 0, 0, 0, 0, 0
+
+        if dx.all() != 0:
+            jnx_s = get_jn(sys, efn, v, sites, sites + 1, dx)
+            jpx_s = get_jp(sys, efp, v, sites, sites + 1, dx)
+
+            jnx_sm1 = get_jn(sys, efn, v, sites - 1, sites, dxm1)
+            jpx_sm1 = get_jp(sys, efp, v, sites - 1, sites, dxm1)
+
+            jny_s = get_jn(sys, efn, v, s_spN[0], s_spN[1], dy)
+            jpy_s = get_jp(sys, efp, v, s_spN[0], s_spN[1], dy)
+
+            jny_smN = get_jn(sys, efn, v, smN_s[0], smN_s[1], dym1)
+            jpy_smN = get_jp(sys, efp, v, smN_s[0], smN_s[1], dym1)
+
+            jnz_s = get_jn(sys, efn, v, s_spNN[0], s_spNN[1], dz)
+            jpz_s = get_jp(sys, efp, v, s_spNN[0], s_spNN[1], dz)
+
+            jnz_smNN = get_jn(sys, efn, v, smNN_s[0], smNN_s[1], dzm1)
+            jpz_smNN = get_jp(sys, efp, v, smNN_s[0], smNN_s[1], dzm1)
+
+        return jnx_s, jnx_sm1, jny_s, jny_smN, jnz_s, jnz_smNN,\
+               jpx_s, jpx_sm1, jpy_s, jpy_smN, jpz_s, jpz_smNN
+
+    def ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
+           dx, dxm1, dy, dym1, dz, dzm1, sites):
+    # Drift diffusion Poisson equations that determine fn, fp, fv
 
         # lattice distances
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
         dzbar = (dz + dzm1) / 2.
 
-        # pairs of sites in the x-direction (always defined like this)
-        sm1_s = [i for i in zip(sites - 1, sites)]
-        s_sp1 = [i for i in zip(sites, sites + 1)]
+        # compute currents
+        jnx_s, jnx_sm1, jny_s, jny_smN, jnz_s, jnz_smNN,\
+        jpx_s, jpx_sm1, jpy_s, jpy_smN, jpz_s, jpz_smNN = \
+        currents(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
+                 dx, dxm1, dy, dym1, dz, dzm1, sites)
 
-        # compute the currents
-        jnx_s    = get_jn(sys, efn, v, s_sp1, dx)
-        jnx_sm1  = get_jn(sys, efn, v, sm1_s, dxm1)
-        jny_s    = get_jn(sys, efn, v, s_spN, dy)
-        jny_smN  = get_jn(sys, efn, v, smN_s, dym1)
-        jnz_s    = get_jn(sys, efn, v, s_spNN, dz)
-        jnz_smNN = get_jn(sys, efn, v, smNN_s, dzm1)
-
-        jpx_s    = get_jp(sys, efp, v, s_sp1, dx)
-        jpx_sm1  = get_jp(sys, efp, v, sm1_s, dxm1)
-        jpy_s    = get_jp(sys, efp, v, s_spN, dy)
-        jpy_smN  = get_jp(sys, efp, v, smN_s, dym1)
-        jpz_s    = get_jp(sys, efp, v, s_spNN, dz)
-        jpz_smNN = get_jp(sys, efp, v, smNN_s, dzm1)
-
+        # drift diffusion
+        u = sys.g[sites] - r[sites]
         fn = (jnx_s - jnx_sm1) / dxbar + (jny_s - jny_smN) / dybar \
-           + (jnz_s - jnz_smNN) / dzbar + sys.g[sites] - r[sites]
-
+           + (jnz_s - jnz_smNN) / dzbar + u
         fp = (jpx_s - jpx_sm1) / dxbar + (jpy_s - jpy_smN) / dybar \
-           + (jpz_s - jpz_smNN) / dzbar + r[sites] - sys.g[sites]
+           + (jpz_s - jpz_smNN) / dzbar - u
 
-        return fn, fp
+        # Poisson
+        dv_sm1, dv_sp1, dv_smN, dv_spN, dv_smNN, dv_spNN = 0, 0, 0, 0, 0, 0
+        v_s = v[sites]
+        dv_sp1 = (v[sites+1] - v_s) / dx
+        dv_sm1 = (v_s - v[sites-1]) / dxm1
+        dv_spN = (v[s_spN[1]] - v_s) / dy
+        dv_smN = (v_s - v[smN_s[0]]) / dym1
+        dv_spNN = (v[s_spNN[1]] - v_s) / dz
+        dv_smNN = (v_s - v[smNN_s[0]]) / dzm1
 
-    # Poisson equation that determines fv
-    def poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1,
-                dy, dym1, dz, dzm1, sites):
+        fv = (dv_sm1 - dv_sp1) / dxbar + (dv_smN - dv_spN) / dybar\
+           + (dv_smNN - dv_spNN) / dzbar - rho[sites]
 
-        # lattice distances
+        # update vector
+        update(fn, fp, fv, sites)
+
+    def right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy,\
+                 dym1, dz, dzm1, sites):
+    # We implement the right contact boundary conditions here.
+        # lattice distances and sites
+        dx = np.array([0])
+        dxm1 = sys.dx[-1]
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
         dzbar = (dz + dzm1) / 2.
+        sm1_s = [sites - 1, sites]
 
-        # Potentials that are always defined the same way (x-direction)
-        v_sm1 = v[sites - 1]
-        v_s = v[sites]
-        v_sp1 = v[sites + 1]
+        # compute currents
+        _, jnx_sm1, jny_s, jny_smN, jnz_s, jnz_smNN,\
+        _, jpx_sm1, jpy_s, jpy_smN, jpz_s, jpz_smNN = \
+        currents(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
+                 dx, dxm1, dy, dym1, dz, dzm1, sites)
 
-        fv = ((v_s - v_sm1) / dxm1 - (v_sp1 - v_s) / dx) / dxbar\
-           + ((v_s - v_smN) / dym1 - (v_spN - v_s) / dy) / dybar\
-           + ((v_s - v_smNN) / dzm1 - (v_spNN - v_s) / dz) / dzbar\
-           - rho[sites]
+        jnx_s = jnx_sm1 + dxbar * (r[sites] - sys.g[sites] - (jny_s - jny_smN)/dybar\
+                                   - (jnz_s - jnz_smNN)/dzbar)
+        jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar\
+                                   - (jpz_s - jpz_smNN)/dzbar)
 
-        return fv
+        # b_n, b_p and b_v values
+        n_eq = 0
+        p_eq = 0
+        if sys.rho[2*Nx-1] < 0: # p doped
+            p_eq = -sys.rho[2*Nx-1]
+            n_eq = sys.ni[sites]**2 / p_eq
+        else: # n doped
+            n_eq = sys.rho[2*Nx-1]
+            p_eq = sys.ni[sites]**2 / n_eq
+            
+        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
+        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+        bv = 0 # Dirichlet BC
+        # update right hand side vector
+        update(bn, bp, bv, sites)
+
 
 
     ###########################################################################
@@ -149,20 +196,9 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
+        dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #        left boundary: i = 0, 0 <= j <= Ny-1, 0 <= k <= Nz-1             #
@@ -172,9 +208,8 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # compute the currents
-    s_sp1 = [sites, sites + 1]
-    jnx = get_jn(sys, efn, v, s_sp1)
-    jpx = get_jp(sys, efp, v, s_sp1)
+    jnx = get_jn(sys, efn, v, sites, sites + 1, sys.dx[0])
+    jpx = get_jp(sys, efp, v, sites, sites + 1, sys.dx[0])
 
     # compute an, ap, av
     n_eq = 0
@@ -196,50 +231,7 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                            right boundaries                             #
     ###########################################################################
-    # We write everything that won't change in this function below
 
-    def right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-                 dym1, dz, dzm1, sites):
-
-        # lattice distances and sites
-        dxbar = (dx + dxm1) / 2.
-        dybar = (dy + dym1) / 2.
-        dzbar = (dz + dzm1) / 2.
-        sm1_s = [sites - 1, sites]
-
-        # currents
-        jnx_sm1  = get_jn(sys, efn, v, sm1_s)
-        jny_s    = get_jn(sys, efn, v, s_spN, dy)
-        jny_smN  = get_jn(sys, efn, v, smN_s, dym1)
-        jnz_s    = get_jn(sys, efn, v, s_spNN, dz)
-        jnz_smNN = get_jn(sys, efn, v, smNN_s, dzm1)
-
-        jpx_sm1  = get_jp(sys, efp, v, sm1_s)
-        jpy_s    = get_jp(sys, efp, v, s_spN, dy)
-        jpy_smN  = get_jp(sys, efp, v, smN_s, dym1)
-        jpz_s    = get_jp(sys, efp, v, s_spNN, dz)
-        jpz_smNN = get_jp(sys, efp, v, smNN_s, dzm1)
-
-        jnx_s = jnx_sm1 + dxbar * (r[sites] - sys.g[sites] - (jny_s - jny_smN)/dybar\
-                                   - (jnz_s - jnz_smNN)/dzbar)
-        jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar\
-                                   - (jpz_s - jpz_smNN)/dzbar)
-
-        # b_n, b_p and b_v values
-        n_eq = 0
-        p_eq = 0
-        if sys.rho[2*Nx-1] < 0: # p doped
-            p_eq = -sys.rho[2*Nx-1]
-            n_eq = sys.ni[sites]**2 / p_eq
-        else: # n doped
-            n_eq = sys.rho[2*Nx-1]
-            p_eq = sys.ni[sites]**2 / n_eq
-            
-        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
-        bv = 0 # Dirichlet BC
-        # update right hand side vector
-        update(bn, bp, bv, sites)
 
     ###########################################################################
     #         right boundary: i = Nx-1, 0 < j < Ny-1, 0 < k < Nz-1            #
@@ -249,8 +241,6 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dx = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
-    dxm1 = np.tile(sys.dx[-1], (Ny-2)*(Nz-2))
     dy = np.repeat(sys.dy[1:], Nz-2)
     dym1 = np.repeat(sys.dy[:-1], Nz-2)
     dz = np.repeat(sys.dz[1:], Ny-2)
@@ -263,8 +253,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #           right boundary: i = Nx-1, j = Ny-1, 0 < k < Nz-1              #
@@ -274,8 +263,6 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dx = np.tile(sys.dx[-1], Nz-2)
-    dxm1 = np.tile(sys.dx[-1], Nz-2)
     dy = np.repeat((sys.dy[0] + sys.dy[-1]) / 2., Nz-2)
     dym1 = np.repeat(sys.dy[-1], Nz-2) 
     dz = sys.dz[1:]
@@ -288,8 +275,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
  
     ###########################################################################
     #              right boundary: i = Nx-1, j = 0, 0 < k < Nz-1              #
@@ -311,8 +297,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
  
     ###########################################################################
     #           right boundary: i = Nx-1, 0 < j < Ny-1, k = Nz-1              #
@@ -322,8 +307,6 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dx = np.tile(sys.dx[-1], Ny-2)
-    dxm1 = np.tile(sys.dx[-1], Ny-2)
     dy = sys.dy[1:]
     dym1 = sys.dy[:-1]
     dz = np.repeat((sys.dz[-1] + sys.dz[0])/2., Ny-2)
@@ -336,8 +319,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #              right boundary: i = Nx-1, 0 < j < Ny-1, k = 0              #
@@ -359,8 +341,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = Ny-1, k = 0              #
@@ -370,8 +351,6 @@ def getF(sys, v, efn, efp):
     sites = np.asarray(sites)
 
     # lattice distances
-    dx = sys.dx[-1]
-    dxm1 = sys.dx[-1]
     dy = (sys.dy[0] + sys.dy[-1])/2.
     dym1 = sys.dy[-1]
     dz = sys.dz[0]
@@ -384,8 +363,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = Ny-1, k = Nz-1           #
@@ -407,8 +385,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
              
     ###########################################################################
     #                  right boundary: i = Nx-1, j = 0, k = Nz-1              #
@@ -430,8 +407,7 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #                  right boundary: i = Nx-1, j = 0, k = 0                 #
@@ -453,16 +429,14 @@ def getF(sys, v, efn, efp):
     s_spNN = [sites, sites + Nx*Ny]
 
     # compute the BC and update the right hand side vector
-    right_bc(sys, efn, efp, v,  smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy,\
-             dym1, dz, dzm1, sites)
+    right_bc(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dy, dym1, dz, dzm1, sites)
 
 
 
     ###########################################################################
     #            faces between contacts: 0 < i < Nx-1, j or k fixed           #
     ###########################################################################
-    # Here we focus on the faces between the contacts. There are 4 cases
-    # (obviously).
+    # Here we focus on the faces between the contacts. There are 4 cases.
 
     ###########################################################################
     #              z-face top: 0 < i < Nx-1, 0 < j < Ny-1, k = Nz-1           #
@@ -485,20 +459,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites - Nx*Ny*(Nz-1)]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #             z- face bottom: 0 < i < Nx-1, 0 < j < Ny-1, k = 0           #
@@ -521,20 +483,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites + Nx*Ny*(Nz-1)]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #            y-face front: 0 < i < Nx-1, j = 0, 0 < k < Nz-1              #
@@ -557,20 +507,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites + Nx*(Ny-1)]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #            y-face back: 0 < i < Nx-1, j = Ny-1, 0 < k < Nz-1            #
@@ -593,27 +531,14 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites - Nx*(Ny-1)]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites - Nx*(Ny-1)]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
 
     ###########################################################################
     #           edges between contacts: 0 < i < Nx-1, j and k fixed           #
     ###########################################################################
-    # Here we focus on the edges between the contacts. There are 4 cases again
-    # (obviously).
+    # Here we focus on the edges between the contacts. There are 4 cases.
 
     # lattice distances
     dx = sys.dx[1:]
@@ -638,19 +563,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites - Nx*(Ny-1)]
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites - Nx*(Ny-1)]
-    v_spNN = v[sites - Nx*Ny*(Nz-1)]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #           edge z top // y front: 0 < i < Nx-1, j = 0, k = Nz-1          #
@@ -671,20 +585,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites - Nx*Ny*(Nz-1)]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites - Nx*Ny]
-    v_smN = v[sites + Nx*(Ny-1)]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites - Nx*Ny*(Nz-1)]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #          edge z bottom // y back: 0 < i < Nx-1, j = Ny-1, k = 0         #
@@ -705,20 +607,8 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites - Nx*(Ny-1)]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites + Nx*Ny*(Nz-1)]
-    v_smN = v[sites - Nx]
-    v_spN = v[sites - Nx*(Ny-1)]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     ###########################################################################
     #         edge z bottom // y front: 0 < i < Nx-1, j = 0, k = 0            #
@@ -739,19 +629,7 @@ def getF(sys, v, efn, efp):
     s_spN = [sites, sites + Nx]
     s_spNN = [sites, sites + Nx*Ny]
 
-    # compute fn, fp
-    fn, fp = drift_diffusion(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
-                             dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # compute fv
-    v_smNN = v[sites + Nx*Ny*(Nz-1)]
-    v_smN = v[sites + Nx*(Ny-1)]
-    v_spN = v[sites + Nx]
-    v_spNN = v[sites + Nx*Ny]
-
-    fv = poisson(sys, v_smNN, v_smN, v_spN, v_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
-
-    # update vector
-    update(fn, fp, fv, sites)
+    # compute fn, fp, fv and update vector
+    ddp(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN, dx, dxm1, dy, dym1, dz, dzm1, sites)
 
     return vec
