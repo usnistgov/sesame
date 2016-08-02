@@ -36,7 +36,7 @@ class Builder():
         self.dopant = namedtuple('dopant', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'density'])
         self.dopants = []
         self.charge = namedtuple('charge', ['xa', 'ya', 'za', 'xb', 'yb', 'zb',
-                                            'energy', 'density', 'S'])
+                                            'energy', 'density', 'Se', 'Sh'])
         self.charges = []
 
         # generation of carriers
@@ -72,7 +72,7 @@ class Builder():
                         xb/self.xscale, yb/self.xscale, zb/self.xscale, mat)
         self.regions.append(r)
 
-    def add_local_charges(self, location, local_E, local_N, local_S):
+    def add_local_charges(self, location, local_E, local_N, local_Se, local_Sh):
         """
         Add charges (for a grain boundary for instance) to the total charge rho
 
@@ -83,7 +83,8 @@ class Builder():
         Use zeros for unused dimensions.
         local_E: energy level of the states defined with respect to Eg/2 [eV]
         local_N: defect density [m^-2]
-        local_S: surface recombination velocity [m.s^-1]
+        local_Se: surface recombination velocity of electrons [m.s^-1]
+        local_Sh: surface recombination velocity of holes [m.s^-1]
         """
         
         xa, ya, za = location[0]
@@ -92,7 +93,7 @@ class Builder():
         d = self.charge(xa/self.xscale, ya/self.xscale, za/self.xscale,
                         xb/self.xscale, yb/self.xscale, zb/self.xscale,
                         local_E/self.vt, local_N/(self.N*self.xscale), 
-                        local_S/self.Sc)
+                        local_Se/self.Sc, local_Sh/self.Sc)
         self.charges.append(d)
 
     def doping_profile(self, location, density):
@@ -235,7 +236,8 @@ class Builder():
         # additional extra charges
         if len(self.charges) != 0:
             self.Nextra = np.zeros((nx*ny*nz,), dtype=float)
-            self.Sextra = np.zeros((nx*ny*nz,), dtype=float)
+            self.Seextra = np.zeros((nx*ny*nz,), dtype=float)
+            self.Shextra = np.zeros((nx*ny*nz,), dtype=float)
             self.nextra = np.zeros((nx*ny*nz,), dtype=float)
             self.pextra = np.zeros((nx*ny*nz,), dtype=float)
             self.extra_charge_sites = []
@@ -254,10 +256,12 @@ class Builder():
                 s = get_sites(xa, ya, za, xb, yb, zb)
                 self.extra_charge_sites += s
                 self.Nextra[s] = c.density
-                self.Sextra[s] = c.S
+                self.Seextra[s] = c.Se
+                self.Sehxtra[s] = c.Sh
                 if ny > 1 and nz == 1: # meaning a 2D problem
                     self.Nextra[s] = self.Nextra[s] / dl
-                    self.Sextra[s] = self.Sextra[s] / dl
+                    self.Seextra[s] = self.Seextra[s] / dl
+                    self.Shextra[s] = self.Shextra[s] / dl
                 self.nextra[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
                 self.pextra[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
 

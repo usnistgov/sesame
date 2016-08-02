@@ -52,8 +52,8 @@ def getF(sys, v, efn, efp):
         rho[matches] += sys.Nextra[matches] / 2. * (1 - 2*f)
 
         # extra charge recombination
-        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/sys.Sextra[matches],
-                             1/sys.Sextra[matches], matches)
+        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/sys.Seextra[matches],
+                             1/sys.Shextra[matches], matches)
 
     
     # charge devided by epsilon

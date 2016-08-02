@@ -111,6 +111,14 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     clamp = 5.
     converged = False
 
+    from sesame.observables import get_jn, get_jp, get_n, get_p, get_rr
+    from scipy.interpolate import InterpolatedUnivariateSpline as spline
+    def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl):
+        # return the current in the x-direction, summed along the y-axis
+        jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
+        jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
+        return jn + jp
+
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
@@ -119,7 +127,17 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
 
         #--------- choose the new step -----------------
         error = max(np.abs(dx))
-        
+        # J = integrator(sys, v, efn, efp, 10, 11, sys.dx[10])
+        # sites = [i for i in range(sys.nx)]
+        # p = get_p(sys, efp, v, sites)
+        # n = get_n(sys, efp, v, sites)
+        # r = get_rr(sys, n, p, sys.n1[0], sys.p1[0], sys.tau_e[0], sys.tau_h[0], sites)
+        # sp = spline(sys.xpts, r)
+        # x = sys.xpts
+        # gtot = spline(x, sys.g).integral(x[0], x[-1])
+        # print(J/gtot+sp.integral(0, sys.xpts[-1])/gtot)
+
+       
         if error < tolerance:
             converged = True
             solution['efn'] = efn
@@ -129,6 +147,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
 
         # use the usual clamping once a proper direction has been found
         elif error < 1e-2:
+
             if error < 10: clamp = 10.
             # you can see how the variables are arranged: (efn, efp, v)
             defn = dx[0::3]

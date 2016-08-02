@@ -77,8 +77,8 @@ def getJ(sys, v, efn, efp):
                             / (_n+_p+nextra+pextra)**2
 
         # extra charge recombination
-        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Sextra[matches], 
-                                        1/Sextra[matches], matches)
+        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/sys.Seextra[matches], 
+                                        1/sys.Shextra[matches], matches)
         dr_defn_s[matches] += defn
         dr_defp_s[matches] += defp
         dr_dv_s[matches] += dv
