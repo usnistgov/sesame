@@ -72,7 +72,8 @@ class Builder():
                         xb/self.xscale, yb/self.xscale, zb/self.xscale, mat)
         self.regions.append(r)
 
-    def add_local_charges(self, location, local_E, local_N, local_Se, local_Sh):
+    def add_local_charges(self, location, local_E, local_N, local_Se,\
+                          local_Sh=None):
         """
         Add charges (for a grain boundary for instance) to the total charge rho
 
@@ -90,6 +91,10 @@ class Builder():
         xa, ya, za = location[0]
         xb, yb, zb = location[1]
         
+        # if one wants same S for electrons and holes
+        if local_Sh == None:
+            local_Sh = local_Se
+
         d = self.charge(xa/self.xscale, ya/self.xscale, za/self.xscale,
                         xb/self.xscale, yb/self.xscale, zb/self.xscale,
                         local_E/self.vt, local_N/(self.N*self.xscale), 
