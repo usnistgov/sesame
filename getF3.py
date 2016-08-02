@@ -56,13 +56,13 @@ def getF(sys, v, efn, efp):
         _p = p[matches]
 
         # extra charge density
-        f = (_n + pextra) / (_n + _p + nextra + pextra)
+        Se = sys.Seextra[matches]
+        Sh = sys.Shextra[matches]
+        f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
         rho[matches] += sys.Nextra[matches] / 2. * (1 - 2*f)
 
         # extra charge recombination
-        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/sys.Seextra[matches],
-                             1/sys.Shextra[matches], matches)
-
+        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
     # charge devided by epsilon
     rho = rho / sys.epsilon[sites]
 
