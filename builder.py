@@ -257,7 +257,7 @@ class Builder():
                 self.extra_charge_sites += s
                 self.Nextra[s] = c.density
                 self.Seextra[s] = c.Se
-                self.Sehxtra[s] = c.Sh
+                self.Shextra[s] = c.Sh
                 if ny > 1 and nz == 1: # meaning a 2D problem
                     self.Nextra[s] = self.Nextra[s] / dl
                     self.Seextra[s] = self.Seextra[s] / dl
