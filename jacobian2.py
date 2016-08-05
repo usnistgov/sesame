@@ -75,22 +75,21 @@ def getJ(sys, v, efn, efp):
         _p = p[matches]
 
         # extra charge density
-        drho_defn_s[matches] = drho_defn_s[matches]- sys.Nextra[matches] \
-                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*_n)\
-                                / (_n+_p+nextra+pextra)**2
-        drho_defp_s[matches] = drho_defp_s[matches]+sys.Nextra[matches] * (_n+pextra)*_p \
-                              / (_n+_p+nextra+pextra)**2
-        drho_dv_s[matches] = drho_dv_s[matches]- sys.Nextra[matches]\
-                            * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
-                            / (_n+_p+nextra+pextra)**2
+        Se = sys.Seextra[matches]
+        Sh = sys.Shextra[matches]
+        d = (Se*(_n+nextra)+Sh*(_p+pextra))
+        drho_defn_s[matches] += - sys.Nextra[matches] *\
+            (Se*_n*(Se*nextra + Sh*(_p+pextra))-Sh*pextra*Se*_n) / d**2
+        drho_defp_s[matches] += sys.Nextra[matches] *\
+            (Se*_n+Sh*pextra)*Sh*_p / d**2
+        drho_dv[matches] += - sys.Nextra[matches] *\
+            (Se*_n*d - (Se*_n+Sh*pextra)*(Se*_n-Sh*_p)) / d**2
 
         # extra charge recombination
-        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/sys.Seextra[matches], 
-                                        1/sys.Shextra[matches], matches)
-        dr_defn_s[matches] = dr_defn_s[matches]+defn
-        dr_defp_s[matches] = dr_defp_s[matches]+defp
-        dr_dv_s[matches] = dr_dv_s[matches]+dv
-
+        defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
+        dr_defn_s[matches] += defn
+        dr_defp_s[matches] += defp
+        dr_dv_s[matches] += dv
 
     # charge is divided by epsilon
     drho_defn_s = drho_defn_s / sys.epsilon[sites]
