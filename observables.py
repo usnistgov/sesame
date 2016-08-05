@@ -150,6 +150,6 @@ def get_rr_derivs(sys, n, p, n1, p1, tau_e, tau_h, sites):
          / (tau_h*(n+n1) + tau_e*(p+p1))**2
     defp = (n*p*(tau_h*(n+n1) + tau_e*(p+p1)) - (n*p-ni**2)*p*tau_e)\
          / (tau_h*(n+n1) + tau_e*(p+p1))**2
-    dv = (n*p-ni**2) * (tau_h*p - tau_e*n) / (tau_h*(n+n1) + tau_e*(p+p1))**2
+    dv = (n*p-ni**2) * (tau_e*p - tau_h*n) / (tau_h*(n+n1) + tau_e*(p+p1))**2
 
     return defn, defp, dv
