@@ -79,12 +79,12 @@ def getJ(sys, v, efn, efp):
         # extra charge density
         Se = sys.Seextra[matches]
         Sh = sys.Shextra[matches]
-        d = (Se*(_n+nextra)+Sh*(_p+pextra))
+        d = Se*(_n+nextra)+Sh*(_p+pextra)
         drho_defn_s[matches] += - sys.Nextra[matches] *\
             (Se*_n*(Se*nextra + Sh*(_p+pextra))-Sh*pextra*Se*_n) / d**2
         drho_defp_s[matches] += sys.Nextra[matches] *\
             (Se*_n+Sh*pextra)*Sh*_p / d**2
-        drho_dv[matches] += - sys.Nextra[matches] *\
+        drho_dv_s[matches] += - sys.Nextra[matches] *\
             (Se*_n*d - (Se*_n+Sh*pextra)*(Se*_n-Sh*_p)) / d**2
 
         # extra charge recombination
