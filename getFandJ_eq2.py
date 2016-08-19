@@ -55,19 +55,20 @@ def getFandJ_eq(sys, v):
 
     if hasattr(sys, 'Nextra'): 
         # find sites containing extra charges
-        matches = sys.extra_charge_sites
+        for idx, matches in enumerate(sys.extra_charge_sites):
+            nextra = sys.nextra[idx, matches]
+            pextra = sys.pextra[idx, matches]
+            _n = n[matches]
+            _p = p[matches]
 
-        nextra = sys.nextra[matches]
-        pextra = sys.pextra[matches]
-        _n = n[matches]
-        _p = p[matches]
+            Se = sys.Seextra[idx, matches]
+            Sh = sys.Shextra[idx, matches]
+            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
+            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
 
-        f = (_n + pextra) / (_n + _p + nextra + pextra)
-        rho[matches] += sys.Nextra[matches] / 2. * (1 - 2*f)
-
-        drho_dv[matches] += - sys.Nextra[matches]\
-                            * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
-                            / (_n+_p+nextra+pextra)**2
+            drho_dv[matches] += - sys.Nextra[idx, matches]\
+                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
+                                / (_n+_p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
     rho = rho / sys.epsilon[sites]

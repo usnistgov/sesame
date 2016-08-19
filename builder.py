@@ -240,13 +240,13 @@ class Builder():
 
         # additional extra charges
         if len(self.charges) != 0:
-            self.Nextra = np.zeros((nx*ny*nz,), dtype=float)
-            self.Seextra = np.zeros((nx*ny*nz,), dtype=float)
-            self.Shextra = np.zeros((nx*ny*nz,), dtype=float)
-            self.nextra = np.zeros((nx*ny*nz,), dtype=float)
-            self.pextra = np.zeros((nx*ny*nz,), dtype=float)
+            self.Nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
+            self.Seextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
+            self.Shextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
+            self.nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
+            self.pextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
             self.extra_charge_sites = []
-            for c in self.charges:
+            for cdx, c in enumerate(self.charges):
                 xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
                 xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
                 if xa == xb and xa != nx-1: # parallel to the junction
@@ -259,16 +259,16 @@ class Builder():
                     dl = self.ypts[ya] - self.ypts[ya-1]
 
                 s = get_sites(xa, ya, za, xb, yb, zb)
-                self.extra_charge_sites += s
-                self.Nextra[s] = c.density
-                self.Seextra[s] = c.Se
-                self.Shextra[s] = c.Sh
+                self.extra_charge_sites += [s]
+                self.Nextra[cdx, s] = c.density
+                self.Seextra[cdx, s] = c.Se
+                self.Shextra[cdx, s] = c.Sh
                 if ny > 1 and nz == 1: # meaning a 2D problem
-                    self.Nextra[s] = self.Nextra[s] / dl
-                    self.Seextra[s] = self.Seextra[s] / dl
-                    self.Shextra[s] = self.Shextra[s] / dl
-                self.nextra[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
-                self.pextra[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
+                    self.Nextra[cdx, s] = self.Nextra[cdx, s] / dl
+                    self.Seextra[cdx, s] = self.Seextra[cdx, s] / dl
+                    self.Shextra[cdx, s] = self.Shextra[cdx, s] / dl
+                self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
+                self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
 
         # illumination
         if self.g == 0:

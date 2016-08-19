@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 
-
 def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl, integrate=True):
     # return the current in the x-direction, summed along the y-axis
     jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
