@@ -57,7 +57,7 @@ def getJ(sys, v, efn, efp):
 
     # bulk charges
     drho_defn_s = - n
-    drho_defp_s = p
+    drho_defp_s = + p
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates

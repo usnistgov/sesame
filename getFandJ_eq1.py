@@ -56,15 +56,21 @@ def getFandJ_eq(sys, v):
 
     # extra charge density
     if hasattr(sys, 'Nextra'): 
-        nextra = sys.nextra[sites]
-        pextra = sys.pextra[sites]
+        # find sites containing extra charges
+        for idx, matches in enumerate(sys.extra_charge_sites):
+            nextra = sys.nextra[idx, matches]
+            pextra = sys.pextra[idx, matches]
+            _n = n[matches]
+            _p = p[matches]
 
-        f = (n + pextra) / (n + p + nextra + pextra)
-        rho +=  sys.Nextra[sites] / 2. * (1 - 2*f)
+            Se = sys.Seextra[idx, matches]
+            Sh = sys.Shextra[idx, matches]
+            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
+            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
 
-        # GB charge density derivatives
-        drho_dv += -sys.Nextra[sites] * (n*(n+p+nextra+pextra)-(n+pextra)*(n-p))\
-                                       / (n+p+nextra+pextra)**2
+            drho_dv[matches] += - sys.Nextra[idx, matches]\
+                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
+                                / (_n+_p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
     rho = rho / sys.epsilon[sites]
