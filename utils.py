@@ -115,3 +115,33 @@ def get_dl(sys, sites):
     if za != zb: dl = sys.dz[za]
 
     return dl
+
+def extra_charges_path(sys, start, end):
+    # Return the path and the sites
+    xa, ya = start[0]/sys.xscale, start[1]/sys.xscale
+    xb, yb = end[0]/sys.xscale, end[1]/sys.xscale
+    
+    ia, ja, _ = get_indices(sys, [xa, ya, 0])
+    ib, jb, _ = get_indices(sys, [xb, yb, 0])
+
+    distance = lambda x, y:\
+        abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
+            np.sqrt((yb-ya)**2 + (xb-xa)**2)
+
+    s = [ia + ja*sys.nx]
+    X = [sys.xpts[ia]]
+    x, y = ia, ja
+    while x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1:
+        # distance between the point above (x,y) and the segment
+        d1 = distance(sys.xpts[x], sys.ypts[y+1])
+        # distance between the point right of (x,y) and the segment
+        d2 = distance(sys.xpts[x+1], sys.ypts[y])
+
+        if d1 <= d2: # going up
+            X.append(X[-1] + sys.dy[y])
+            x, y = x, y+1
+        else: # going right
+            X.append(X[-1] + sys.dx[x])
+            x, y = x+1, y
+        s.append(x + y*sys.nx)
+    return s, np.asarray(X)

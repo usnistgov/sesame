@@ -239,6 +239,7 @@ class Builder():
             self.rho[s] = d.density # divided by epsilon later
 
         # additional extra charges
+        #!!! DO NOT add extra charges on the contact sites
         if len(self.charges) != 0:
             self.Nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
             self.Seextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
@@ -249,16 +250,39 @@ class Builder():
             for cdx, c in enumerate(self.charges):
                 xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
                 xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
-                if xa == xb and xa != nx-1: # parallel to the junction
-                    dl = self.xpts[xa+1] - self.xpts[xa]
-                if xa == xb and xa == nx-1: # parallel to the junction
-                    dl = self.xpts[xa] - self.xpts[xa-1]
-                if ya == yb and ya != ny-1: # orthogonal to the junction
-                    dl = self.ypts[ya+1] - self.ypts[ya]
-                if ya == yb and ya == ny-1: # orthogonal to the junction
-                    dl = self.ypts[ya] - self.ypts[ya-1]
 
-                s = get_sites(xa, ya, za, xb, yb, zb)
+                # find the sites closest to the straight line defined by
+                # (xa,ya,za) and (xb,yb,zb) and the associated dl       
+                # XXX TODO generalize to 3D and the distance to a plane
+                distance = lambda x, y:\
+                    abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
+                        np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
+
+                s = [xa + ya*nx]
+                dl = []
+                x, y = xa, ya
+                while x <= xb and y <= yb and x < nx-1 and y < ny-1:
+                    # distance between the point above (x,y) and the segment
+                    d1 = distance(self.xpts[x], self.ypts[y+1])
+                    # distance between the point right of (x,y) and the segment
+                    d2 = distance(self.xpts[x+1], self.ypts[y])
+
+                    if d1 <= d2: # going up
+                        x, y = x, y+1
+                        # set dl for the previous node
+                        dl.append((self.dx[x] + self.dx[x-1])/2.)
+                    else: # going right
+                        x, y = x+1, y
+                        # set dl for the previous node
+                        dl.append((self.dy[y] + self.dy[y-1])/2.)
+                    s.append(x + y*nx)
+                dl.append(dl[-1])
+                dl = np.asarray(dl)
+
+                if nz > 1: # no tilted planes
+                    s = get_sites(xa, ya, za, xb, yb, zb)
+
+                # fill arrays of DOS and surface recombination velocities
                 self.extra_charge_sites += [s]
                 self.Nextra[cdx, s] = c.density
                 self.Seextra[cdx, s] = c.Se
