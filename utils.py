@@ -128,6 +128,7 @@ def extra_charges_path(sys, start, end):
         abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
             np.sqrt((yb-ya)**2 + (xb-xa)**2)
 
+    xcoord, ycoord = [], []
     s = [ia + ja*sys.nx]
     X = [sys.xpts[ia]]
     x, y = ia, ja
@@ -144,4 +145,6 @@ def extra_charges_path(sys, start, end):
             X.append(X[-1] + sys.dx[x])
             x, y = x+1, y
         s.append(x + y*sys.nx)
-    return s, np.asarray(X)
+        xcoord.append(x)
+        ycoord.append(y)
+    return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
