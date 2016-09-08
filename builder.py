@@ -253,6 +253,7 @@ class Builder():
 
                 # find the sites closest to the straight line defined by
                 # (xa,ya,za) and (xb,yb,zb) and the associated dl       
+
                 # XXX TODO generalize to 3D and the distance to a plane
                 distance = lambda x, y:\
                     abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
@@ -261,18 +262,31 @@ class Builder():
                 s = [xa + ya*nx]
                 dl = []
                 x, y = xa, ya
-                while x <= xb and y <= yb and x < nx-1 and y < ny-1:
+                def condition(x, y):
+                    if xa <= xb:
+                        return x <= xb and y <= yb and x < nx-1 and y < ny-1
+                    else:
+                        return x >= xb and y <= yb and x > 1 and y < ny-1
+                        
+                while condition(x, y):
                     # distance between the point above (x,y) and the segment
                     d1 = distance(self.xpts[x], self.ypts[y+1])
                     # distance between the point right of (x,y) and the segment
                     d2 = distance(self.xpts[x+1], self.ypts[y])
-
-                    if d1 <= d2: # going up
+                    # distance between the point left of (x,y) and the segment
+                    d3 = distance(self.xpts[x-1], self.ypts[y])
+                    
+                    # print(min(d1, d2, d3), d2, d3)
+                    if min(d1, d2, d3) == d1: # going up
                         x, y = x, y+1
                         # set dl for the previous node
                         dl.append((self.dx[x] + self.dx[x-1])/2.)
-                    else: # going right
+                    elif xa < xb: # going right
                         x, y = x+1, y
+                        # set dl for the previous node
+                        dl.append((self.dy[y] + self.dy[y-1])/2.)
+                    elif xa > xb: # going left
+                        x, y = x-1, y
                         # set dl for the previous node
                         dl.append((self.dy[y] + self.dy[y-1])/2.)
                     s.append(x + y*nx)

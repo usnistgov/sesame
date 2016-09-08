@@ -128,22 +128,33 @@ def extra_charges_path(sys, start, end):
         abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
             np.sqrt((yb-ya)**2 + (xb-xa)**2)
 
+    def condition(x, y):
+        if xa <= xb:
+            return x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1
+        else:
+            return x >= ib and y <= jb and x > 1 and y < sys.ny-1
+                        
     xcoord, ycoord = [], []
     s = [ia + ja*sys.nx]
     X = [sys.xpts[ia]]
     x, y = ia, ja
-    while x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1:
+    while condition(x, y):
         # distance between the point above (x,y) and the segment
         d1 = distance(sys.xpts[x], sys.ypts[y+1])
         # distance between the point right of (x,y) and the segment
         d2 = distance(sys.xpts[x+1], sys.ypts[y])
+        # distance between the point left of (x,y) and the segment
+        d3 = distance(sys.xpts[x-1], sys.ypts[y])
 
-        if d1 <= d2: # going up
+        if min(d1, d2, d3) == d1: # going up
             X.append(X[-1] + sys.dy[y])
             x, y = x, y+1
-        else: # going right
+        elif xa < xb: # going right
             X.append(X[-1] + sys.dx[x])
             x, y = x+1, y
+        elif xa > xb: # going left
+            X.append(X[-1] - sys.dx[x-1])
+            x, y = x-1, y
         s.append(x + y*sys.nx)
         xcoord.append(x)
         ycoord.append(y)
