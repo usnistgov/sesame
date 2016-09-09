@@ -136,7 +136,7 @@ def extra_charges_path(sys, start, end):
                         
     xcoord, ycoord = [], []
     s = [ia + ja*sys.nx]
-    X = [sys.xpts[ia]]
+    X = [0]
     x, y = ia, ja
     while condition(x, y):
         # distance between the point above (x,y) and the segment
@@ -153,7 +153,7 @@ def extra_charges_path(sys, start, end):
             X.append(X[-1] + sys.dx[x])
             x, y = x+1, y
         elif xa > xb: # going left
-            X.append(X[-1] - sys.dx[x-1])
+            X.append(X[-1] + sys.dx[x-1])
             x, y = x-1, y
         s.append(x + y*sys.nx)
         xcoord.append(x)

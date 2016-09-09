@@ -240,6 +240,7 @@ class Builder():
 
         # additional extra charges
         #!!! DO NOT add extra charges on the contact sites
+
         if len(self.charges) != 0:
             self.Nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
             self.Seextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
