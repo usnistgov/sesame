@@ -277,19 +277,24 @@ class Builder():
                     # distance between the point left of (x,y) and the segment
                     d3 = distance(self.xpts[x-1], self.ypts[y])
                     
-                    # print(min(d1, d2, d3), d2, d3)
-                    if min(d1, d2, d3) == d1: # going up
-                        x, y = x, y+1
-                        # set dl for the previous node
-                        dl.append((self.dx[x] + self.dx[x-1])/2.)
-                    elif xa < xb: # going right
-                        x, y = x+1, y
-                        # set dl for the previous node
-                        dl.append((self.dy[y] + self.dy[y-1])/2.)
-                    elif xa > xb: # going left
-                        x, y = x-1, y
-                        # set dl for the previous node
-                        dl.append((self.dy[y] + self.dy[y-1])/2.)
+                    if xa < xb: # overall direction is to the right
+                        if d1 < d2:
+                            x, y = x, y+1
+                            # set dl for the previous node
+                            dl.append((self.dx[x] + self.dx[x-1])/2.)
+                        else:
+                            x, y = x+1, y
+                            # set dl for the previous node
+                            dl.append((self.dy[y] + self.dy[y-1])/2.)
+                    else: # overall direction is to the left
+                        if d1 < d3:
+                            x, y = x, y+1
+                            # set dl for the previous node
+                            dl.append((self.dx[x] + self.dx[x-1])/2.)
+                        else:
+                            x, y = x-1, y
+                            # set dl for the previous node
+                            dl.append((self.dy[y] + self.dy[y-1])/2.)
                     s.append(x + y*nx)
                 dl.append(dl[-1])
                 dl = np.asarray(dl)

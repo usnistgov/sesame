@@ -146,16 +146,22 @@ def extra_charges_path(sys, start, end):
         # distance between the point left of (x,y) and the segment
         d3 = distance(sys.xpts[x-1], sys.ypts[y])
 
-        if min(d1, d2, d3) == d1: # going up
-            X.append(X[-1] + sys.dy[y])
-            x, y = x, y+1
-        elif xa < xb: # going right
-            X.append(X[-1] + sys.dx[x])
-            x, y = x+1, y
-        elif xa > xb: # going left
-            X.append(X[-1] + sys.dx[x-1])
-            x, y = x-1, y
+        if xa < xb: # overall direction is to the right
+            if d1 < d2:
+                x, y = x, y+1
+                X.append(X[-1] + sys.dy[y])
+            else:
+                x, y = x+1, y
+                X.append(X[-1] + sys.dx[x])
+        else: # overall direction is to the left
+            if d1 < d3:
+                x, y = x, y+1
+                X.append(X[-1] + sys.dy[y])
+            else:
+                x, y = x-1, y
+                X.append(X[-1] + sys.dx[x-1])
         s.append(x + y*sys.nx)
         xcoord.append(x)
         ycoord.append(y)
+
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
