@@ -25,7 +25,6 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
 
     Parameters
     ----------
-
     sys: Builder
         The discretized system.
     guess: numpy array of floats
@@ -44,7 +43,6 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
 
     Returns
     -------
-
     v_final: numpy array of floats
         The final solution of the electrostatic potential in a one-dimensional
         array.
@@ -116,7 +114,6 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
 
     Parameters
     ----------
-
     sys: Builder
         The discretized system.
     guess: list [efn, efp, v] of numpy arrays of floats
@@ -136,7 +133,6 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
 
     Returns
     -------
-
     solution: dictionary
         Keys are 'efn', 'efp' and 'v'. The values contain one-dimensional numpy
         arrays of the solution.

@@ -74,7 +74,7 @@ def maps3D(sys, data, cmap='gnuplot', alpha=1):
     data: numpy array
         One-dimensional array of data with size equal to the size of the system.
     cmap: string
-        Name of the colormap used by Matplolib
+        Name of the colormap used by Matplolib.
     alpha: float
         Transparency of the colormap.
     """
