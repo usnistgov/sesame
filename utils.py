@@ -1,64 +1,84 @@
 from sesame.observables import get_jn, get_jp
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
-from scipy.optimize import brentq
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
 
-def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl, integrate=True):
-    # return the current in the x-direction, summed along the y-axis
-    jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
-    jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
-    j = jn+jp
+def plot(sys, ls='-o'):
+    """
+    Plot the sites containing additional charges.
 
-    # integrate over y if 2d only
-    if integrate:
-        ypts = sys.ypts
-        j = spline(ypts, j).integral(ypts[0], ypts[-1])
-    else:
-        j = j[0]
-    return j
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    ls: string
+        Line style of the plotted paths.
+    """
 
-def current(files, vapplist, params, output=None, integrate=True, Voc=False, Pm=False):
-    # output is printed on screen if set to None, otherwise data are stored in a
-    # txt file with the name given by output
-    if len(files) != len(vapplist):
-        print('Lists of files and applied voltages need to have the same dimension!')
-        exit(1)
+    for c in sys.charges:
+        xa, ya, za = get_indices(sys, (c.xa, c.ya, c.za))
+        xb, yb, zb = get_indices(sys, (c.xb, c.yb, c.zb))
 
-    else:
-        # compute normalization if non dark current
-        gtot = 1
-        if params.g.any() != 0:
-            xpts = params.xpts
-            ypts = params.ypts
-            nx = len(xpts)
-            g = params.g[:nx]
-            gtot = spline(xpts, g).integral(xpts[0], xpts[-1]) * ypts[-1]
-        # compute current
-        c = []
-        for fdx, f in enumerate(files):
-            d = np.load(f)
-            c.append(integrator(d[0], d[1], d[2], d[3], d[4], params, integrate) / (gtot))
-        if type(output) == str:
-            np.savetxt(output, np.column_stack((vapplist, c)))
+        # find the sites closest to the straight line defined by
+        # (xa,ya,za) and (xb,yb,zb) and the associated dl       
+        distance = lambda x, y:\
+            abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
+                np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
 
-        # compute Voc if asked
-        if Voc == True:
-            sp = spline(vapplist, np.asarray(c))
-            Voc = brentq(lambda x: sp(x), 0, vapplist[-1])
-            print('Open circuit voltage: ', Voc)
+        def condition(x, y):
+            if xa <= xb:
+                return x <= xb and y <= yb and x < sys.nx-1 and y < sys.ny-1
+            else:
+                return x >= xb and y <= yb and x > 1 and y < sys.ny-1
 
-        # compute the point of maximum J * V
-        if Pm == True:
-            sp = spline(vapplist, np.asarray(c))
-            dsp = sp.derivative()
-            Vm = brentq(lambda x: dsp(x), 0, vapplist[-1])
-            Jm = sp(Vm)
-            print('Maximum power at Vm={0}, Jm={1}'.format(Vm, Jm))
-        return c
+        x, y = xa, ya
+        xcoord, ycoord = [xa], [ya]
+        while condition(x, y):
+            # distance between the point above (x,y) and the segment
+            d1 = distance(sys.xpts[x], sys.ypts[y+1])
+            # distance between the point right of (x,y) and the segment
+            d2 = distance(sys.xpts[x+1], sys.ypts[y])
+            # distance between the point left of (x,y) and the segment
+            d3 = distance(sys.xpts[x-1], sys.ypts[y])
+
+            if xa < xb: # overall direction is to the right
+                if d1 < d2:
+                    x, y = x, y+1
+                else:
+                    x, y = x+1, y
+            else: # overall direction is to the left
+                if d1 < d3:
+                    x, y = x, y+1
+                else:
+                    x, y = x-1, y
+            xcoord.append(x)
+            ycoord.append(y)
+
+        # plot the path of added charges
+        sc = sys.xscale*1e6
+        plt.plot(sys.xpts[xcoord]*sc, sys.ypts[ycoord]*sc, ls)
+
+    plt.xlim(xmin=0, xmax=sys.xpts[-1]*sc)
+    plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)
+    plt.show())
 
 def maps3D(sys, data, cmap='gnuplot', alpha=1):
+    """
+    Plot a 3D map of data across the system.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    data: numpy array
+        One-dimensional array of data with size equal to the size of the system.
+    cmap: string
+        Name of the colormap used by Matplolib
+    alpha: float
+        Transparency of the colormap.
+    """
+
     xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
     nx, ny = len(xpts), len(ypts)
     data_xy = data.reshape(ny, nx).T
@@ -116,7 +136,39 @@ def get_dl(sys, sites):
 
     return dl
 
+    return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 def extra_charges_path(sys, start, end):
+    """
+    Get sites and coordinates of the locations containing additional charges.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    start: Tuple (x, y, z)
+        Coordinates of the first point of the line containing additional
+        charges in [m].
+    end: Tuple (x, y, z)
+        Coordinates of the last point of the line containing additional
+        charges [m].
+
+    Returns
+    -------
+
+    s: numpy array of integers
+        Sites numbers.
+    X: numpy array of floats
+        Incremental sum of the lattice size between sites.
+    xccord: numpy array of floats
+        x-coordinates of the sites on the discretized lattice.
+    yccord: numpy array of floats
+        y-coordinates of the sites on the discretized lattice.
+
+    Notes
+    -----
+    This only works in 2D.
+    """
     # Return the path and the sites
     xa, ya = start[0]/sys.xscale, start[1]/sys.xscale
     xb, yb = end[0]/sys.xscale, end[1]/sys.xscale
@@ -163,5 +215,8 @@ def extra_charges_path(sys, start, end):
         s.append(x + y*sys.nx)
         xcoord.append(x)
         ycoord.append(y)
-
-    return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
+        
+        X = np.asarray(X)
+        xcoord = np.asarray(xcoord)
+        ycoord = np.asarray(ycoord)
+    return s, X, xcoord, ycoord

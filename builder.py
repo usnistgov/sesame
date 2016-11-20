@@ -4,6 +4,14 @@ from collections import namedtuple
 from sesame.utils import get_indices, get_xyz_from_s
 
 class Builder():
+    """
+    A system discretized on a mesh. 
+
+    This type discretizes a system on a mesh provided by the user, and takes
+    care of all normalizations. The temperature of the system is specified when
+    an instance is created. The default is 300 K. 
+    """
+
     def __init__(self, T=300):
         # temperature in Kelvin
         self.T = T
@@ -49,13 +57,19 @@ class Builder():
 
     def add_material(self, location, mat):
         """
-        Update self.regions with dimensionless material parameters
+        Add a material to the system.
 
-        Arguments
-        ---------
-        location: x,y,z-coordinates of the material region [m]. Tuple containing
-        x,y,z, use zeros for unused dimensions.
-        mat: dictionary with the material parameters
+        Parameters
+        ----------
+        location: list of two (x, y, z) tuples 
+            The coordinates define in [m] define the material's region (a
+            rectangle in 2D). Use zeros for unused dimensions.
+        mat: dictionary containing the material parameters
+            Keys are Nc (Nv): conduction (valence) effective densities of
+            states [1/m^3], Eg: band gap [eV], epsilon: material's
+            permitivitty, mu_e (mu_h): electron (hole) mobility [m^2/(V.s)],
+            tau_e (tau_h): electron (hole) bulk lifetime, RCenergy: energy
+            level of the bulk recombination centers [eV].
         """
 
         # make material parameters dimensionless
@@ -75,17 +89,22 @@ class Builder():
     def add_local_charges(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
         """
-        Add charges (for a grain boundary for instance) to the total charge rho
+        Add additional charges (for a grain boundary for instance) to the total
+        charge of the system.
 
-        Arguments
-        ---------
-        location: coordinates of the two points defining a line in a 2D problem
-        or a rectangle in a 3D problem [m]. List of two tuples containing x,y,z.
-        Use zeros for unused dimensions.
-        local_E: energy level of the states defined with respect to Eg/2 [eV]
-        local_N: defect density [m^-2]
-        local_Se: surface recombination velocity of electrons [m.s^-1]
-        local_Sh: surface recombination velocity of holes [m.s^-1]
+        Parameters
+        ----------
+        location: list of two (x, y, z) tuples 
+            The coordinates in [m] define a line of defect in 2D or a plane in
+            3D. Use zeros for unused dimensions.
+        local_E: float 
+            Energy level of the states defined with respect to Eg/2 [eV].
+        local_N: float
+            Defect density of states [m^-2].
+        local_Se: float
+            Surface recombination velocity of electrons [m.s^-1].
+        local_Sh: float
+            surface recombination velocity of holes [m.s^-1].
         """
         
         xa, ya, za = location[0]
@@ -103,13 +122,15 @@ class Builder():
 
     def doping_profile(self, location, density):
         """
-        Add dopant charges to the system
+        Add dopant charges to the system.
 
-        Arguments
-        ---------
-        location: x,y,z-coordinates of the material region [m]. Tuple containing
-        x,y,z, use zeros for unused dimensions.
-        density: doping density [m^-3]
+        Parameters
+        ----------
+        location: list of two (x, y, z) tuples 
+            The coordinates in [m] define the region of doping (a rectangle in
+            2D). Use zeros for unused dimensions.
+        density: float
+            Doping density [m^-3].
         """
 
         xa, ya, za = location[0]
@@ -128,13 +149,16 @@ class Builder():
 
     def illumination(self, f, scale=True):
         """
-        Illumination profile along x, assumed invariant along y
+        Distribution of photogenerated carriers.
 
-        Arguments
-        ---------
-        f: function for the generation rate [m^-3]
-        scale: Boolean that determines if scaling should be done here or not.
+        Parameters
+        ----------
+        f: function 
+            Generation rate [m^-3].
+        scale: boolean 
+            Determines if scaling should be applied (True) or not (False).
         """
+
         if scale:
             self.illumination = lambda x, y, z: f(x, y, z) / self.U
         else:
@@ -147,11 +171,23 @@ class Builder():
 
     def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """
-        Create the lists of recombination velocities for the contacts
+        Create the lists of recombination velocities that define the contacts
+        boundary conditions.
 
-        Arguments
-        ---------
-        Scx: recombination velocities [m.s^-1]
+        Parameters
+        ----------
+        Scn_left: float
+            Surface recombination velocity for electrons at the left contact [m/s].
+        Scp_left: float
+            Surface recombination velocity for holes at the left contact [m/s].
+        Scn_right: float
+            Surface recombination velocity for electrons at the right contact [m/s].
+        Scn_right: float
+            Surface recombination velocity for electrons at the right contact [m/s].
+
+        Notes
+        -----
+        Use 10^50 for infinite surface recombination velocities.
         """
 
         self.Scn = [Scn_left/self.Sc, Scn_right/self.Sc]
@@ -159,11 +195,16 @@ class Builder():
 
     def mesh(self, xpts, ypts=None, zpts=None):
         """
-        User provided mesh of the system
+        Mesh of the system.
 
-        Arguments
-        ---------
-        xpts, ypts, zpts: numpy arrays [m]
+        Parameters
+        ----------
+        xpts: numpy array
+            Mesh points in the x-direction in [m].
+        ypts: numpy array
+            Mesh points in the y-direction in [m].
+        zpts: numpy array
+            Mesh points in the z-direction in [m].
         """
 
         self.xpts = xpts / self.xscale
@@ -186,8 +227,7 @@ class Builder():
 
     def finalize(self):
         """
-        Generate the local charge for all points in the system, create
-        arrays of materials parameters
+        Generate the arrays containing all the parameters of the system.
         """
 
         # mesh parameters

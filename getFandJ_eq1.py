@@ -68,9 +68,9 @@ def getFandJ_eq(sys, v):
             f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
             rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
 
-            drho_dv[matches] += - sys.Nextra[idx, matches]\
-                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
-                                / (_n+_p+nextra+pextra)**2
+            drho_dv[matches] += - sys.Nextra[idx, matches] *\
+                (Se**2*_n*nextra + 2*Sh*Se*_p*_n + Sh**2*_p*pextra) /\
+                (Se*(_n+nextra)+Sh*(_p+pextra))**2
 
     # charge is divided by epsilon (Poisson equation)
     rho = rho / sys.epsilon[sites]

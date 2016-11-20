@@ -20,6 +20,35 @@ def refine(dv):
     return dv
 
 def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
+    """
+    Poisson solver of the system at thermal equilibrium.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    guess: numpy array of floats
+        One-dimensional array of the guess for the electrostatic potential
+        across the system.
+    tolerance: float
+        Accepted error made by the Newton-Raphson scheme.
+    periodic_bcs: boolean
+        Defines the choice of boundary conditions in the y-direction. True
+        (False) corresponds to periodic (abrupt) boundary conditions.
+    max_step: integer
+        Maximum number of steps taken by the Newton-Raphson scheme.
+    info: integer
+        The solver returns the step number and the associated error every info
+        steps.
+
+    Returns
+    -------
+
+    v_final: numpy array of floats
+        The final solution of the electrostatic potential in a one-dimensional
+        array.
+    """
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
         m = __import__('sesame.getFandJ_eq{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
@@ -82,6 +111,37 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
 
 
 def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
+    """
+    Drift Diffusion Poisson solver of the system at out of equilibrium.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    guess: list [efn, efp, v] of numpy arrays of floats
+        List of one-dimensional arrays of the initial guesses for the electron
+        quasi-Fermi level (efn), the hole quasi-Fermi level (efp) and the
+        electrostatic potential (v).
+    tolerance: float
+        Accepted error made by the Newton-Raphson scheme.
+    periodic_bcs: boolean
+        Defines the choice of boundary conditions in the y-direction. True
+        (False) corresponds to periodic (abrupt) boundary conditions.
+    max_step: integer
+        Maximum number of steps taken by the Newton-Raphson scheme.
+    info: integer
+        The solver returns the step number and the associated error every info
+        steps.
+
+    Returns
+    -------
+
+    solution: dictionary
+        Keys are 'efn', 'efp' and 'v'. The values contain one-dimensional numpy
+        arrays of the solution.
+    """
+
     # guess: initial guess passed to Newton Raphson algorithm
     # tolerance: max error accepted for delta u
     # max_step: maximum number of step allowed before declaring 'no solution
@@ -111,14 +171,6 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     clamp = 5.
     converged = False
 
-    from sesame.observables import get_jn, get_jp, get_n, get_p, get_rr
-    from scipy.interpolate import InterpolatedUnivariateSpline as spline
-    def integrator(sys, v, efn, efp, sites_i, sites_ip1, dl):
-        # return the current in the x-direction, summed along the y-axis
-        jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
-        jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
-        return jn + jp
-
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
@@ -127,16 +179,6 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
 
         #--------- choose the new step -----------------
         error = max(np.abs(dx))
-        # J = integrator(sys, v, efn, efp, 10, 11, sys.dx[10])
-        # sites = [i for i in range(sys.nx)]
-        # p = get_p(sys, efp, v, sites)
-        # n = get_n(sys, efp, v, sites)
-        # r = get_rr(sys, n, p, sys.n1[0], sys.p1[0], sys.tau_e[0], sys.tau_h[0], sites)
-        # sp = spline(sys.xpts, r)
-        # x = sys.xpts
-        # gtot = spline(x, sys.g).integral(x[0], x[-1])
-        # print(J/gtot+sp.integral(0, sys.xpts[-1])/gtot)
-
        
         if error < tolerance:
             converged = True
