@@ -1,1 +1,5 @@
 *.pyc
+doc/_build
+build
+sesame.egg-info
+dist
