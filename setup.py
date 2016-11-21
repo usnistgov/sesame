@@ -8,7 +8,7 @@ setup(
     author='Benoit H. Gaury',
     author_email='benoit.gaury@nist.gov',
     packages=['mumps', 'sesame'],
-    ext_modules=[Extension('mumps._dmumps', sources=['mumps/_dmumps.c'], libraries=['dmumps'])],
+    ext_modules=[Extension('mumps._dmumps', sources=['mumps/_dmumps.c'])],
     classifiers=[
         'Intended Audience :: Science/Research',
         'Programming Language :: Python :: 3',
