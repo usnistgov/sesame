@@ -1,3 +1,5 @@
+.. _label_code:
+
 Core modules
 ============
 

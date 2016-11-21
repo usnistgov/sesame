@@ -5,7 +5,8 @@ import numpy as np
 
 def plot(sys, ls='-o'):
     """
-    Plot the sites containing additional charges.
+    Plot the sites containing additional charges. The length scale of the the
+    graph is 1 micrometer.
 
     Parameters
     ----------
@@ -57,6 +58,8 @@ def plot(sys, ls='-o'):
         # plot the path of added charges
         sc = sys.xscale*1e6
         plt.plot(sys.xpts[xcoord]*sc, sys.ypts[ycoord]*sc, ls)
+        plt.xlabel('x (µm)')
+        plt.ylabel('y (µm)')
 
     plt.xlim(xmin=0, xmax=sys.xpts[-1]*sc)
     plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)

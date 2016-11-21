@@ -1,8 +1,8 @@
 Introduction
 ============
 
-Present the assumed geometry, the set of equations and the procedure to follow to perform simulations.
-Explain how the system is discretized, and how the data are stored (flattened)
+Here we present the geometry with the system of coordinates that Sesame assumes,
+and the set of equations that it solves.
 
 Geometry and governing equations
 --------------------------------

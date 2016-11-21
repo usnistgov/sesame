@@ -10,14 +10,28 @@ class Builder():
     This type discretizes a system on a mesh provided by the user, and takes
     care of all normalizations. The temperature of the system is specified when
     an instance is created. The default is 300 K. 
+
+    Attributes
+    ----------
+    N: 10^25 m⁻3
+        Density scale.
+    vt: kT/e
+        Thermal velocity (voltage scale) [V].
+    mu: :math`10^-4 m^2/(V\cdot s)`
+        Mobility scale.
+    t0: `\epsilon_0 vt / (e N)`
+        Time scale [s].
+    xscale: :math:`\sqrt{\epsilon_0 vt/(eN)}`
+        Length scale [m].
+    U: :math:`N\ mu\  vt/ xscale^2`
+        Generation rate scale [m^-3].
+    Sc: xscale/t0
+        Surface recombination velocity scale [m/s].
     """
 
     def __init__(self, T=300):
-        # temperature in Kelvin
+    # temperature in Kelvin
         self.T = T
-
-        # q = 1.6e-19
-        # epsilon = 11 * (8.85 * 1e-12)
 
         # scalings for...
         # densities
@@ -29,10 +43,8 @@ class Builder():
         self.mu = 1 * 1e-4
         # time [s]
         self.t0 = cts.epsilon_0 / (self.mu * cts.e* self.N)
-        # self.t0 = (self.mu * q* NN / (epsilon))**(-1)
         # space [m]
         self.xscale = np.sqrt(cts.epsilon_0 * self.vt / (cts.e * self.N))
-        # self.xscale = (epsilon * self.vt / (q*NN))**.5
         # generation rate [m^-3]
         self.U = (self.N * self.mu * self.vt) / self.xscale**2 
         # recombination velocities
@@ -104,7 +116,15 @@ class Builder():
         local_Se: float
             Surface recombination velocity of electrons [m.s^-1].
         local_Sh: float
-            surface recombination velocity of holes [m.s^-1].
+            Surface recombination velocity of holes [m.s^-1].
+
+        Warnings
+        --------
+        * In 2D the two points defining a line of defects must be given in
+        ascending order (lowest y-coordinate first).
+
+        * We assume that no additional charge is on the contacts.
+
         """
         
         xa, ya, za = location[0]
