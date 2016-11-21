@@ -1,0 +1,211 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.5. sesame.utils – Miscellaneous routines &#8212; Sesame 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Sesame 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="3. Core modules" href="index.html" />
+    <link rel="prev" title="3.4. sesame.observables – Computing densities, currents and recombination" href="sesame.observables.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sesame.observables.html" title="3.4. sesame.observables – Computing densities, currents and recombination"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Sesame 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">3. Core modules</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-sesame.utils">
+<span id="sesame-utils-miscellaneous-routines"></span><h1>3.5. <a class="reference internal" href="#module-sesame.utils" title="sesame.utils"><code class="xref py py-mod docutils literal"><span class="pre">sesame.utils</span></code></a> &#8211; Miscellaneous routines<a class="headerlink" href="#module-sesame.utils" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="sesame.utils.extra_charges_path">
+<code class="descclassname">sesame.utils.</code><code class="descname">extra_charges_path</code><span class="sig-paren">(</span><em>sys</em>, <em>start</em>, <em>end</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.utils.extra_charges_path" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get sites and coordinates of the locations containing additional charges.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>start: Tuple (x, y, z)</strong></p>
+<blockquote>
+<div><p>Coordinates of the first point of the line containing additional
+charges in [m].</p>
+</div></blockquote>
+<p><strong>end: Tuple (x, y, z)</strong></p>
+<blockquote>
+<div><p>Coordinates of the last point of the line containing additional
+charges [m].</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">s: numpy array of integers</p>
+<blockquote>
+<div><p>Sites numbers.</p>
+</div></blockquote>
+<p>X: numpy array of floats</p>
+<blockquote>
+<div><p>Incremental sum of the lattice size between sites.</p>
+</div></blockquote>
+<p>xccord: numpy array of floats</p>
+<blockquote>
+<div><p>x-coordinates of the sites on the discretized lattice.</p>
+</div></blockquote>
+<p>yccord: numpy array of floats</p>
+<blockquote class="last">
+<div><p>y-coordinates of the sites on the discretized lattice.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Notes</p>
+<p>This only works in 2D.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.utils.maps3D">
+<code class="descclassname">sesame.utils.</code><code class="descname">maps3D</code><span class="sig-paren">(</span><em>sys</em>, <em>data</em>, <em>cmap='gnuplot'</em>, <em>alpha=1</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.utils.maps3D" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot a 3D map of data across the system.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>data: numpy array</strong></p>
+<blockquote>
+<div><p>One-dimensional array of data with size equal to the size of the system.</p>
+</div></blockquote>
+<p><strong>cmap: string</strong></p>
+<blockquote>
+<div><p>Name of the colormap used by Matplolib.</p>
+</div></blockquote>
+<p><strong>alpha: float</strong></p>
+<blockquote class="last">
+<div><p>Transparency of the colormap.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.utils.plot">
+<code class="descclassname">sesame.utils.</code><code class="descname">plot</code><span class="sig-paren">(</span><em>sys</em>, <em>ls='-o'</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.utils.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plot the sites containing additional charges.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>ls: string</strong></p>
+<blockquote class="last">
+<div><p>Line style of the plotted paths.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="sesame.observables.html"
+                        title="previous chapter">3.4. <code class="docutils literal"><span class="pre">sesame.observables</span></code> &#8211; Computing densities, currents and recombination</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/sesame.utils.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sesame.observables.html" title="3.4. sesame.observables – Computing densities, currents and recombination"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Sesame 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >3. Core modules</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Benoit H. Gaury.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.8.
+    </div>
+  </body>
+</html>

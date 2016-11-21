@@ -1,0 +1,334 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>3.4. sesame.observables – Computing densities, currents and recombination &#8212; Sesame 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../_static/classic.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="top" title="Sesame 0.1.0 documentation" href="../index.html" />
+    <link rel="up" title="3. Core modules" href="index.html" />
+    <link rel="next" title="3.5. sesame.utils – Miscellaneous routines" href="sesame.utils.html" />
+    <link rel="prev" title="3.3. sesame.solvers – Equilibrium and nonequilibrium solvers" href="sesame.solvers.html" /> 
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sesame.utils.html" title="3.5. sesame.utils – Miscellaneous routines"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="sesame.solvers.html" title="3.3. sesame.solvers – Equilibrium and nonequilibrium solvers"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Sesame 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">3. Core modules</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="module-sesame.observables">
+<span id="sesame-observables-computing-densities-currents-and-recombination"></span><h1>3.4. <a class="reference internal" href="#module-sesame.observables" title="sesame.observables"><code class="xref py py-mod docutils literal"><span class="pre">sesame.observables</span></code></a> &#8211; Computing densities, currents and recombination<a class="headerlink" href="#module-sesame.observables" title="Permalink to this headline">¶</a></h1>
+<dl class="function">
+<dt id="sesame.observables.get_jn">
+<code class="descclassname">sesame.observables.</code><code class="descname">get_jn</code><span class="sig-paren">(</span><em>sys</em>, <em>efn</em>, <em>v</em>, <em>sites_i</em>, <em>sites_ip1</em>, <em>dl</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.observables.get_jn" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the electron current between sites <code class="docutils literal"><span class="pre">site_i</span></code> and <code class="docutils literal"><span class="pre">sites_ip1</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>efn: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electron quasi-Fermi level for the entire system (as given
+by the drift diffusion Poisson solver).</p>
+</div></blockquote>
+<p><strong>v: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electrostatic potential for the entire system (as given
+by the drift diffusion Poisson solver).</p>
+</div></blockquote>
+<p><strong>sites_i: list of integers</strong></p>
+<blockquote>
+<div><p>Indices of the sites the current is coming from.</p>
+</div></blockquote>
+<p><strong>sites_ip1: list of integers</strong></p>
+<blockquote>
+<div><p>Indices of the sites the current is going to.</p>
+</div></blockquote>
+<p><strong>dl: numpy arrays of floats</strong></p>
+<blockquote>
+<div><p>Lattice distances between sites <code class="docutils literal"><span class="pre">sites_i</span></code> and sites <code class="docutils literal"><span class="pre">sites_ip1</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">jn: numpy array of floats</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.observables.get_jp">
+<code class="descclassname">sesame.observables.</code><code class="descname">get_jp</code><span class="sig-paren">(</span><em>sys</em>, <em>efp</em>, <em>v</em>, <em>sites_i</em>, <em>sites_ip1</em>, <em>dl</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.observables.get_jp" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the hole current between sites <code class="docutils literal"><span class="pre">site_i</span></code> and <code class="docutils literal"><span class="pre">sites_ip1</span></code>.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>efp: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the hole quasi-Fermi level for the entire system (as given
+by the drift diffusion Poisson solver).</p>
+</div></blockquote>
+<p><strong>v: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electrostatic potential for the entire system (as given
+by the drift diffusion Poisson solver).</p>
+</div></blockquote>
+<p><strong>sites_i: list of integers</strong></p>
+<blockquote>
+<div><p>Indices of the sites the current is coming from.</p>
+</div></blockquote>
+<p><strong>sites_ip1: list of integers</strong></p>
+<blockquote>
+<div><p>Indices of the sites the current is going to.</p>
+</div></blockquote>
+<p><strong>dl: numpy arrays of floats</strong></p>
+<blockquote>
+<div><p>Lattice distances between sites <code class="docutils literal"><span class="pre">sites_i</span></code> and sites <code class="docutils literal"><span class="pre">sites_ip1</span></code>.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">jp: numpy array of floats</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.observables.get_n">
+<code class="descclassname">sesame.observables.</code><code class="descname">get_n</code><span class="sig-paren">(</span><em>sys</em>, <em>efn</em>, <em>v</em>, <em>sites</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.observables.get_n" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the electron density on the given sites.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>efn: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electron quasi-Fermi level.</p>
+</div></blockquote>
+<p><strong>v: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electrostatic potential.</p>
+</div></blockquote>
+<p><strong>sites: list of integers</strong></p>
+<blockquote>
+<div><p>The sites where the electron density should be computed.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">n: numpy array</p>
+<blockquote class="last">
+<div><p>An array with the values of electron density.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.observables.get_p">
+<code class="descclassname">sesame.observables.</code><code class="descname">get_p</code><span class="sig-paren">(</span><em>sys</em>, <em>efp</em>, <em>v</em>, <em>sites</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.observables.get_p" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the hole density on the given sites.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>efp: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the hole quasi-Fermi level.</p>
+</div></blockquote>
+<p><strong>v: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electrostatic potential.</p>
+</div></blockquote>
+<p><strong>sites: list of integers</strong></p>
+<blockquote>
+<div><p>The sites where the hole density should be computed.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">p: numpy array</p>
+<blockquote class="last">
+<div><p>An array with the values of electron density.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="function">
+<dt id="sesame.observables.get_rr">
+<code class="descclassname">sesame.observables.</code><code class="descname">get_rr</code><span class="sig-paren">(</span><em>sys</em>, <em>n</em>, <em>p</em>, <em>n1</em>, <em>p1</em>, <em>tau_e</em>, <em>tau_h</em>, <em>sites</em><span class="sig-paren">)</span><a class="headerlink" href="#sesame.observables.get_rr" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the recombination on the given sites for the lifetimes and densities
+provided.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><p class="first"><strong>sys: Builder</strong></p>
+<blockquote>
+<div><p>The discretized system.</p>
+</div></blockquote>
+<p><strong>n: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the electron density at the given sites.</p>
+</div></blockquote>
+<p><strong>p: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the hole density at the given sites.</p>
+</div></blockquote>
+<p><strong>n1: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the recombination center equilibrium electron density at the given sites.</p>
+</div></blockquote>
+<p><strong>p1: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Values of the recombination center equilibrium hole density at the given sites.</p>
+</div></blockquote>
+<p><strong>tau_e: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Electron lifetimes associated with the recombination center at the given
+sites.</p>
+</div></blockquote>
+<p><strong>tau_h: numpy array of floats</strong></p>
+<blockquote>
+<div><p>Hole lifetimes associated with the recombination center at the given
+sites.</p>
+</div></blockquote>
+<p><strong>sites: list of integers</strong></p>
+<blockquote>
+<div><p>The sites where the recombination should be computed.</p>
+</div></blockquote>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first">r: numpy array</p>
+<blockquote class="last">
+<div><p>An array with the values of recombination.</p>
+</div></blockquote>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h4>Previous topic</h4>
+  <p class="topless"><a href="sesame.solvers.html"
+                        title="previous chapter">3.3. <code class="docutils literal"><span class="pre">sesame.solvers</span></code> &#8211; Equilibrium and nonequilibrium solvers</a></p>
+  <h4>Next topic</h4>
+  <p class="topless"><a href="sesame.utils.html"
+                        title="next chapter">3.5. <code class="docutils literal"><span class="pre">sesame.utils</span></code> &#8211; Miscellaneous routines</a></p>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/reference/sesame.observables.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../search.html" method="get">
+      <div><input type="text" name="q" /></div>
+      <div><input type="submit" value="Go" /></div>
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="right" >
+          <a href="sesame.utils.html" title="3.5. sesame.utils – Miscellaneous routines"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="sesame.solvers.html" title="3.3. sesame.solvers – Equilibrium and nonequilibrium solvers"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">Sesame 0.1.0 documentation</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >3. Core modules</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+        &#169; Copyright 2016, Benoit H. Gaury.
+      Created using <a href="http://sphinx-doc.org/">Sphinx</a> 1.4.8.
+    </div>
+  </body>
+</html>

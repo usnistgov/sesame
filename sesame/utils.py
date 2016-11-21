@@ -60,7 +60,7 @@ def plot(sys, ls='-o'):
 
     plt.xlim(xmin=0, xmax=sys.xpts[-1]*sc)
     plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)
-    plt.show())
+    plt.show()
 
 def maps3D(sys, data, cmap='gnuplot', alpha=1):
     """

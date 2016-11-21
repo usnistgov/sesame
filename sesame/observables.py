@@ -3,21 +3,116 @@ import numpy as np
 
 
 def get_n(sys, efn, v, sites):
+    """
+    Compute the electron density on the given sites.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        Values of the electron quasi-Fermi level.
+    v: numpy array of floats
+        Values of the electrostatic potential.
+    sites: list of integers
+        The sites where the electron density should be computed.
+
+    Returns
+    -------
+    n: numpy array
+        An array with the values of electron density.
+    """
+
     bl = 0
-    return sys.Nc[sites] * exp(-bl+efn[sites]+v[sites])
+    n = sys.Nc[sites] * exp(-bl+efn[sites]+v[sites])
+    return n
 
 def get_p(sys, efp, v, sites):
+    """
+    Compute the hole density on the given sites.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efp: numpy array of floats
+        Values of the hole quasi-Fermi level.
+    v: numpy array of floats
+        Values of the electrostatic potential.
+    sites: list of integers
+        The sites where the hole density should be computed.
+
+    Returns
+    -------
+    p: numpy array
+        An array with the values of electron density.
+    """
     bl = 0
     Eg = sys.Eg[sites]
     Nv = sys.Nv[sites]
-    return Nv * exp(-Eg+bl+efp[sites]-v[sites])
+    p = Nv * exp(-Eg+bl+efp[sites]-v[sites])
+    return p
 
 def get_rr(sys, n, p, n1, p1, tau_e, tau_h, sites):
+    """
+    Compute the recombination on the given sites for the lifetimes and densities
+    provided.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    n: numpy array of floats
+        Values of the electron density at the given sites.
+    p: numpy array of floats
+        Values of the hole density at the given sites.
+    n1: numpy array of floats
+        Values of the recombination center equilibrium electron density at the given sites.
+    p1: numpy array of floats
+        Values of the recombination center equilibrium hole density at the given sites.
+    tau_e: numpy array of floats
+        Electron lifetimes associated with the recombination center at the given
+        sites.
+    tau_h: numpy array of floats
+        Hole lifetimes associated with the recombination center at the given
+        sites.
+    sites: list of integers
+        The sites where the recombination should be computed.
+
+    Returns
+    -------
+    r: numpy array
+        An array with the values of recombination.
+    """
     ni = sys.ni[sites]
     r = (n*p - ni**2)/(tau_h * (n+n1) + tau_e*(p+p1))
     return r
 
 def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
+    """
+    Compute the electron current between sites ``site_i`` and ``sites_ip1``.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        Values of the electron quasi-Fermi level for the entire system (as given
+        by the drift diffusion Poisson solver).
+    v: numpy array of floats
+        Values of the electrostatic potential for the entire system (as given
+        by the drift diffusion Poisson solver).
+    sites_i: list of integers
+        Indices of the sites the current is coming from.
+    sites_ip1: list of integers
+        Indices of the sites the current is going to.
+    dl: numpy arrays of floats
+        Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
+
+    Returns
+    -------
+    jn: numpy array of floats
+    """
     # sites is a list of pairs of sites given in the folded representation
     bl = 0
 
@@ -31,12 +126,35 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    jn = exp(-bl) * (exp(efnp1) - exp(efnp0)) / dl * \
+    jn = Nc * mu * exp(-bl) * (exp(efnp1) - exp(efnp0)) / dl * \
          dv / (-exp(-vp0)*(1 - exp(dv)))
-
-    return jn * Nc * mu
+    return jn
 
 def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
+    """
+    Compute the hole current between sites ``site_i`` and ``sites_ip1``.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efp: numpy array of floats
+        Values of the hole quasi-Fermi level for the entire system (as given
+        by the drift diffusion Poisson solver).
+    v: numpy array of floats
+        Values of the electrostatic potential for the entire system (as given
+        by the drift diffusion Poisson solver).
+    sites_i: list of integers
+        Indices of the sites the current is coming from.
+    sites_ip1: list of integers
+        Indices of the sites the current is going to.
+    dl: numpy arrays of floats
+        Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
+
+    Returns
+    -------
+    jp: numpy array of floats
+    """
     bl = 0
 
     vp0 = v[sites_i]
@@ -50,10 +168,10 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
 
-    jp = exp(-Eg + bl) * (exp(efpp1) - exp(efpp0)) / dl *\
+    jp = Nv * mu * exp(-Eg + bl) * (exp(efpp1) - exp(efpp0)) / dl *\
          dv / (-exp(vp0)*(1 - exp(-dv)))
 
-    return jp * Nv * mu
+    return jp
 
 def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     bl = 0
