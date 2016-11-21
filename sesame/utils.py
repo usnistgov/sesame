@@ -140,6 +140,7 @@ def get_dl(sys, sites):
     return dl
 
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
+
 def extra_charges_path(sys, start, end):
     """
     Get sites and coordinates of the locations containing additional charges.
@@ -219,7 +220,7 @@ def extra_charges_path(sys, start, end):
         xcoord.append(x)
         ycoord.append(y)
         
-        X = np.asarray(X)
-        xcoord = np.asarray(xcoord)
-        ycoord = np.asarray(ycoord)
+    X = np.asarray(X)
+    xcoord = np.asarray(xcoord)
+    ycoord = np.asarray(ycoord)
     return s, X, xcoord, ycoord
