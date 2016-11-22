@@ -176,9 +176,16 @@ def extra_charges_path(sys, start, end):
     # Return the path and the sites
     xa, ya = start[0]/sys.xscale, start[1]/sys.xscale
     xb, yb = end[0]/sys.xscale, end[1]/sys.xscale
-    
-    ia, ja, _ = get_indices(sys, [xa, ya, 0])
-    ib, jb, _ = get_indices(sys, [xb, yb, 0])
+
+    # reorder the points do that they are in ascending order
+    inverted = False
+    if ya <= yb:
+        ia, ja, ka = get_indices(sys, (xa, ya, 0))
+        ib, jb, kb = get_indices(sys, (xb, yb, 0))
+    else:
+        xa, ya, ka = get_indices(sys, (xb, yb, 0))
+        xb, yb, kb = get_indices(sys, (xa, ya, 0))
+        inverted = True
 
     distance = lambda x, y:\
         abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
@@ -223,4 +230,11 @@ def extra_charges_path(sys, start, end):
     X = np.asarray(X)
     xcoord = np.asarray(xcoord)
     ycoord = np.asarray(ycoord)
+
+    # put everyting back to original order if inverted=True
+    if inverted == True:
+        s = s.reverse()
+        X = np.flpud(X[-1] - X)
+        xcoord = np.flipud(xcoord)
+        ycoord = np.flipud(ycoord)
     return s, X, xcoord, ycoord

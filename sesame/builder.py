@@ -13,24 +13,43 @@ class Builder():
 
     Attributes
     ----------
-    N: 10^25 m⁻3
+    N: :math:`10^{25}\ \mathrm{m^{⁻3}}`
         Density scale.
-    vt: kT/e
-        Thermal velocity (voltage scale) [V].
-    mu: :math`10^-4 m^2/(V\cdot s)`
+    vt: :math:`k_BT/e\ \mathrm{[V]}`
+        Thermal velocity (voltage scale). :math:`k_B` is the Boltzmann constant,
+        :math:`e` is the electron charge.
+    mu: :math:`10^{-4}\ \mathrm{m^2/(V\cdot s)}`
         Mobility scale.
-    t0: `\epsilon_0 vt / (e N)`
-        Time scale [s].
-    xscale: :math:`\sqrt{\epsilon_0 vt/(eN)}`
-        Length scale [m].
-    U: :math:`N\ mu\  vt/ xscale^2`
-        Generation rate scale [m^-3].
-    Sc: xscale/t0
-        Surface recombination velocity scale [m/s].
+    t0: :math:`\epsilon_0 vt / (e N)\ \mathrm{[s]}`
+        Time scale.
+    xscale: :math:`\sqrt{\epsilon_0 vt/(eN)}\ \mathrm{[m]}`
+        Length scale. :math:`\epsilon_0` is the vaccuum permittivity.
+    U: :math:`N\ mu\  vt/ xscale^2\ \mathrm{[m^{-3}]}`
+        Generation rate scale.
+    Sc: xscale/t0 :math:`\mathrm{[m/s]}`
+        Surface recombination velocity scale.
+    nx, ny, nz: integers
+        Number of lattice nodes in the x, y, z directions.
+    xpts, ypts, zpts: numpy arrays of floats
+        Dimensionless lattice nodes in the x, y, z directions.
+    dx, dy, dz: numpy arrays of floats
+        Dimensionless lattice constants in the x, y, z directions.
+    Nc, Nv: numpy arrays of floats
+        Dimensionless effective densities of states of the conduction and
+        valence bands.
+    Eg: numpy array of floats
+        Dimensionless band gap.
+    mu_e, mu_h:  numpy arrays of floats
+        Dimensionless mobilities of electron and holes.
+    tau_e, tau_h:  numpy arrays of floats
+        Dimensionless bulk lifetime for electrons and holes.
+    n1, p1:  numpy arrays of floats
+        Dimensionless equilibrium densities of electrons and holes at the bulk
+        trap state.
     """
 
     def __init__(self, T=300):
-    # temperature in Kelvin
+        # temperature in Kelvin
         self.T = T
 
         # scalings for...
@@ -120,8 +139,7 @@ class Builder():
 
         Warnings
         --------
-        * In 2D the two points defining a line of defects must be given in
-        ascending order (lowest y-coordinate first).
+        * Only works in 2D.
 
         * We assume that no additional charge is on the contacts.
 
@@ -309,8 +327,15 @@ class Builder():
             self.pextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
             self.extra_charge_sites = []
             for cdx, c in enumerate(self.charges):
-                xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
-                xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
+                # XXX TODO generalize to 3D (extremities must be in ascending
+                # order
+                if c.ya <= c.yb:
+                    xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
+                    xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
+                else:
+                    xa, ya, za = get_indices(self, (c.xb, c.yb, c.zb))
+                    xb, yb, zb = get_indices(self, (c.xa, c.ya, c.za))
+                    
 
                 # find the sites closest to the straight line defined by
                 # (xa,ya,za) and (xb,yb,zb) and the associated dl       
