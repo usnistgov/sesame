@@ -183,8 +183,8 @@ def extra_charges_path(sys, start, end):
         ia, ja, ka = get_indices(sys, (xa, ya, 0))
         ib, jb, kb = get_indices(sys, (xb, yb, 0))
     else:
-        xa, ya, ka = get_indices(sys, (xb, yb, 0))
-        xb, yb, kb = get_indices(sys, (xa, ya, 0))
+        ia, ja, ka = get_indices(sys, (xb, yb, 0))
+        ib, jb, kb = get_indices(sys, (xa, ya, 0))
         inverted = True
 
     distance = lambda x, y:\
@@ -234,7 +234,7 @@ def extra_charges_path(sys, start, end):
     # put everyting back to original order if inverted=True
     if inverted == True:
         s = s.reverse()
-        X = np.flpud(X[-1] - X)
+        X = np.flipud(X[-1] - X)
         xcoord = np.flipud(xcoord)
         ycoord = np.flipud(ycoord)
     return s, X, xcoord, ycoord
