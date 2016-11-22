@@ -17,8 +17,12 @@ def plot(sys, ls='-o'):
     """
 
     for c in sys.charges:
-        xa, ya, za = get_indices(sys, (c.xa, c.ya, c.za))
-        xb, yb, zb = get_indices(sys, (c.xb, c.yb, c.zb))
+        if c.ya <= c.yb:
+            xa, ya, za = get_indices(sys, (c.xa, c.ya, c.za))
+            xb, yb, zb = get_indices(sys, (c.xb, c.yb, c.zb))
+        else:
+            xa, ya, za = get_indices(sys, (c.xb, c.yb, c.zb))
+            xb, yb, zb = get_indices(sys, (c.xa, c.ya, c.za))
 
         # find the sites closest to the straight line defined by
         # (xa,ya,za) and (xb,yb,zb) and the associated dl       
@@ -178,21 +182,19 @@ def extra_charges_path(sys, start, end):
     xb, yb = end[0]/sys.xscale, end[1]/sys.xscale
 
     # reorder the points do that they are in ascending order
-    inverted = False
     if ya <= yb:
         ia, ja, ka = get_indices(sys, (xa, ya, 0))
         ib, jb, kb = get_indices(sys, (xb, yb, 0))
     else:
         ia, ja, ka = get_indices(sys, (xb, yb, 0))
         ib, jb, kb = get_indices(sys, (xa, ya, 0))
-        inverted = True
 
     distance = lambda x, y:\
         abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
             np.sqrt((yb-ya)**2 + (xb-xa)**2)
 
     def condition(x, y):
-        if xa <= xb:
+        if ia <= ib:
             return x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1
         else:
             return x >= ib and y <= jb and x > 1 and y < sys.ny-1
@@ -209,7 +211,7 @@ def extra_charges_path(sys, start, end):
         # distance between the point left of (x,y) and the segment
         d3 = distance(sys.xpts[x-1], sys.ypts[y])
 
-        if xa < xb: # overall direction is to the right
+        if ia < ib: # overall direction is to the right
             if d1 < d2:
                 x, y = x, y+1
                 X.append(X[-1] + sys.dy[y])
@@ -228,12 +230,12 @@ def extra_charges_path(sys, start, end):
         ycoord.append(y)
         
     X = np.asarray(X)
-    xcoord = np.asarray(xcoord)
-    ycoord = np.asarray(ycoord)
+    xcoord = np.asarray(xcoord, dtype=int)
+    ycoord = np.asarray(ycoord, dtype=int)
 
     # put everyting back to original order if inverted=True
-    if inverted == True:
-        s = s.reverse()
+    if xa > xb:
+        s.reverse()
         X = np.flipud(X[-1] - X)
         xcoord = np.flipud(xcoord)
         ycoord = np.flipud(ycoord)
