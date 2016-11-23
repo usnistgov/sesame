@@ -50,7 +50,7 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
     """
 
     # choose mumps solver or scipy
-    if with_mumps == True:
+    if with_mumps:
         try:
             from mumps import spsolve
         except:
@@ -155,7 +155,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
     """
 
     # choose mumps solver or scipy
-    if with_mumps == True:
+    if with_mumps:
         try:
             from mumps import spsolve
         except:

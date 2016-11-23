@@ -311,7 +311,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     columns += dbv_cols
     data += dbv_data
 
-    if with_mumps == True:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)

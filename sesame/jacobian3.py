@@ -863,7 +863,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     ddp_derivs(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
                dx, dxm1, dy, dym1, dz, dzm1, sites)
 
-    if with_mumps == True:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)

@@ -249,7 +249,7 @@ def getFandJ_eq(sys, v, with_mumps):
     data += list(chain.from_iterable(dfv_data))
 
 
-    if with_mumps == True:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)

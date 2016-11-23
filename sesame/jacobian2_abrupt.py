@@ -672,7 +672,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     update(dfv_rows, dfv_cols, dfv_data)
     
 
-    if with_mumps == False:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)

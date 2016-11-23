@@ -776,7 +776,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     data = [i for idx, i in enumerate(data) if 0 <= columns[idx] < 3*Nx*Ny*Nz]
     columns = [i for i in columns if 0 <= i < 3*Nx*Ny*Nz]
 
-    if with_mumps == True:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)

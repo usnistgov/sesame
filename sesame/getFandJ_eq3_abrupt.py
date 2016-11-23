@@ -382,7 +382,7 @@ def getFandJ_eq(sys, v, with_mumps):
     poisson_derivs(v, dxm1, dx, dym1, dy, dzm1, dz, sites)
 
     # create the sparse matrix
-    if with_mumps == True:
+    if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny*Nz, Nx*Ny*Nz), dtype=np.float64)
     else:
         J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny*Nz, Nx*Ny*Nz), dtype=np.float64)
