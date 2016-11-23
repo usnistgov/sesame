@@ -3,9 +3,7 @@
 ####################################
 import sesame
 import numpy as np
-from mpi4py import MPI
-
-from mumps import spsolve
+import warnings
 
 def refine(dv):
     # This damping procedure was taken from Solid-State Electronics, vol. 19,
@@ -19,7 +17,8 @@ def refine(dv):
             dv[sdx] = np.sign(s) * np.log(abs(s))/2
     return dv
 
-def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
+def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
+                   info=0, with_mumps=False):
     """
     Poisson solver of the system at thermal equilibrium.
 
@@ -40,6 +39,8 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
     info: integer
         The solver returns the step number and the associated error every info
         steps.
+    with_mumps: Boolean
+        Flag to decide whether to use MUMPS library or not. Default is False.
 
     Returns
     -------
@@ -47,6 +48,18 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
         The final solution of the electrostatic potential in a one-dimensional
         array.
     """
+
+    # choose mumps solver or scipy
+    if with_mumps == True:
+        try:
+            from mumps import spsolve
+        except:
+            warnings.warn('Could not import mumps. Default back to scipy.', UserWarning)
+            from scipy.sparse.linalg import spsolve
+            with_mumps = False
+    else:
+        from scipy.sparse.linalg import spsolve
+
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
         m = __import__('sesame.getFandJ_eq{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
@@ -57,7 +70,7 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
 
     # first step of the Newton Raphson solver
     v = guess
-    f, J = getFandJ_eq(sys, v)
+    f, J = getFandJ_eq(sys, v, with_mumps)
 
     cc = 0
     clamp = 5.
@@ -66,7 +79,7 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
-        dx = spsolve(J, -f, MPI.COMM_WORLD)
+        dx = spsolve(J, -f)
         dx = dx.transpose()
 
         #--------- choose the new step -----------------
@@ -82,14 +95,14 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
             # new correction and trial
             dv = dx / (1 + np.abs(dx/clamp))
             v = v + dv
-            f, J = getFandJ_eq(sys, v)
+            f, J = getFandJ_eq(sys, v, with_mumps)
 
             
         # Start slowly this refinement method found in a paper
         else:
             dv = refine(dx)
             v = v + dv
-            f, J = getFandJ_eq(sys, v)
+            f, J = getFandJ_eq(sys, v, with_mumps)
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
@@ -108,7 +121,8 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=
 
 
 
-def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
+def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
+               info=0, with_mumps=False):
     """
     Drift Diffusion Poisson solver of the system at out of equilibrium.
 
@@ -130,6 +144,8 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     info: integer
         The solver returns the step number and the associated error every info
         steps.
+    with_mumps: Boolean
+        Flag to decide whether to use MUMPS library or not. Default is False.
 
     Returns
     -------
@@ -138,12 +154,16 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
         arrays of the solution.
     """
 
-    # guess: initial guess passed to Newton Raphson algorithm
-    # tolerance: max error accepted for delta u
-    # max_step: maximum number of step allowed before declaring 'no solution
-    # found'
-    # info: integer, the program will print out the step number every 'info'
-    # steps. If info is 0, no output is pronted out
+    # choose mumps solver or scipy
+    if with_mumps == True:
+        try:
+            from mumps import spsolve
+        except:
+            warnings.warn('Could not import mumps. Default back to scipy.', UserWarning)
+            from scipy.sparse.linalg import spsolve
+            with_mumps = False
+    else:
+        from scipy.sparse.linalg import spsolve
 
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
@@ -160,7 +180,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     efn, efp, v = guess
 
     f = getF(sys, v, efn, efp)
-    J = getJ(sys, v, efn, efp)
+    J = getJ(sys, v, efn, efp, with_mumps)
     solution = {'v': v, 'efn': efn, 'efp': efp}
 
     cc = 0
@@ -170,7 +190,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
     while converged != True:
         cc = cc + 1
         #-------- solve linear system ---------------------
-        dx = spsolve(J, -f, MPI.COMM_WORLD)
+        dx = spsolve(J, -f)
         dx = dx.transpose()
 
         #--------- choose the new step -----------------
@@ -201,7 +221,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
             v = v + dv
 
             f = getF(sys, v, efn, efp)
-            J = getJ(sys, v, efn, efp)
+            J = getJ(sys, v, efn, efp, with_mumps)
 
         # Start slowly with this refinement method found in a paper
         else:
@@ -219,7 +239,7 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300, info=0):
             v = v + dv
 
             f = getF(sys, v, efn, efp)
-            J = getJ(sys, v, efn, efp)
+            J = getJ(sys, v, efn, efp, with_mumps)
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:

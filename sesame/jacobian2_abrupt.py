@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from sesame.observables import *
 
-def getJ(sys, v, efn, efp):
+def getJ(sys, v, efn, efp, with_mumps):
     ###########################################################################
     #                     organization of the Jacobian matrix                 #
     ###########################################################################
@@ -672,5 +672,9 @@ def getJ(sys, v, efn, efp):
     update(dfv_rows, dfv_cols, dfv_data)
     
 
-    J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
+    if with_mumps == False:
+        J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
+    else:
+        J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny, 3*Nx*Ny), dtype=np.float64)
+        
     return J
