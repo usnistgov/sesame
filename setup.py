@@ -41,10 +41,10 @@ cmdclass = {'build_ext': ve_build_ext}
 
 
 def status_msgs(*msgs):
-    print('*' * 80)
+    print('*' * 75)
     for msg in msgs:
         print(msg)
-    print('*' * 80)
+    print('*' * 75)
 
 
 
