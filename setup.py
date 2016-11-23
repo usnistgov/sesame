@@ -71,6 +71,9 @@ def run_setup(with_mumps):
 try:
     run_setup(True)
 
+    status_msgs(
+        "BUILD SUMMARY: The MUMPS extension compiled successfully. Python build succeeded.")
+
 except BuildFailed as exc:
     status_msgs(
         exc.cause,
@@ -81,6 +84,6 @@ except BuildFailed as exc:
     run_setup(False)
 
     status_msgs(
-        "WARNING: The MUMPS extension could not be compiled. " +  
+        "BUILD SUMMARY: The MUMPS extension could not be compiled. " +  
         "Plain-Python build succeeded."
     )
