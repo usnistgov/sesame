@@ -1,11 +1,11 @@
 import numpy as np
-from scipy.sparse import coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from sesame.observables import get_n, get_p
 # remember that efn and efp are zero at equilibrium
 
-def getFandJ_eq(sys, v):
+def getFandJ_eq(sys, v, with_mumps):
     Nx = sys.xpts.shape[0]
     dx = sys.dx
     
@@ -136,5 +136,8 @@ def getFandJ_eq(sys, v):
     columns += dbv_cols
     data += dbv_data
 
-    J = coo_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
+    if with_mumps:
+        J = coo_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
+    else:
+        J = csr_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
     return vec, J

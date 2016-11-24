@@ -26,6 +26,17 @@ Building Sesame requires
    C++ and Fortran.
 
 The following software is highly recommended though not strictly required:
+ * `MUMPS <http://graal.ens-lyon.fr/MUMPS/>`_, a sparse linear algebra library
+   that will in many cases speed up Sesame several times and reduce the memory
+   footprint.  (Sesame uses only the sequential, single core version
+   of MUMPS.  The advantages due to MUMPS as used by Sesame are thus independent
+   of the number of CPU cores of the machine on which Sesame runs.)
+ * `PyMUMPS <https://pypi.python.org/pypi/PyMUMPS>`_, Python bindings for MUMPS
+   if MUMPS is used.  This is included in the ``mumps`` directory found in the
+   root directory of the distribution. The package is built together with
+   Sesame.
+ * An environment which allows to compile Python extensions written in C,
+   C++ and Fortran.
  * `matplotlib <http://matplotlib.sourceforge.net/>`_ 1.1 or newer, for Sesame's
    plotting routines,
 
@@ -54,9 +65,8 @@ directory of the Sesame source distribution.
 Build configuration
 ===================
 
-The setup script of Sesame has to know how to link against MUMPS.  By default it
-will assume that MUMPS can be found under its usual name.  
-This setting can be configured by editing the file ``setup.cfg`` in the
+The setup script of Sesame is used to link Sesame against MUMPS. The name of the
+library installed and its location are configured by editing the file ``setup.cfg`` in the
 root directory of the Sesame distribution. 
 
 Building the documentation

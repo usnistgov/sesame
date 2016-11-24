@@ -1,17 +1,228 @@
 Numerical treatment of the drift diffusion Poisson equations
 ============================================================
 
+In this section we present the procedure followed to discretize the drift
+diffusion Poisson set of equations, the algorithm used to solve it and its
+implementation.
+
 Scharfetter-Gummel scheme
 -------------------------
+To solve the drift diffusion Poisson equations numerically, we utilize a simple
+spatial discretization.  Recall that densities are defined on sites, and fluxes
+(such as current flux, electric field flux) are defined on links.  This is a
+very common technique, and it is always important to remember that *sites* and
+*links* in the discretized grid are fundamentally different objects, as shown in
+Fig. 1.
+
+.. figure:: site_link.svg
+   :align: center
+
+   Fig. 1: Sites versus links.  I take the indexing convention that :math:`\Delta
+   x^i` represents the space between sites :math:`i` and :math:`i+1`.
+
+We consider a one-dimensional system to illustrate how the discretization of the
+model is done.  First, we want to rewrite the currents in semi-discretized form
+for link :math:`i` (link :math:`i` connects discretized points :math:`i` and
+:math:`i+1`):  
+
+.. math::
+    J_n^i & = q\mu_n n_i \frac{\partial E_{F_n,i}}{\partial x} \\
+    J_p^i & = -q\mu_p p_i \frac{\partial E_{F_p,i}}{\partial x}
+   :label: ji
+
+Note that here, link indices are denoted with a superscript, while point indices
+are denoted with a subscript.
+
+Next, a key step to ensure numerical stability is to integrate the above in order to
+get a completely discretized version of the current :math:`J^i`.  This discretization
+is known as the Scharfetter-Gummel scheme [GUM64], and is mandatory.  Let us
+do the hole case.  First, rewrite the hole density in terms of the quasi-Fermi
+level. 
+
+.. math::
+    p_i = N_V e^{\left(b_l-E_g+E_{F_p}(x)-\phi(x)\right)/k_BT}
+
+We plug this form of :math:`p` into Eq. :eq:`ji`, then multiply both sides of
+the hole current  by :math:`e^{q\phi(x)/k_BT}\ dx`, 
+
+.. math::
+    J_p^i = -q \mu_p N_V e^{\left(b_l-E_g+E_{F_p}-\phi(x)\right)/k_BT}
+    \frac{\partial E_{F_p}}{\partial x} 
+    
+and integrate over link :math:`i`
+
+.. math::
+    \int J_p^i e^{q\phi(x)/k_BT} \mathrm{d}x
+    = -q \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \int e^{E_{F_p}/k_BT}
+    \mathrm{d}E_{F_p}
+   :label: eqx
+
+Now we assume that the potential varies linearly between grid points, 
+
+.. math::
+    \phi \left(x\right) = \frac{\phi_{i+1}-\phi_{i}}{\Delta x^i}\left(x-x_i\right)+\phi_i,
+
+which enables the integral on the left hand side above to be performed:
+
+.. math::
+    \int_{x_i}^{x_{i+1}} \mathrm{d}x e^{\pm q\phi(x)/k_BT} = \pm
+    \frac{k_BT}{q} \Delta x^i \frac{e^{\pm q\phi_{i+1}/k_BT} - e^{\pm
+    q\phi_i / k_BT}}{\phi_{i+1} - \phi_i}.
+   :label: eqxx
+
+Plugging Eq. :eq:`eqxx` into Eq. :eq:eqx and solving for :math:`J_p^i` yields
+
+.. math::
+    J_p^i = - \frac{q^2/k_BT}{\Delta x^i}
+    \frac{\phi_{i+1}-\phi_i}{e^{q\phi_{i+1}/k_BT}-e^{q\phi_i/k_BT}} 
+    \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \left[e^{E_{F_p,i+1}/k_BT}-e^{E_{F_p,i}}\right]
+   :label: jpi
+
+A similar procedure leads to the following expression for :math:`J_n^i`:
+
+.. math::
+    J_n^i = \frac{q^2/k_BT}{\Delta x^i}
+    \frac{\phi_{i+1}-\phi_i}{e^{-q\phi_{i+1}/k_BT}-e^{-q\phi_i/k_BT}}
+    \mu_n N_C e^{-b_l}  \left[e^{E_{F_n,i+1}/k_BT}-e^{E_{F_n,i}/k_BT}\right]
+   :label: jni
+
+The formulations of :math:`J_{n,p}^i` given in Eqs. :eq:`jpi` and :eq:`jni`
+ensure perfect current conservation.
+
 
 
 
 
 Newton-Raphson algorithm
 ------------------------
+We want to write the continuity and Poisson equations in the form :math:`f(x)=0`,
+and solve these coupled nonlinear equations by using root-finding algorithms.
+The appropriate form is given by: 
+
+.. math::
+    f_{p,i}&=&\frac{2}{\Delta x^i
+    + \Delta x^{i-1}}\left(J_p^{i} - J_p^{i-1}\right) + G_i - R_i \\
+    f_{n,i}&=&\frac{2}{\Delta x^i + \Delta x^{i-1}}\left(J_n^{i} -
+    J_n^{i-1}\right) - G_i + R_i \\ 
+    f_{v,i}&=&\frac{2}{\Delta x^i + \Delta x^{i-1}}
+    \left(-\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) +
+    \left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)\right) -
+    \frac{\rho_i}{\epsilon}
+
+These equations are the
+discretized drift-diffusion-Poisson equations to be solved for the variables
+:math:`\left\{E_{F_n,i}, E_{F_p,i}, \phi_i\right\}`, subject to the boundary
+conditions given in introduction.
 
 
+
+.. We use a Newton-Raphson method to solves Eqs. \ref{eq:final1}-\ref{eq:final3}.  The idea behind the method is clearest in a simple 1-d case.  Given a general nonlinear function $f(x)$, we want to find its root $\bar x$: $f(\bar x)=0$.  Given an initial guess $x_1$, one can estimate the error $\delta x$ in this guess, assuming that the function varies linearly all the way to its root.
+.. \begin{eqnarray}
+.. \delta x= \left({\frac{df\left(x_1\right)}{dx}}\right)^{-1}f\left(x_1\right)  \label{eq:1d}
+.. \end{eqnarray}
+.. An updated guess is provided by $x_2 = x_1 + \delta x$.
+..
+..
+.. \begin{figure}[h!]
+.. \begin{center}
+.. \vskip 0.2 cm
+.. \includegraphics[width=2.5in]{NR.eps}
+.. \vskip 0.2 cm \caption{Schematic of the newton-raphson method for root finding.  root finding is ubiquotous and, at times, extremely difficult.}\label{fig:hopping}
+.. \end{center}
+.. \end{figure}
+..
+.. In multiple dimensions the last term in Eq. \ref{eq:1d} gets replaced by the inverse of the Jacobian - which is simply the multi-dimensional generalization of the derivative.  In this case, Eq. \ref{eq:1d} is simply a matrix equation of the form:
+.. \begin{eqnarray}
+.. \delta {\bf x} = A^{-1} {\bf F}\left({\bf x}\right)
+.. \end{eqnarray}
+.. where
+.. \begin{eqnarray}
+.. A_{ij} = \frac{\partial F_i}{\partial x_j}
+.. \end{eqnarray}
+..
+.. Here is a small subset of what the $A$ matrix looks like for our problem.  I've only explicitly shown the row which corresponds to $f_n^i$.  (Here I drop the super/sub script convention I had set up to distinguish between sites and links, for the sake of writing things more compactly.)
+..
+.. \begin{eqnarray}
+.. \left(
+.. \begin{array}{ccccccccccc}
+..   & \ldots &  &  &  &  &  &  & & &\\
+..   \vdots  &  &  &  &  &  &  &  & & &  \\
+..    &  &  &  &  &  &  &  &  & &\\
+..    &  &  &  &  &  &  &  &  & &\\
+..   \ldots & \frac{\partial f_n^i}{\partial E_{fn}^{i-1}} & \frac{\partial f_n^i}{\partial E_{fp}^{i-1}}  & \frac{\partial f_n^i}{\partial V^{i-1}}  & \frac{\partial f_n^i}{\partial E_{fn}^{i}} & \frac{\partial f_n^i}{\partial E_{fp}^{i}}  & \frac{\partial f_n^i}{\partial V^{i}}  &  \frac{\partial f_n^i}{\partial E_{fn}^{i+1}} & \frac{\partial f_n^i}{\partial E_{fp}^{i+1}}  & \frac{\partial f_n^i}{\partial V^{i+1}} & \ldots \\
+..   \vdots &  &  &  &  &  &  &  & & &\\
+..    &  &  &  &  &  &  &  &  & &\\
+..    &  &  &  &  &  &  &  &  & &\\
+..    &  &  &  &  &  &  &  &  & &\\
+..    &  &  &  &  &  &  &  &  & &\\
+..    & \ldots &  &  &  &  &  &  &  & &
+.. \end{array}
+.. \right)
+.. \left(
+..   \begin{array}{c}
+..   \vdots\\
+..     \delta E_{fn}^{i-1} \\
+..     \delta E_{fp}^{i-1} \\
+..     \delta V^{i-1} \\
+..     \delta E_{fn}^{i} \\
+..     \delta E_{fp}^{i} \\
+..     \delta V^{i} \\
+..     \delta E_{fn}^{i+1} \\
+..     \delta E_{fp}^{i+1} \\
+..     \delta V^{i+1} \\
+..     \vdots
+..   \end{array}
+.. \right)
+.. =
+.. \left(
+..   \begin{array}{c}
+..   \vdots\\
+..     f_n^{i-1} \\
+..     f_p^{i-1} \\
+..     f_v^{i-1} \\
+..     f_n^{i} \\
+..     f_p^{i} \\
+..     f_v^{i} \\
+..     f_n^{i+1} \\
+..     f_p^{i+1} \\
+..     f_v^{i+1} \\
+..     \vdots
+..   \end{array}
+.. \right)
+.. \end{eqnarray}
+..
+.. The derivatives get messy.  I used mathematica to find the derivatives symbolically, then copied and pasted into matlab.  Also note that for this problem, finding derivatives numerically leads to major convergence problems.  It's mandatory to get analytic forms for the derivatives.
+..
+..
+..
+..
+..
+.. \section{matlab implementation in 2-d}
+.. We do the standard ``folding" of the two dimensional index label $(ii,jj)$ into the single index label ${\rm ind}$:
+.. \begin{eqnarray}
+.. {\rm ind} = (jj-1)\times N_x + ii.
+.. \end{eqnarray}
+.. The 3 fields $E_{fn},~E_{fp},~V$ are arranged as:
+.. \begin{eqnarray}
+.. \left(Efn\right)_{\rm ind} &=& 3\times\left({\rm ind}-2\right) \\
+.. \left(Efp\right)_{\rm ind} &=& 3\times\left({\rm ind}-1\right) \\
+.. \left(V\right)_{\rm ind} &=& 3\times\left({\rm ind}-0\right)
+.. \end{eqnarray}
+.. Using sparse matrix techniques is key to fast computation.  It's necessary to define the sparse matrix using matlab conventions: the set of row and column indices which correspond to nonzero matrix entries should be initialized to the proper length.  This length is given by:
+.. \begin{eqnarray}
+.. 2\times\left(2\times \left(4\left(N_x - 1\right)\bar{N_y}    + N_x\bar{N_y}\right) \right)
+.. \end{eqnarray}
+..
+.. Still need to add explanation of the above length, in terms of the grid and boundary conditions...
+..
+.. \
 
 
 Multi-dimensional implementation
 --------------------------------
+
+
+
+
+.. rubric:: References
+.. [GUM64] Gummel H. K., IEEE Transactions on Electron Devices, **11**, 455 (1964).
