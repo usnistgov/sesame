@@ -100,11 +100,11 @@ and solve these coupled nonlinear equations by using root-finding algorithms.
 The appropriate form is given by: 
 
 .. math::
-    f_{p,i}&=&\frac{2}{\Delta x^i
-    + \Delta x^{i-1}}\left(J_p^{i} - J_p^{i-1}\right) + G_i - R_i \\
-    f_{n,i}&=&\frac{2}{\Delta x^i + \Delta x^{i-1}}\left(J_n^{i} -
-    J_n^{i-1}\right) - G_i + R_i \\ 
-    f_{v,i}&=&\frac{2}{\Delta x^i + \Delta x^{i-1}}
+    f_{p,i} &= \frac{2}{\Delta x^i + \Delta x^{i-1}}\left(J_p^{i} -
+    J_p^{i-1}\right) + G_i - R_i 
+    \\ f_{n,i} &= \frac{2}{\Delta x^i + \Delta
+    x^{i-1}}\left(J_n^{i} - J_n^{i-1}\right) - G_i + R_i \\ 
+    f_{v,i} &= \frac{2}{\Delta x^i + \Delta x^{i-1}}
     \left(-\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) +
     \left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)\right) -
     \frac{\rho_i}{\epsilon}
