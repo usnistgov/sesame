@@ -37,12 +37,12 @@ import sesame
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.todo',
-    'sphinx.ext.mathjax',
+    'sphinx.ext.imgmath',
     'sphinx.ext.autosummary',
-    'numpydoc'
+    'numpydoc', 
 ]
 
-math_number_all = True
+# math_number_all = True
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
