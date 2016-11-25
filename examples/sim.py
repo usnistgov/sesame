@@ -13,7 +13,8 @@ junction = 10e-9 # size of the n-region [m]
 
 # dictionary with the material parameters
 CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-        'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 'RCenergy':0}
+        'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9,
+        'RCenergy':0, 'band_offset':0}
 
 # add the material to the system
 sys.add_material(((0,0,0), (L,d,0)), CdTe)

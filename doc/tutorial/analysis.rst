@@ -16,14 +16,49 @@ interpolation. This procedure requires another routine::
 
     from scipy.interpolate import InterpolatedUnivariateSpline as spline
 
-First, we load the data file for the results obtained for an applied voltage
-1.0::
+First we need to create the system so that we can access the discretization
+easily, and the quantities used to make the system of equations dimensionless.
+In the table below we show the syntax used to get these quantities assuming
+that the system as been built as shown in the previous section and is called
+`sys`:
+
+=========================            ==========================
+Attribute                            Syntax
+=========================            ==========================
+grid nodes                            ``sys.xpts``, ``sys.ypts``, ``sys.zpts``
+number of grid nodes                  ``sys.nx, ``sys.ny``, ``sys.nz``
+grid distances                        ``sys.dx``, ``sys.dy``, ``sys.dz``
+density scale                         ``sys.N``
+length scale                          ``sys.xscale``
+energy scale                          ``sys.vt``
+=========================            ==========================
+
+This table is not exhaustive. The list of all accessible attributes is in the
+documentation of the `Builder` class itself, see :ref:`builder_doc`.
+
+
+Next, we load the data file for the results. As an example, let's assume we
+generated a file called ``data.vapp_1.0.npy``::
 
     efn, efp, v = np.load('data.vapp_1.0.npy')
 
-As an example one can plot a 3D map of the electrostatic potential::
+The quantities ``efn``, ``efp``, ``v`` are one-dimensional arrays that will be
+used to compute and plot physical quantities. For instance, a 3D map of the
+electrostatic potential of a 2D system is obtained as follows::
 
     maps3D(sys, v)
+
+
+Computations of quantities like densities and currents require lists of sites
+where to compute them. Remember that we folded the indices of the mesh into a single
+site index ``s``
+
+.. math:: s = i + j \times n_x + k \times n_x n_y
+
+In 2D, the list of sites in the :math:`x`-direction between indices ``i_start``
+and ``i_end``, at index ``j`` in the :math:`y`-direction reads::
+
+    sites = [i + j*sys.nx for i in range(i_start, i_end)]
 
 Computing the current integrated across the system is done as follows::
 

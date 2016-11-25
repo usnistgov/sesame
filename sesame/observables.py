@@ -23,8 +23,7 @@ def get_n(sys, efn, v, sites):
         An array with the values of electron density.
     """
 
-    bl = 0
-    n = sys.Nc[sites] * exp(-bl+efn[sites]+v[sites])
+    n = sys.Nc[sites] * exp(-sys.bl[sites]+efn[sites]+v[sites])
     return n
 
 def get_p(sys, efp, v, sites):
@@ -47,7 +46,7 @@ def get_p(sys, efp, v, sites):
     p: numpy array
         An array with the values of electron density.
     """
-    bl = 0
+    bl = sys.bl[sites]
     Eg = sys.Eg[sites]
     Nv = sys.Nv[sites]
     p = Nv * exp(-Eg+bl+efp[sites]-v[sites])
@@ -114,7 +113,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     jn: numpy array of floats
     """
     # sites is a list of pairs of sites given in the folded representation
-    bl = 0
+    bl = sys.bl[sites_i]
 
     vp0 = v[sites_i]
     dv = vp0 - v[sites_ip1]
@@ -155,7 +154,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     -------
     jp: numpy array of floats
     """
-    bl = 0
+    bl = sys.bl[sites]
 
     vp0 = v[sites_i]
     dv = vp0 - v[sites_ip1]
@@ -174,7 +173,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     return jp
 
 def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
-    bl = 0
+    bl = sys.bl[sites]
 
     vp0 = v[sites_i]
     vp1 = v[sites_ip1]
@@ -186,19 +185,6 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     mu = sys.mu_e[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
-    # defn_i = 1./dl * exp(-bl+efnp0) * (-dv)\
-    #          / (-exp(-vp0)*(1 - exp(dv)))
-    #
-    # defn_ip1 = -1./dl * exp(-bl+efnp1) * (-dv)\
-    #            / (-exp(-vp0) * (1 - exp(dv)))
-    #
-    # dv_i = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
-    #        * exp(-vp0)*(1 + dv - exp(dv))\
-    #        / (exp(-2*vp0) * (exp(dv)-1)**2)
-    #
-    # dv_ip1 = -1./dl * exp(-bl) * (exp(efnp1) - exp(efnp0))\
-    #         * exp(-vp1) * (1 - dv - exp(-dv))\
-    #         / (exp(-2*vp1) * (1-exp(-dv))**2)
 
     ev0 = exp(-vp0)
     ep1 = exp(-bl+efnp1)
@@ -217,7 +203,7 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     return mu*Nc*defn_i, mu*Nc*defn_ip1, mu*Nc*dv_i, mu*Nc*dv_ip1   
 
 def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
-    bl = 0
+    bl = sys.bl[sites]
 
     vp0 = v[sites_i]
     vp1 = v[sites_ip1]
@@ -230,20 +216,6 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     mu = sys.mu_h[sites_i]
 
     dv = dv + (np.abs(dv) < 1e-5)*1e-5
-
-    # defp_i = 1/dl * exp(bl-Eg+efpp0) * (-dv)\
-    #          / (-exp(vp0) * (1 - exp(-dv)))
-    #
-    # defp_ip1 = 1/dl * exp(bl-Eg+efpp1) * (-dv)\
-    #            / (exp(vp0) * (1 - exp(-dv)))
-    #
-    # dv_i = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
-    #        * exp(vp0) * (1-dv - exp(-dv))\
-    #        / (exp(2*vp0)*((exp(-dv)-1)**2))
-    #
-    # dv_ip1 = -1/dl * exp(bl-Eg) * (exp(efpp1) - exp(efpp0))\
-    #         * exp(vp1) * (1+dv - exp(dv))\
-    #         / (exp(2*vp1)*((1-exp(dv))**2))
 
     ev0 = exp(vp0)
     ep1 = exp(bl+efpp1-Eg)

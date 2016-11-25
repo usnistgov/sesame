@@ -44,8 +44,10 @@ class Builder():
     tau_e, tau_h:  numpy arrays of floats
         Dimensionless bulk lifetime for electrons and holes.
     n1, p1:  numpy arrays of floats
-        Dimensionless equilibrium densities of electrons and holes at the bulk
-        trap state.
+        Dimensionless equilibrium densities of electrons and holes at the bulk trap state.
+    bl: numpy array of floats
+        Band offset.
+
     """
 
     def __init__(self, T=300):
@@ -97,17 +99,19 @@ class Builder():
             rectangle in 2D). Use zeros for unused dimensions.
         mat: dictionary containing the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of
-            states [1/m^3], Eg: band gap [eV], epsilon: material's
-            permitivitty, mu_e (mu_h): electron (hole) mobility [m^2/(V.s)],
+            states [:math:`1/m^3`], Eg: band gap [eV], epsilon: material's
+            permitivitty, mu_e (mu_h): electron (hole) mobility
+            [:math:`m^2/(V\codt s)`],
             tau_e (tau_h): electron (hole) bulk lifetime, RCenergy: energy
-            level of the bulk recombination centers [eV].
+            level of the bulk recombination centers [eV], band_offset: band
+            offset setting the zero of potential [eV].
         """
 
         # make material parameters dimensionless
         scale = {'Nc':self.N, 'Nv':self.N, 'Eg':self.vt, 'epsilon':1,
                  'mu_e':self.mu, 'mu_h':self.mu,
                  'tau_e':self.t0, 'tau_h':self.t0,
-                 'RCenergy':self.vt}
+                 'RCenergy':self.vt, 'band_offset':self.vt}
         mat = {k: mat[k] / scale[k] for k in mat.keys() & scale.keys()}
 
         # create a named_tuple for the region and update the list of regions
@@ -291,6 +295,7 @@ class Builder():
         self.tau_h = np.zeros((nx*ny*nz,), dtype=float)
         self.n1 = np.zeros((nx*ny*nz,), dtype=float)
         self.p1 = np.zeros((nx*ny*nz,), dtype=float)
+        self.bl = np.zeros((nx*ny*nz,), dtype=float)
         for r in self.regions:
             xa, ya, za = get_indices(self, (r.xa, r.ya, r.za))
             xb, yb, zb = get_indices(self, (r.xb, r.yb, r.zb))
@@ -306,6 +311,7 @@ class Builder():
             self.tau_h[s] = r.material['tau_h']
             self.n1[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + r.material['RCenergy'])
             self.p1[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - r.material['RCenergy'])
+            self.bl[s] = r.material['band_offset']
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
         # set the electrostatic charge from the doping profile

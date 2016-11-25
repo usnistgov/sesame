@@ -100,13 +100,13 @@ and solve these coupled nonlinear equations by using root-finding algorithms.
 The appropriate form is given by: 
 
 .. math::
-    f_{p,i} &= \frac{2}{\Delta x^i + \Delta x^{i-1}}\left(J_p^{i} -
+    f_p^i &= \frac{2}{\Delta x^i + \Delta x^{i-1}}\left(J_p^{i} -
     J_p^{i-1}\right) + G_i - R_i 
-    \\ f_{n,i} &= \frac{2}{\Delta x^i + \Delta
+    \\ f_n^i &= \frac{2}{\Delta x^i + \Delta
     x^{i-1}}\left(J_n^{i} - J_n^{i-1}\right) - G_i + R_i \\ 
-    f_{v,i} &= \frac{2}{\Delta x^i + \Delta x^{i-1}}
-    \left(-\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) +
-    \left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)\right) -
+    f_v^i &= \frac{2}{\Delta x^i + \Delta x^{i-1}}
+    \left( \left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)
+    -\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) \right) -
     \frac{\rho_i}{\epsilon}
 
 These equations are the
@@ -115,14 +115,19 @@ discretized drift-diffusion-Poisson equations to be solved for the variables
 conditions given in introduction.
 
 
+We use a Newton-Raphson method to solve the above set of equations.  The idea
+behind the method is clearest in a simple one-dimensional case.  Given a general
+nonlinear function :math:`f(x)`, we want to find its root :math:`\bar x: f(\bar
+x)=0`.  Given an initial guess :math:`x_1`, one can estimate the error
+:math:`\delta x` in this guess, assuming that the function varies linearly all
+the way to its root
 
-.. We use a Newton-Raphson method to solves Eqs. \ref{eq:final1}-\ref{eq:final3}.  The idea behind the method is clearest in a simple 1-d case.  Given a general nonlinear function $f(x)$, we want to find its root $\bar x$: $f(\bar x)=0$.  Given an initial guess $x_1$, one can estimate the error $\delta x$ in this guess, assuming that the function varies linearly all the way to its root.
-.. \begin{eqnarray}
-.. \delta x= \left({\frac{df\left(x_1\right)}{dx}}\right)^{-1}f\left(x_1\right)  \label{eq:1d}
-.. \end{eqnarray}
-.. An updated guess is provided by $x_2 = x_1 + \delta x$.
-..
-..
+.. math::
+    \delta x= \left(\frac{df}{dx} (x_1)\right)^{-1}f\left(x_1\right)
+    :label: eq1D
+
+An updated guess is provided by :math:`x_2 = x_1 - \delta x`.
+
 .. \begin{figure}[h!]
 .. \begin{center}
 .. \vskip 0.2 cm
@@ -130,96 +135,112 @@ conditions given in introduction.
 .. \vskip 0.2 cm \caption{Schematic of the newton-raphson method for root finding.  root finding is ubiquotous and, at times, extremely difficult.}\label{fig:hopping}
 .. \end{center}
 .. \end{figure}
-..
-.. In multiple dimensions the last term in Eq. \ref{eq:1d} gets replaced by the inverse of the Jacobian - which is simply the multi-dimensional generalization of the derivative.  In this case, Eq. \ref{eq:1d} is simply a matrix equation of the form:
-.. \begin{eqnarray}
-.. \delta {\bf x} = A^{-1} {\bf F}\left({\bf x}\right)
-.. \end{eqnarray}
-.. where
-.. \begin{eqnarray}
-.. A_{ij} = \frac{\partial F_i}{\partial x_j}
-.. \end{eqnarray}
-..
-.. Here is a small subset of what the $A$ matrix looks like for our problem.  I've only explicitly shown the row which corresponds to $f_n^i$.  (Here I drop the super/sub script convention I had set up to distinguish between sites and links, for the sake of writing things more compactly.)
-..
-.. \begin{eqnarray}
-.. \left(
-.. \begin{array}{ccccccccccc}
-..   & \ldots &  &  &  &  &  &  & & &\\
-..   \vdots  &  &  &  &  &  &  &  & & &  \\
-..    &  &  &  &  &  &  &  &  & &\\
-..    &  &  &  &  &  &  &  &  & &\\
-..   \ldots & \frac{\partial f_n^i}{\partial E_{fn}^{i-1}} & \frac{\partial f_n^i}{\partial E_{fp}^{i-1}}  & \frac{\partial f_n^i}{\partial V^{i-1}}  & \frac{\partial f_n^i}{\partial E_{fn}^{i}} & \frac{\partial f_n^i}{\partial E_{fp}^{i}}  & \frac{\partial f_n^i}{\partial V^{i}}  &  \frac{\partial f_n^i}{\partial E_{fn}^{i+1}} & \frac{\partial f_n^i}{\partial E_{fp}^{i+1}}  & \frac{\partial f_n^i}{\partial V^{i+1}} & \ldots \\
-..   \vdots &  &  &  &  &  &  &  & & &\\
-..    &  &  &  &  &  &  &  &  & &\\
-..    &  &  &  &  &  &  &  &  & &\\
-..    &  &  &  &  &  &  &  &  & &\\
-..    &  &  &  &  &  &  &  &  & &\\
-..    & \ldots &  &  &  &  &  &  &  & &
-.. \end{array}
-.. \right)
-.. \left(
-..   \begin{array}{c}
-..   \vdots\\
-..     \delta E_{fn}^{i-1} \\
-..     \delta E_{fp}^{i-1} \\
-..     \delta V^{i-1} \\
-..     \delta E_{fn}^{i} \\
-..     \delta E_{fp}^{i} \\
-..     \delta V^{i} \\
-..     \delta E_{fn}^{i+1} \\
-..     \delta E_{fp}^{i+1} \\
-..     \delta V^{i+1} \\
-..     \vdots
-..   \end{array}
-.. \right)
-.. =
-.. \left(
-..   \begin{array}{c}
-..   \vdots\\
-..     f_n^{i-1} \\
-..     f_p^{i-1} \\
-..     f_v^{i-1} \\
-..     f_n^{i} \\
-..     f_p^{i} \\
-..     f_v^{i} \\
-..     f_n^{i+1} \\
-..     f_p^{i+1} \\
-..     f_v^{i+1} \\
-..     \vdots
-..   \end{array}
-.. \right)
-.. \end{eqnarray}
-..
-.. The derivatives get messy.  I used mathematica to find the derivatives symbolically, then copied and pasted into matlab.  Also note that for this problem, finding derivatives numerically leads to major convergence problems.  It's mandatory to get analytic forms for the derivatives.
-..
-..
-..
-..
-..
-.. \section{matlab implementation in 2-d}
-.. We do the standard ``folding" of the two dimensional index label $(ii,jj)$ into the single index label ${\rm ind}$:
-.. \begin{eqnarray}
-.. {\rm ind} = (jj-1)\times N_x + ii.
-.. \end{eqnarray}
-.. The 3 fields $E_{fn},~E_{fp},~V$ are arranged as:
-.. \begin{eqnarray}
-.. \left(Efn\right)_{\rm ind} &=& 3\times\left({\rm ind}-2\right) \\
-.. \left(Efp\right)_{\rm ind} &=& 3\times\left({\rm ind}-1\right) \\
-.. \left(V\right)_{\rm ind} &=& 3\times\left({\rm ind}-0\right)
-.. \end{eqnarray}
-.. Using sparse matrix techniques is key to fast computation.  It's necessary to define the sparse matrix using matlab conventions: the set of row and column indices which correspond to nonzero matrix entries should be initialized to the proper length.  This length is given by:
-.. \begin{eqnarray}
-.. 2\times\left(2\times \left(4\left(N_x - 1\right)\bar{N_y}    + N_x\bar{N_y}\right) \right)
-.. \end{eqnarray}
-..
-.. Still need to add explanation of the above length, in terms of the grid and boundary conditions...
-..
-.. \
+
+In multiple dimensions the last term in Eq. :eq:`eq1d` is replaced by the
+inverse of the Jacobian, which is the multi-dimensional generalization
+of the derivative.  In this case, Eq. :eq:`eq1d` is a matrix equation of
+the form: 
+
+.. math::
+    \delta {\bf x} = A^{-1} {\bf F}\left({\bf x}\right)
+
+where
+
+.. math::
+    A_{ij} = \frac{\partial F_i}{\partial x_j}
+
+Here is a small subset of what the :math:`A` matrix looks like for our problem.
+We have only explicitly shown the row which corresponds to :math:`f_n^i` (here we
+drop the super/sub script convention set up to distinguish between
+sites and links, for the sake of writing things more compactly):
+
+.. math::
+    \left(
+    \begin{array}{ccccccccccc}
+      & \ldots &  &  &  &  &  &  & & &\\
+      \vdots  &  &  &  &  &  &  &  & & &  \\
+       &  &  &  &  &  &  &  &  & &\\
+       &  &  &  &  &  &  &  &  & &\\
+      \ldots & \frac{\partial f_n^i}{\partial E_{F_n}^{i-1}} & \frac{\partial
+      f_n^i}{\partial E_{F_p}^{i-1}}  & \frac{\partial f_n^i}{\partial \phi^{i-1}}
+      & \frac{\partial f_n^i}{\partial E_{F_n}^{i}} & \frac{\partial
+      f_n^i}{\partial E_{F_p}^{i}}  & \frac{\partial f_n^i}{\partial \phi^{i}}  &
+      \frac{\partial f_n^i}{\partial E_{F_n}^{i+1}} & \frac{\partial
+      f_n^i}{\partial E_{F_p}^{i+1}}  & \frac{\partial f_n^i}{\partial \phi^{i+1}} &
+      \ldots \\ \vdots &  &  &  &  &  &  &  & & &\\
+       &  &  &  &  &  &  &  &  & &\\
+       &  &  &  &  &  &  &  &  & &\\
+       &  &  &  &  &  &  &  &  & &\\
+       &  &  &  &  &  &  &  &  & &\\
+       & \ldots &  &  &  &  &  &  &  & &
+    \end{array}
+    \right)
+    \left(
+      \begin{array}{c}
+      \vdots\\
+        \delta E_{F_n}^{i-1} \\
+        \delta E_{F_p}^{i-1} \\
+        \delta \phi^{i-1} \\
+        \delta E_{F_n}^{i} \\
+        \delta E_{F_p}^{i} \\
+        \delta \phi^{i} \\
+        \delta E_{F_n}^{i+1} \\
+        \delta E_{F_p}^{i+1} \\
+        \delta \phi^{i+1} \\
+        \vdots
+      \end{array}
+    \right)
+    =
+    \left(
+      \begin{array}{c}
+      \vdots\\
+        f_n^{i-1} \\
+        f_p^{i-1} \\
+        f_v^{i-1} \\
+        f_n^{i} \\
+        f_p^{i} \\
+        f_v^{i} \\
+        f_n^{i+1} \\
+        f_p^{i+1} \\
+        f_v^{i+1} \\
+        \vdots
+      \end{array}
+    \right)
+
+Note that for this
+problem, finding derivatives numerically leads to major convergence problems. We
+derived the derivatives and implemented them in the code for this reason.
+
+
+
 
 
 Multi-dimensional implementation
 --------------------------------
+We do the standard *folding* of the multi-dimensional index label :math:`(i,j,k)`
+into the single index label :math:`s` of the sites of the system: 
+
+.. math::
+    s = i + j \times n_x + k \times n_x n_y
+
+where :math:`n_x` (:math:`n_y`) is the number of sites in the
+:math:`x`-direction (:math:`y`-direction).
+
+Using sparse matrix techniques is key fast to fast computation. We provide below
+the number of non-zero elements in the Jacobian for periodic boundary conditions
+in the :math:`y`- and :math:`z`-direction.
+
+=========      ===========================================
+Dimension      Non-zero elements in Jacobian
+=========      ===========================================
+ 1              :math:`19\times (n_x-2) + 20`
+ 2              :math:`n_y\times [29\times (n_x-2) + 28]`
+ 3              to be determined 
+=========      ===========================================
+
+
+
+
 
 
 

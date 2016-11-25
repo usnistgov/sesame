@@ -33,16 +33,19 @@ the system::
 
     # Dictionary with the material parameters
     CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 'RCenergy':0}
+            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
+            'RCenergy':0, 'band_offset':0}
 
     # Add the material to the system
     sys.add_material(((0,0,0), (L,d,0)), CdTe)
 
-where ``Nc`` (``Nv``) is the effective density of states of the conduction (valence)
-band (m^-3), ``Eg`` is the material band gap (eV), ``epsilon`` is the material's
-dielectric constant, ``mu_e`` (``mu_h``) is the electron (hole) mobility (m^2/(V.s)),
-``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime and ``RCenergy`` is the bulk
-recombination centers energy level (eV). Let's add the dopants::
+where ``Nc`` (``Nv``) is the effective density of states of the conduction
+(valence) band (:math:`\mathrm{m^{-3}}`), ``Eg`` is the material band gap (:math:`\mathrm{eV}`),
+``epsilon`` is the material's dielectric constant, ``mu_e`` (``mu_h``) is the
+electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot s)}`), ``tau_e`` (``tau_h``) is the
+electron (hole) bulk lifetime (:math:`\mathrm{s}`), ``RCenergy`` is the bulk
+recombination centers energy level (:math:`\mathrm{eV}`), and ``band_offset`` is a band
+offset that sets the zero of potential (:math:`\mathrm{eV}`). Let's add the dopants::
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -178,3 +181,14 @@ output after each step::
 This way of saving the data creates multiple files like ``data.vapp_1.0.npy``
 containing a list of the 1D arrays of the solution for the electron and hole
 quasi-Fermi levels, as well as the electrostatic potential. 
+
+Solvers options
++++++++++++++++
+
+By default the solvers assume periodic boundary conditions in all directions
+parallel to the contacts. One can change this setting to abrupt boundary
+conditions by setting the flag ``periodic_bcs`` to ``False``.
+
+Both ``poisson_solver`` and ``ddp_solver`` can make use of the MUMPS
+library if Sesame was built against it. For that, pass the argument
+``with_mumps=True`` to these functions.
