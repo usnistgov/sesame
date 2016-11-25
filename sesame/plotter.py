@@ -105,7 +105,7 @@ def map2D(sys, data, cmap='gnuplot', alpha=1):
 
     xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
     nx, ny = len(xpts), len(ypts)
-    data = data.reshape(ny, nx).T
+    data = data.reshape(ny, nx)
     xmax = sys.xpts[-1] * sys.xscale * 1e6
     ymax = sys.ypts[-1] * sys.xscale * 1e6
     plt.imshow(data, extent=[0, xmax, 0, ymax])
