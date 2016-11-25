@@ -105,9 +105,9 @@ the mesh provided::
 
 It is then possible to plot the lines of defects introduced to make sure that
 they are rendered as we expect after the discretization. To do so we need the
-``plot`` function of the module ``sesame.utils``::
+``plot`` function of the module ``sesame.plotter`` (requires matplotlib)::
 
-    from sesame.utils import plot
+    from sesame.plotter import plot
 
     plot(sys)
 

@@ -1,7 +1,8 @@
 :mod:`sesame` -- Top level package
 ==================================
 
-This package has no functionality of its own.
+We provide short names for a few objects from the sub-packages.
+Otherwise, this package has no functionality of its own.
 
 
 .. currentmodule:: sesame.builder
@@ -13,19 +14,6 @@ From `sesame.builder`
    Builder
 
 
-.. currentmodule:: sesame.observables
-
-From `sesame.observables`
--------------------------
-.. autosummary::
-
-   get_n
-   get_p
-   get_rr
-   get_jn
-   get_jp
-
-
 .. currentmodule:: sesame.solvers
 
 From `sesame.solvers`
@@ -34,14 +22,3 @@ From `sesame.solvers`
 
    poisson_solver
    ddp_solver
-
-
-.. currentmodule:: sesame.utils
-
-From `sesame.utils`
--------------------
-.. autosummary::
-
-   plot
-   maps3D
-   extra_charges_path

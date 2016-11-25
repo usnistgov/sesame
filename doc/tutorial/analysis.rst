@@ -4,9 +4,7 @@ Simulation data analysis
 The data analysis requires to compute carrier densities, currents and plot data.
 The relevant packages to import are the following::
 
-    from sesame.utils import maps3D, extra_charges_path
     from sesame.observables import get_jn, get_jp, get_rr, get_n, get_p
-    import matplotlib.pyplot as plt
     import numpy as np
 
 The descriptions of these functions (input arguments, output) are detailed in
@@ -44,8 +42,10 @@ generated a file called ``data.vapp_1.0.npy``::
 
 The quantities ``efn``, ``efp``, ``v`` are one-dimensional arrays that will be
 used to compute and plot physical quantities. For instance, a 3D map of the
-electrostatic potential of a 2D system is obtained as follows::
+electrostatic potential of a 2D system is obtained as follows (requires
+matplotlib)::
 
+    from sesame.plotter import maps3D
     maps3D(sys, v)
 
 
@@ -99,6 +99,8 @@ In order to get information about the defect sites we need to get them. This is
 done by calling the function ``sesame.utils.extra_charges_path`` with the
 starting and ending point of the defect line we are considering. Let's compute
 the recombination along the grain boundary::
+
+    from sesame.utils import extra_charges_path
 
     # Get the defect sites, path along the lattice, x coordinates, y coordinates
     startGB = (20e-9, 2.5e-6, 0)   #[m]

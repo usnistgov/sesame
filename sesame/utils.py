@@ -1,101 +1,6 @@
 from sesame.observables import get_jn, get_jp
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.axes3d import Axes3D
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
 import numpy as np
-
-def plot(sys, ls='-o'):
-    """
-    Plot the sites containing additional charges. The length scale of the the
-    graph is 1 micrometer.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    ls: string
-        Line style of the plotted paths.
-    """
-
-    for c in sys.charges:
-        if c.ya <= c.yb:
-            xa, ya, za = get_indices(sys, (c.xa, c.ya, c.za))
-            xb, yb, zb = get_indices(sys, (c.xb, c.yb, c.zb))
-        else:
-            xa, ya, za = get_indices(sys, (c.xb, c.yb, c.zb))
-            xb, yb, zb = get_indices(sys, (c.xa, c.ya, c.za))
-
-        # find the sites closest to the straight line defined by
-        # (xa,ya,za) and (xb,yb,zb) and the associated dl       
-        distance = lambda x, y:\
-            abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
-                np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
-
-        def condition(x, y):
-            if xa <= xb:
-                return x <= xb and y <= yb and x < sys.nx-1 and y < sys.ny-1
-            else:
-                return x >= xb and y <= yb and x > 1 and y < sys.ny-1
-
-        x, y = xa, ya
-        xcoord, ycoord = [xa], [ya]
-        while condition(x, y):
-            # distance between the point above (x,y) and the segment
-            d1 = distance(sys.xpts[x], sys.ypts[y+1])
-            # distance between the point right of (x,y) and the segment
-            d2 = distance(sys.xpts[x+1], sys.ypts[y])
-            # distance between the point left of (x,y) and the segment
-            d3 = distance(sys.xpts[x-1], sys.ypts[y])
-
-            if xa < xb: # overall direction is to the right
-                if d1 < d2:
-                    x, y = x, y+1
-                else:
-                    x, y = x+1, y
-            else: # overall direction is to the left
-                if d1 < d3:
-                    x, y = x, y+1
-                else:
-                    x, y = x-1, y
-            xcoord.append(x)
-            ycoord.append(y)
-
-        # plot the path of added charges
-        sc = sys.xscale*1e6
-        plt.plot(sys.xpts[xcoord]*sc, sys.ypts[ycoord]*sc, ls)
-        plt.xlabel('x (µm)')
-        plt.ylabel('y (µm)')
-
-    plt.xlim(xmin=0, xmax=sys.xpts[-1]*sc)
-    plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)
-    plt.show()
-
-def maps3D(sys, data, cmap='gnuplot', alpha=1):
-    """
-    Plot a 3D map of data across the system.
-
-    Parameters
-    ----------
-
-    sys: Builder
-        The discretized system.
-    data: numpy array
-        One-dimensional array of data with size equal to the size of the system.
-    cmap: string
-        Name of the colormap used by Matplolib.
-    alpha: float
-        Transparency of the colormap.
-    """
-
-    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
-    nx, ny = len(xpts), len(ypts)
-    data_xy = data.reshape(ny, nx).T
-    X, Y = np.meshgrid(xpts, ypts)
-    fig = plt.figure(figsize=(8,6))
-    ax = fig.add_subplot(1,1,1, projection='3d')
-    Z = data_xy.T
-    ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
-    ax.mouse_init(rotate_btn=1, zoom_btn=3)
-    plt.show()
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -240,3 +145,89 @@ def extra_charges_path(sys, start, end):
         xcoord = np.flipud(xcoord)
         ycoord = np.flipud(ycoord)
     return s, X, xcoord, ycoord
+
+def bulk_recombination_current(sys, efn, efp, v):
+    """
+    Compute the bulk recombination current.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        One-dimensional array containing the electron quasi-Fermi level.
+    efp: numpy array of floats
+        One-dimensional array containing the hole quasi-Fermi level.
+    v: numpy array of floats
+        One-dimensional array containing the electrostatic potential.
+
+    Returns
+    -------
+    JR: float
+        The integrated bulk recombination.
+
+    Warnings
+    --------
+    Not implemented in 3D.
+    """
+    u = []
+    for j in range(sys.ny):
+        # List of sites
+        s = [i + j*sys.nx for i in range(sys.nx)]
+
+        # Carrier densities
+        n = get_n(sys, efn, v, s)
+        p = get_p(sys, efp, v, s)
+
+        # Recombination
+        r = get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
+        sp = spline(sys.xpts, r)
+        u.append(sp.integral(sys.xpts[0], sys.xpts[-1]))
+    if sys.ny == 1:
+        JR = u[-1]
+    if sys.ny > 1:
+        sp = spline(sys.ypts, u)
+        JR = sp.integral(sys.ypts[0], sys.ypts[-1])
+    return JR
+ 
+def full_current(sys, efn, efp, v):
+    """
+    Compute the steady state current.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        One-dimensional array containing the electron quasi-Fermi level.
+    efp: numpy array of floats
+        One-dimensional array containing the hole quasi-Fermi level.
+    v: numpy array of floats
+        One-dimensional array containing the electrostatic potential.
+
+    Returns
+    -------
+    JR: float
+        The integrated bulk recombination.
+
+    Warnings
+    --------
+    Not implemented in 3D.
+    """
+    # Define the sites between which computing the currents
+    sites_i = [sys.nx//2 + j*sys.nx for j in range(sys.ny)]
+    sites_ip1 = [sys.nx//2+1 + j*sys.nx for j in range(sys.ny)]
+    # And the corresponding lattice dimensions
+    dl = sys.dx[sys.nx//2]
+
+    # Compute the electron and hole currents
+    jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
+    jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
+
+    if sys.ny == 1:
+        j = jn + jp
+    if sys.ny > 1:
+        # Interpolate the results and integrate over the y-direction
+        j = spline(sys.ypts, jn+jp).integral(sys.ypts[0], sys.ypts[-1])
+
+    return j

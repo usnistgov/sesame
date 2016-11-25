@@ -46,7 +46,11 @@ class Builder():
     n1, p1:  numpy arrays of floats
         Dimensionless equilibrium densities of electrons and holes at the bulk trap state.
     bl: numpy array of floats
-        Band offset.
+        Dimensionless Band offset.
+    g: numpy array of floats
+        Dimensionless generation for each site of the
+        system. This is defined only if a generation profile was provided when
+        building the system.
 
     """
 
@@ -99,12 +103,12 @@ class Builder():
             rectangle in 2D). Use zeros for unused dimensions.
         mat: dictionary containing the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of
-            states [:math:`1/m^3`], Eg: band gap [eV], epsilon: material's
+            states [:math:`\mathrm{m^{-3}}`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
             permitivitty, mu_e (mu_h): electron (hole) mobility
-            [:math:`m^2/(V\codt s)`],
+            [:math:`\mathrm{m^2/(V\cdot s})`],
             tau_e (tau_h): electron (hole) bulk lifetime, RCenergy: energy
-            level of the bulk recombination centers [eV], band_offset: band
-            offset setting the zero of potential [eV].
+            level of the bulk recombination centers [:math:`\mathrm{eV}`], band_offset: band
+            offset setting the zero of potential [:math:`\mathrm{eV}`].
         """
 
         # make material parameters dimensionless

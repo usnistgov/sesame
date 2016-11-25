@@ -72,7 +72,7 @@ try:
     run_setup(True)
 
     status_msgs(
-        "BUILD SUMMARY: The MUMPS extension compiled successfully. Python build succeeded.")
+        "BUILD SUMMARY: Build successful.")
 
 except BuildFailed as exc:
     status_msgs(
