@@ -9,3 +9,12 @@ available = [('builder', ['Builder']),
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))
     __all__.extend(names)
+
+try:
+    from . import plotter
+    from .plotter import plot_extra_charges, map2D
+except:
+    pass
+else:
+    __all__.extend(['plotter', 'plot_extra_charges', 'map2D'])
+

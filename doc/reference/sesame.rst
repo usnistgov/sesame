@@ -13,6 +13,14 @@ From `sesame.builder`
 
    Builder
 
+.. currentmodule:: sesame.plotter
+
+From `sesame.plotter`
+---------------------
+.. autosummary::
+
+   map2D
+   plot_extra_charges
 
 .. currentmodule:: sesame.solvers
 

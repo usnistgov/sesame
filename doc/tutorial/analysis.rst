@@ -1,5 +1,5 @@
-Simulation data analysis
-========================
+Analysis of simulation data
+---------------------------
 
 The data analysis requires to compute carrier densities, currents and plot data.
 The relevant packages to import are the following::
@@ -31,8 +31,8 @@ length scale                          ``sys.xscale``
 energy scale                          ``sys.vt``
 =========================            ==========================
 
-This table is not exhaustive. The list of all accessible attributes is in the
-documentation of the `Builder` class itself, see :ref:`builder_doc`.
+The exhaustive list of all accessible attributes is in the
+documentation of the :func:`~sesame.builder.Builder` class itself.
 
 
 Next, we load the data file for the results. As an example, let's assume we
@@ -45,8 +45,8 @@ used to compute and plot physical quantities. For instance, a 3D map of the
 electrostatic potential of a 2D system is obtained as follows (requires
 matplotlib)::
 
-    from sesame.plotter import maps3D
-    maps3D(sys, v)
+    from sesame.plotter import map3D
+    map3D(sys, v)
 
 
 Computations of quantities like densities and currents require lists of sites

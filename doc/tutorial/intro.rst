@@ -1,11 +1,11 @@
 Introduction
-============
+------------
 
 Here we present the geometry with the system of coordinates that Sesame assumes,
 and the set of equations that it solves.
 
 Geometry and governing equations
---------------------------------
+.................................
 
 The steady state dimension-ful drift-diffusion-Poisson equations read
 
@@ -60,8 +60,8 @@ charge density. For this reason they become more important at higher densities
 of electron-hole pairs).  On the other hand, Shockley-Read-Hall recombination is
 first order in charge density.
 
-Boundary conditions in the :math:`x`-direction
-----------------------------------------------
+Boundary conditions in the x-direction
+................................................
 The boundary conditions for carriers at charge-collecting contacts located at
 :math:`x=0` and `x = L` are typically
 parameterized with the surface recombination velocities for electrons and holes
@@ -83,7 +83,7 @@ Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
 velocity).  
 
 Additional charges
-------------------
+...................
 Additional charged defect can be added to the system to simulate, for example,
 grain boundaries in a semiconductor. Grain boundaries separate crystallites of
 different orientation. They occupy a reduced dimensionality space (e.g.  2D
@@ -128,7 +128,7 @@ the direction normal to the plane.
 
 
 Carrier densities and quasi-Fermi levels
-----------------------------------------
+........................................
 
 Despite their apparent simplicity, Eqs. :eq:`ddp`, and the set of boundary
 conditions of the form of Eq. :eq:`BCs` are

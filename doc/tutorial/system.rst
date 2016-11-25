@@ -1,12 +1,12 @@
 Make a system and solve the problem
-===================================
+-----------------------------------
 
 The example treated here is in the file ``sim.py`` in the ``examples`` directory in the root
 directory of the distribution. Also, all the descriptions of the methods used
 here are in Sec. :ref:`label_code`.
 
 Build a system
---------------
+...............
 
 Suppose we want to simulate a 2D pn junction (homojunction) with a line of
 defects as depicted below.  
@@ -19,12 +19,18 @@ We start by importing the sesame package and numpy::
     import sesame
     import numpy as np
 
-Create an instance of the builder::
+Create an instance of the :func:`~sesame.builder.Builder`::
 
     sys = sesame.Builder()
 
-and add features to it. Define the material using a dictionary and add it to
-the system::
+Note that  we accessed :func:`~sesame.builder.Builder` by the name
+``sesame.Builder``. We could have written ``sesame.builder.Builder`` instead.
+For convenience some often used members of the sub-packages of Sesame are
+accessible through the top-level `sesame` package. See the :doc:`reference
+documentation <../reference/index>`.
+
+We need to add the  features of our system. Define the material using a
+dictionary and add it to the system::
 
     # Dimensions of the system
     L = 3e-6 # [m]
@@ -40,12 +46,22 @@ the system::
     sys.add_material(((0,0,0), (L,d,0)), CdTe)
 
 where ``Nc`` (``Nv``) is the effective density of states of the conduction
-(valence) band (:math:`\mathrm{m^{-3}}`), ``Eg`` is the material band gap (:math:`\mathrm{eV}`),
-``epsilon`` is the material's dielectric constant, ``mu_e`` (``mu_h``) is the
-electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot s)}`), ``tau_e`` (``tau_h``) is the
-electron (hole) bulk lifetime (:math:`\mathrm{s}`), ``RCenergy`` is the bulk
-recombination centers energy level (:math:`\mathrm{eV}`), and ``band_offset`` is a band
-offset that sets the zero of potential (:math:`\mathrm{eV}`). Let's add the dopants::
+(valence) band (:math:`\mathrm{m^{-3}}`), ``Eg`` is the material band gap
+(:math:`\mathrm{eV}`), ``epsilon`` is the material's dielectric constant,
+``mu_e`` (``mu_h``) is the electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot
+s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime
+(:math:`\mathrm{s}`), ``RCenergy`` is the bulk recombination centers energy
+level (:math:`\mathrm{eV}`), and ``band_offset`` is a band offset that sets the
+zero of potential (:math:`\mathrm{eV}`). 
+
+.. warning::
+   The code does not handle regions with different band
+   structures because we did not implement the equations necessary to treat the
+   interfaces between them. However different regions can have different
+   mobilities or bulk lifetimes for example.
+
+
+Let's add the dopants to define a pn junction::
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -55,7 +71,7 @@ offset that sets the zero of potential (:math:`\mathrm{eV}`). Let's add the dopa
     nA = 1e15 * 1e6 # [m^-3]
     sys.add_acceptor(((junction,0,0), (L,d,0)), nA)
 
-Now that we have the inerior of the system, we specify the contacts boundary
+Now that we have the interior of the system, we specify the contacts boundary
 conditions. We choose to have perfectly selective contacts::
 
     # Define the surface recombination velocities for electrons and holes [m/s]
@@ -83,7 +99,7 @@ We add a generation profile::
     sys.illumination(f)
 
 Now we add some local charges to simulate the defect line of our system. We
-define the defect recombination paramters and give the two points that define
+define the defect recombination parameters and give the two points that define
 the line::
 
     S   = 1e5 * 1e-2           # trap recombination velocity [m/s]
@@ -104,23 +120,28 @@ the mesh provided::
 
 
 It is then possible to plot the lines of defects introduced to make sure that
-they are rendered as we expect after the discretization. To do so we need the
-``plot`` function of the module ``sesame.plotter`` (requires matplotlib)::
+they are rendered as we expect after the discretization (requires matplotlib)::
 
-    from sesame.plotter import plot
-
-    plot(sys)
+    sesame.plot_extra_charges(sys)
 
 which generates the following figure
 
 .. image:: system_plot.svg
    :align: center
 
+We can also plot the mobility across the system to check that different regions
+are rendered as we expect::
+
+    sesame.map2D(sys, sys.mu_e)
+
+The exhaustive list of all accessible attributes is in the
+documentation of the :func:`~sesame.builder.Builder` class itself.
+
 The system is built, we can run some calculations.
 
 
 Run calculations and save data
-------------------------------
+..............................
 
 A good way to start is by computing the thermal equilibrium electrostatic
 potential. Because of our geometry the potential on the left and right read
@@ -145,9 +166,9 @@ and call the solver::
     # Call Poisson solver with a tolerance of 10^-9
     v = sesame.poisson_solver(sys, v, 1e-9, info=1, max_step=100)
 
-Then we can solve the drift difussion Poisson equations to compute a
+Then we can solve the drift diffusion Poisson equations to compute a
 J(V) characteristics. The call to the drift diffusion Poisson solver returns a
-dictionary with all values of electrostatic potnetial and quasi-Fermi levels. In
+dictionary with all values of electrostatic potential and quasi-Fermi levels. In
 the following we solve the problem for multiple applied voltages and save the
 output after each step::
 
@@ -189,6 +210,7 @@ By default the solvers assume periodic boundary conditions in all directions
 parallel to the contacts. One can change this setting to abrupt boundary
 conditions by setting the flag ``periodic_bcs`` to ``False``.
 
-Both ``poisson_solver`` and ``ddp_solver`` can make use of the MUMPS
-library if Sesame was built against it. For that, pass the argument
-``with_mumps=True`` to these functions.
+Both :func:`~sesame.solvers.poisson_solver` and
+:func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
+was built against it. For that, pass the argument ``with_mumps=True`` to these
+functions.

@@ -4,7 +4,7 @@ try:
     import matplotlib.pyplot as plt
     mpl_enabled = True
     try:
-        from mpl_toolkits.mplot3d.axes3d import Axes3D
+        from mpl_toolkits import mplot3d
         has3d = True
     except ImportError:
         warnings.warn("3D plotting not available.", RuntimeWarning)
@@ -13,9 +13,7 @@ except ImportError:
     warnings.warn("matplotlib is not available", RuntimeWarning)
     mpl_enabled = False
 
-
-
-def plot(sys, ls='-o'):
+def plot_extra_charges(sys, ls='-o'):
     """
     Plot the sites containing additional charges. The length scale of the the
     graph is 1 micrometer.
@@ -84,7 +82,38 @@ def plot(sys, ls='-o'):
     plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)
     plt.show()
 
-def maps3D(sys, data, cmap='gnuplot', alpha=1):
+def map2D(sys, data, cmap='gnuplot', alpha=1):
+    """
+    Plot a 2D map of data across the system.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    data: numpy array
+        One-dimensional array of data with size equal to the size of the system.
+    cmap: string
+        Name of the colormap used by Matplolib.
+    alpha: float
+        Transparency of the colormap.
+    """
+
+    if not mpl_enabled:
+        raise RuntimeError("matplotlib was not found, but is required "
+                           "for map2D()")
+
+    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
+    nx, ny = len(xpts), len(ypts)
+    data = data.reshape(ny, nx).T
+    xmax = sys.xpts[-1] * sys.xscale * 1e6
+    ymax = sys.ypts[-1] * sys.xscale * 1e6
+    plt.imshow(data, extent=[0, xmax, 0, ymax])
+    plt.xlabel('x (µm)')
+    plt.ylabel('y (µm)')
+    plt.show()
+
+def map3D(sys, data, cmap='gnuplot', alpha=1):
     """
     Plot a 3D map of data across the system.
 
@@ -103,8 +132,8 @@ def maps3D(sys, data, cmap='gnuplot', alpha=1):
 
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
-                           "for maps3D()")
-    if not has3D:
+                           "for map3D()")
+    if not has3d:
         raise RuntimeError("Installed matplotlib does not support 3d plotting")
 
     xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
@@ -116,5 +145,7 @@ def maps3D(sys, data, cmap='gnuplot', alpha=1):
     Z = data_xy.T
     ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
+    plt.xlabel('x (µm)')
+    plt.ylabel('y (µm)')
     plt.show()
 
