@@ -13,20 +13,20 @@ class Builder():
 
     Attributes
     ----------
-    N: :math:`10^{25}\ \mathrm{m^{⁻3}}`
+    N: 10\ :sup:`25` m\ :sup:`⁻3`
         Density scale.
-    vt: :math:`k_BT/e\ \mathrm{[V]}`
-        Thermal velocity (voltage scale). :math:`k_B` is the Boltzmann constant,
-        :math:`e` is the electron charge.
-    mu: :math:`10^{-4}\ \mathrm{m^2/(V\cdot s)}`
+    vt: k\ :sub:`B` T/e [V]
+        Thermal velocity (voltage scale). k\ :sub:`B` is the Boltzmann constant,
+        e is the electron charge.
+    mu: 10\ :sup:`-4` m\ :sup:`2`/V/s
         Mobility scale.
-    t0: :math:`\epsilon_0 vt / (e N)\ \mathrm{[s]}`
+    t0: :math:`\epsilon_0 vt / (e N)` [s]
         Time scale.
-    xscale: :math:`\sqrt{\epsilon_0 vt/(eN)}\ \mathrm{[m]}`
+    xscale: :math:`\sqrt{\epsilon_0 vt/(eN)}` [m]
         Length scale. :math:`\epsilon_0` is the vaccuum permittivity.
-    U: :math:`N\ mu\  vt/ xscale^2\ \mathrm{[m^{-3}]}`
+    U: N  mu  vt xscale\ :sup:`2` [m\ :sup:`-3`]
         Generation rate scale.
-    Sc: xscale/t0 :math:`\mathrm{[m/s]}`
+    Sc: xscale/t0 [m/s]
         Surface recombination velocity scale.
     nx, ny, nz: integers
         Number of lattice nodes in the x, y, z directions.
@@ -103,12 +103,12 @@ class Builder():
             rectangle in 2D). Use zeros for unused dimensions.
         mat: dictionary containing the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of
-            states [:math:`\mathrm{m^{-3}}`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
+            states [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
             permitivitty, mu_e (mu_h): electron (hole) mobility
-            [:math:`\mathrm{m^2/(V\cdot s})`],
-            tau_e (tau_h): electron (hole) bulk lifetime, RCenergy: energy
-            level of the bulk recombination centers [:math:`\mathrm{eV}`], band_offset: band
-            offset setting the zero of potential [:math:`\mathrm{eV}`].
+            [m\ :sup:`2`/V/s],
+            tau_e (tau_h): electron (hole) bulk lifetime [s], RCenergy: energy
+            level of the bulk recombination centers [eV], band_offset: band
+            offset setting the zero of potential [eV].
         """
 
         # make material parameters dimensionless
@@ -137,13 +137,13 @@ class Builder():
             The coordinates in [m] define a line of defect in 2D or a plane in
             3D. Use zeros for unused dimensions.
         local_E: float 
-            Energy level of the states defined with respect to Eg/2 [eV].
+            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
         local_N: float
-            Defect density of states [m^-2].
+            Defect density of states [m\ :sup:`-2` ].
         local_Se: float
-            Surface recombination velocity of electrons [m.s^-1].
+            Surface recombination velocity of electrons [m/s].
         local_Sh: float
-            Surface recombination velocity of holes [m.s^-1].
+            Surface recombination velocity of holes [m/s].
 
         Warnings
         --------
