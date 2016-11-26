@@ -12,9 +12,9 @@ for module, names in available:
 
 try:
     from . import plotter
-    from .plotter import plot_extra_charges, map2D
+    from .plotter import plot_line_defects, map2D
 except:
     pass
 else:
-    __all__.extend(['plotter', 'plot_extra_charges', 'map2D'])
+    __all__.extend(['plotter', 'plot_line_defects', 'map2D'])
 

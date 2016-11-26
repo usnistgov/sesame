@@ -1,5 +1,5 @@
-Introduction
-------------
+Physical model
+----------------
 
 Here we present the geometry with the system of coordinates that Sesame assumes,
 and the set of equations that it solves.
@@ -60,8 +60,8 @@ charge density. For this reason they become more important at higher densities
 of electron-hole pairs).  On the other hand, Shockley-Read-Hall recombination is
 first order in charge density.
 
-Boundary conditions in the x-direction
-................................................
+Boundary conditions at the contacts
+...................................
 The boundary conditions for carriers at charge-collecting contacts located at
 :math:`x=0` and `x = L` are typically
 parameterized with the surface recombination velocities for electrons and holes
@@ -82,8 +82,8 @@ thought of identically as a carrier lifetime in twho dimension (considering
 Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
 velocity).  
 
-Additional charges
-...................
+Additional charges: line and plane defects
+............................................
 Additional charged defect can be added to the system to simulate, for example,
 grain boundaries in a semiconductor. Grain boundaries separate crystallites of
 different orientation. They occupy a reduced dimensionality space (e.g.  2D

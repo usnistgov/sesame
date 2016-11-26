@@ -1,8 +1,6 @@
-Preliminaries
-=============
+Installation of Sesame
+======================
 
 .. toctree::
-   :maxdepth: 1
 
-   about
-   install
+.. include:: ../../INSTALL.rst

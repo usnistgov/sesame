@@ -2,9 +2,11 @@ Tutorial: learning Sesame through examples
 ==========================================
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    intro
    discretization
-   system
+   tuto1
+   tuto2
+   tuto3
    analysis

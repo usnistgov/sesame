@@ -1,5 +1,3 @@
-Installation of Sesame
-----------------------
 
 This section documents how to build Sesame. 
 
@@ -13,16 +11,6 @@ Building Sesame requires
    (For best performance the free `OpenBLAS
    <http://xianyi.github.com/OpenBLAS/>`_ or the nonfree `MKL
    <http://software.intel.com/en-us/intel-mkl>`_ can be used.)
- * `MUMPS <http://graal.ens-lyon.fr/MUMPS/>`_, a sparse linear algebra library
-   that will in many cases speed up Sesame several times and reduce the memory
-   footprint.  (Sesame uses only the sequential, single core version
-   of MUMPS.  The advantages due to MUMPS as used by Sesame are thus independent
-   of the number of CPU cores of the machine on which Sesame runs.)
- * `PyMUMPS <https://pypi.python.org/pypi/PyMUMPS>`_, Python bindings for MUMPS.
-   This is included in the ``mumps`` directory found in the root directory of
-   the distribution. The package is built together with Sesame.
- * An environment which allows to compile Python extensions written in C,
-   C++ and Fortran.
 
 The following software is highly recommended though not strictly required:
  * `MUMPS <http://graal.ens-lyon.fr/MUMPS/>`_, a sparse linear algebra library
@@ -40,11 +28,11 @@ The following software is highly recommended though not strictly required:
    plotting routines,
 
 
-Building and installing Sesame
-..............................
+Generic instructions
+.....................
 Standard build and install
 ++++++++++++++++++++++++++
-Sesame can be built and installed following the `usual Python conventions
+Sesame can be built  and installed following the `usual Python conventions
 <http://docs.python.org/install/index.html>`_ by running the following commands
 in the root directory of the Sesame distribution::
 
@@ -70,7 +58,7 @@ library installed and its location are configured by editing the file ``setup.cf
 root directory of the Sesame distribution. 
 
 Building the documentation
-.............................
++++++++++++++++++++++++++++
 
 To build the documentation, the `Sphinx documentation generator
 <http://sphinx.pocoo.org/>`_ is required with ``numpydoc`` extension
@@ -90,6 +78,9 @@ Because of some quirks of how Sphinx works, it might be necessary to execute
 ``make clean`` between building HTML and PDF documentation.  If this is not
 done, Sphinx may mistakenly use PNG files for PDF output or other problems may
 appear.
+
+As an alternative if ``make`` is not available, the documentation can be built
+using the command ``python3 setup.py build_sphinx``.
 
 Hints for specific platforms
 .............................
@@ -111,3 +102,6 @@ Run ``python3 setup.py --help install`` for installation options.
 
 Microsoft Windows
 +++++++++++++++++++
+As the only recommended way to compile Python extensions on Windows is using
+Visual C++, we are not able to provide guidelines as to how to build with the
+MUMPS library. 

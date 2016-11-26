@@ -92,6 +92,7 @@ ensure perfect current conservation.
 
 
 
+.. _algo:
 
 Newton-Raphson algorithm
 ------------------------
@@ -124,7 +125,7 @@ the way to its root
 
 .. math::
     \delta x= \left(\frac{df}{dx} (x_1)\right)^{-1}f\left(x_1\right)
-    :label: eq1D
+    :label: eq1d
 
 An updated guess is provided by :math:`x_2 = x_1 - \delta x`.
 

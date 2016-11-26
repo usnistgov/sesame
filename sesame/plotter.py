@@ -14,7 +14,7 @@ except ImportError:
     warnings.warn("matplotlib is not available", RuntimeWarning)
     mpl_enabled = False
 
-def plot_extra_charges(sys, scale, ls='-o'):
+def plot_line_defects(sys, scale, ls='-o'):
     """
     Plot the sites containing additional charges. The length scale of the the
     graph is 1 micrometer.
@@ -109,12 +109,14 @@ def map2D(sys, data, scale, cmap='gnuplot', alpha=1):
 
     xpts, ypts = sys.xpts / scale, sys.ypts / scale
     data = data.reshape(sys.ny, sys.nx)
-    plt.imshow(data, extent=[0, xpts[-1], 0, ypts[-1]], origin='lower')
+    plt.pcolor(xpts, ypts, data)
+    plt.xlim(xmin=0, xmax=xpts[-1])
+    plt.ylim(ymin=0, ymax=ypts[-1])
     plt.xlabel('x')
     plt.ylabel('y')
     plt.show()
 
-def map3D(sys, data, cmap='gnuplot', alpha=1):
+def map3D(sys, data, scale, cmap='gnuplot', alpha=1):
     """
     Plot a 3D map of data across the system.
 
@@ -123,6 +125,8 @@ def map3D(sys, data, cmap='gnuplot', alpha=1):
 
     sys: Builder
         The discretized system.
+    scale: float
+        Relevant scaling to apply to the axes.
     data: numpy array
         One-dimensional array of data with size equal to the size of the system.
     cmap: string
@@ -137,7 +141,7 @@ def map3D(sys, data, cmap='gnuplot', alpha=1):
     if not has3d:
         raise RuntimeError("Installed matplotlib does not support 3d plotting")
 
-    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
+    xpts, ypts = sys.xpts / scale, sys.ypts / scale
     nx, ny = len(xpts), len(ypts)
     data_xy = data.reshape(ny, nx).T
     X, Y = np.meshgrid(xpts, ypts)
@@ -146,7 +150,7 @@ def map3D(sys, data, cmap='gnuplot', alpha=1):
     Z = data_xy.T
     ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
-    plt.xlabel('x (µm)')
-    plt.ylabel('y (µm)')
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.show()
 

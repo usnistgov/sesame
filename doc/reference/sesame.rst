@@ -20,7 +20,7 @@ From `sesame.plotter`
 .. autosummary::
 
    map2D
-   plot_extra_charges
+   plot_line_defects
 
 .. currentmodule:: sesame.solvers
 

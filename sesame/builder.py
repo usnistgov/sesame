@@ -92,23 +92,19 @@ class Builder():
         self.charges = []
 
         # generation of carriers
-        self.g = 0 # no illumination by default 
+        self.g = 0 # no generation by default 
         # length of mesh in x, y, z directions
         self.nx, self.ny, self.nz = 1, 1, 1
         self.dimension = 1
 
 
 
-    def add_material(self, location, mat):
+    def add_material(self, mat, location=lambda pos: True):
         """
         Add a material to the system.
 
         Parameters
         ----------
-        location: Boolean function
-            Definition of the region containing the material. This function must
-            take actual coordinates as parameters and return True (False) if the
-            a lattice node is inside (outside) the region.
         mat: dictionary 
             Contains the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of
@@ -118,6 +114,10 @@ class Builder():
             tau_e (tau_h): electron (hole) bulk lifetime [s], RCenergy: energy
             level of the bulk recombination centers [eV], band_offset: band
             offset setting the zero of potential [eV].
+        location: Boolean function
+            Definition of the region containing the material. This function must
+            take a tuple of real world coordinates (e.g. (x, y)) as parameters, and return True (False) if the
+            lattice node is inside (outside) the region.
         """
 
         # make material parameters dimensionless
@@ -128,14 +128,10 @@ class Builder():
         mat = {k: mat[k] / scale[k] for k in mat.keys() & scale.keys()}
 
         # create a named_tuple for the region and update the list of regions
-        # xa, ya, za = location[0]
-        # xb, yb, zb = location[1]
-        # r = self.region(xa/self.xscale, ya/self.xscale, za/self.xscale,
-        #                 xb/self.xscale, yb/self.xscale, zb/self.xscale, mat)
         r = self.region(location, mat)
         self.regions.append(r)
 
-    def add_local_charges(self, location, local_E, local_N, local_Se,\
+    def add_line_defects(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
         """
         Add additional charges (for a grain boundary for instance) to the total
@@ -143,9 +139,8 @@ class Builder():
 
         Parameters
         ----------
-        location: list of two (x, y, z) tuples 
-            The coordinates in [m] define a line of defect in 2D or a plane in
-            3D. Use zeros for unused dimensions.
+        location: list of two (x, y) tuples 
+            The coordinates in [m] define a line of defects in 2D.
         local_E: float 
             Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
         local_N: float
@@ -161,6 +156,10 @@ class Builder():
 
         * We assume that no additional charge is on the contacts.
 
+        See Also
+        --------
+        add_plane_defects
+
         """
         
         xa, ya, za = location[0]
@@ -175,37 +174,61 @@ class Builder():
                         local_Se/self.Sc, local_Sh/self.Sc)
         self.charges.append(d)
 
-    def doping_profile(self, location, density):
+    def add_plane_defects(self, location, local_E, local_N, local_Se,\
+                          local_Sh=None):
+        """
+        Add additional charges in a plane to the total
+        charge of the system.
+
+        Parameters
+        ----------
+        location: TODO
+            The coordinates in [m] define a plane of defects in 3D.
+        local_E: float 
+            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
+        local_N: float
+            Defect density of states [m\ :sup:`-2` ].
+        local_Se: float
+            Surface recombination velocity of electrons [m/s].
+        local_Sh: float
+            Surface recombination velocity of holes [m/s].
+
+        Warnings
+        --------
+        * Only works in 3D.
+
+        * We assume that no additional charge is on the contacts.
+
+        See Also
+        --------
+        add_line_defects
+
+        """
+
+    def doping_profile(self, density, location=lambda pos: True):
         """
         Add dopant charges to the system.
 
         Parameters
         ----------
-        location: Boolean function
-            Definition of the region containing the doping. This function must
-            take actual coordinates as parameters and return True (False) if the
-            a lattice node is inside (outside) the region.
         density: float
             Doping density [m\ :sup:`-3`].
+        location: Boolean function
+            Definition of the region containing the doping. This function must
+            take a tuple of real world coordinates (e.g. (x, y)) as parameters, and return True (False) if the
+            lattice node is inside (outside) the region.
         """
-
-        # xa, ya, za = location[0]
-        # xb, yb, zb = location[1]
-
-        # d = self.dopant(xa/self.xscale, ya/self.xscale, za/self.xscale,
-        #                 xb/self.xscale, yb/self.xscale, zb/self.xscale, 
-        #                 density/self.N)
 
         d = self.dopant(location, density/self.N)
         self.dopants.append(d)
 
-    def add_donor(self, location, density):
-        self.doping_profile(location, density)
+    def add_donor(self, density, location):
+        self.doping_profile(density, location)
 
-    def add_acceptor(self, location, density):
-        self.doping_profile(location, -density)
+    def add_acceptor(self, density, location):
+        self.doping_profile(-density, location)
 
-    def illumination(self, f):
+    def generation(self, f):
         """
         Distribution of photogenerated carriers.
 
@@ -214,7 +237,7 @@ class Builder():
         f: function 
             Generation rate [m\ :sup:`-3`].
         """
-        self.illumination = f
+        self.gen = f
         self.g = 1
 
     def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
@@ -285,16 +308,19 @@ class Builder():
         def get_sites(location):
             if self.dimension == 1:
                 s = [c for c in range(nx)]
+                nodes = range(nx)
+                f = lambda node: location(self.xpts[node])
+                s = [c for c in filter(f, nodes)]
             if self.dimension == 2:
                 nodes = product(range(nx), range(ny))
-                f = lambda node: location(self.xpts[node[0]], 
-                                          self.ypts[node[1]])
+                f = lambda node: location((self.xpts[node[0]], 
+                                           self.ypts[node[1]]))
                 s = [c[0] + c[1]*nx for c in filter(f, nodes)]
             if self.dimension == 3:
                 nodes = product(range(nx), range(ny), range(nz))
-                f = lambda node: location(self.xpts[node[0]], 
-                                          self.ypts[node[1]], 
-                                          self.zpts[node[2]])
+                f = lambda node: location((self.xpts[node[0]], 
+                                           self.ypts[node[1]], 
+                                           self.zpts[node[2]]))
                 s = [c[0] + c[1]*nx + c[2]*nx*ny for c in filter(f, nodes)]
             return s
 
@@ -418,17 +444,17 @@ class Builder():
                 self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
                 self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
 
-        # illumination
+        # generation
         if self.g == 0:
             self.g = np.zeros((nx*ny*nz,), dtype=float)
         else:
             if self.dimension == 1:
-                g = [self.illumination(x) for x in self.xpts]
+                g = [self.gen(x) for x in self.xpts]
             elif self.dimension == 2:
-                g = [self.illumination(x, y) for y in self.ypts 
-                                             for x in self.xpts]
+                g = [self.gen(x, y) for y in self.ypts 
+                                    for x in self.xpts]
             elif self.dimension == 3:
-                g = [self.illumination(x, y, z) for z in self.zpts 
-                                                for y in self.ypts
-                                                for x in self.xpts]
+                g = [self.gen(x, y, z) for z in self.zpts 
+                                       for y in self.ypts
+                                       for x in self.xpts]
             self.g = np.asarray(g) / self.U
