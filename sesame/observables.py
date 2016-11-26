@@ -154,7 +154,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     -------
     jp: numpy array of floats
     """
-    bl = sys.bl[sites]
+    bl = sys.bl[sites_i]
 
     vp0 = v[sites_i]
     dv = vp0 - v[sites_ip1]
@@ -173,7 +173,7 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     return jp
 
 def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
-    bl = sys.bl[sites]
+    bl = sys.bl[sites_i]
 
     vp0 = v[sites_i]
     vp1 = v[sites_ip1]
@@ -203,7 +203,7 @@ def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
     return mu*Nc*defn_i, mu*Nc*defn_ip1, mu*Nc*dv_i, mu*Nc*dv_ip1   
 
 def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
-    bl = sys.bl[sites]
+    bl = sys.bl[sites_i]
 
     vp0 = v[sites_i]
     vp1 = v[sites_ip1]

@@ -1,4 +1,5 @@
 import numpy as np
+from sesame.utils import get_indices
 
 try:
     import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ except ImportError:
     warnings.warn("matplotlib is not available", RuntimeWarning)
     mpl_enabled = False
 
-def plot_extra_charges(sys, ls='-o'):
+def plot_extra_charges(sys, scale, ls='-o'):
     """
     Plot the sites containing additional charges. The length scale of the the
     graph is 1 micrometer.
@@ -22,6 +23,8 @@ def plot_extra_charges(sys, ls='-o'):
     ----------
     sys: Builder
         The discretized system.
+    scale: float
+        Relevant scaling to apply to the axes.
     ls: string
         Line style of the plotted paths.
     """
@@ -73,16 +76,15 @@ def plot_extra_charges(sys, ls='-o'):
             ycoord.append(y)
 
         # plot the path of added charges
-        sc = sys.xscale*1e6
-        plt.plot(sys.xpts[xcoord]*sc, sys.ypts[ycoord]*sc, ls)
-        plt.xlabel('x (µm)')
-        plt.ylabel('y (µm)')
+        plt.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
+        plt.xlabel('x')
+        plt.ylabel('y')
 
-    plt.xlim(xmin=0, xmax=sys.xpts[-1]*sc)
-    plt.ylim(ymin=0, ymax=sys.ypts[-1]*sc)
+    plt.xlim(xmin=0, xmax=sys.xpts[-1]/scale)
+    plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
     plt.show()
 
-def map2D(sys, data, cmap='gnuplot', alpha=1):
+def map2D(sys, data, scale, cmap='gnuplot', alpha=1):
     """
     Plot a 2D map of data across the system.
 
@@ -93,6 +95,8 @@ def map2D(sys, data, cmap='gnuplot', alpha=1):
         The discretized system.
     data: numpy array
         One-dimensional array of data with size equal to the size of the system.
+    scale: float
+        Relevant scaling to apply to the axes.
     cmap: string
         Name of the colormap used by Matplolib.
     alpha: float
@@ -103,14 +107,11 @@ def map2D(sys, data, cmap='gnuplot', alpha=1):
         raise RuntimeError("matplotlib was not found, but is required "
                            "for map2D()")
 
-    xpts, ypts = sys.xpts * sys.xscale * 1e6, sys.ypts * sys.xscale * 1e6
-    nx, ny = len(xpts), len(ypts)
-    data = data.reshape(ny, nx)
-    xmax = sys.xpts[-1] * sys.xscale * 1e6
-    ymax = sys.ypts[-1] * sys.xscale * 1e6
-    plt.imshow(data, extent=[0, xmax, 0, ymax])
-    plt.xlabel('x (µm)')
-    plt.ylabel('y (µm)')
+    xpts, ypts = sys.xpts / scale, sys.ypts / scale
+    data = data.reshape(sys.ny, sys.nx)
+    plt.imshow(data, extent=[0, xpts[-1], 0, ypts[-1]], origin='lower')
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.show()
 
 def map3D(sys, data, cmap='gnuplot', alpha=1):

@@ -2,6 +2,7 @@ import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
 from sesame.utils import get_indices, get_xyz_from_s
+from itertools import product
 
 class Builder():
     """
@@ -31,7 +32,7 @@ class Builder():
     nx, ny, nz: integers
         Number of lattice nodes in the x, y, z directions.
     xpts, ypts, zpts: numpy arrays of floats
-        Dimensionless lattice nodes in the x, y, z directions.
+        Mesh with original dimensions.
     dx, dy, dz: numpy arrays of floats
         Dimensionless lattice constants in the x, y, z directions.
     Nc, Nv: numpy arrays of floats
@@ -76,10 +77,16 @@ class Builder():
         self.Sc = self.xscale / self.t0
 
         # list of the regions in the system
-        self.region = namedtuple('region', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'material'])
+        # self.region = namedtuple('region', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'material'])
+        # self.regions = []
+        # self.dopant = namedtuple('dopant', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'density'])
+        # self.dopants = []
+
+        self.region = namedtuple('region', ['location', 'material'])
         self.regions = []
-        self.dopant = namedtuple('dopant', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'density'])
+        self.dopant = namedtuple('dopant', ['location', 'density'])
         self.dopants = []
+
         self.charge = namedtuple('charge', ['xa', 'ya', 'za', 'xb', 'yb', 'zb',
                                             'energy', 'density', 'Se', 'Sh'])
         self.charges = []
@@ -98,10 +105,12 @@ class Builder():
 
         Parameters
         ----------
-        location: list of two (x, y, z) tuples 
-            The coordinates define in [m] define the material's region (a
-            rectangle in 2D). Use zeros for unused dimensions.
-        mat: dictionary containing the material parameters
+        location: Boolean function
+            Definition of the region containing the material. This function must
+            take actual coordinates as parameters and return True (False) if the
+            a lattice node is inside (outside) the region.
+        mat: dictionary 
+            Contains the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of
             states [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
             permitivitty, mu_e (mu_h): electron (hole) mobility
@@ -119,10 +128,11 @@ class Builder():
         mat = {k: mat[k] / scale[k] for k in mat.keys() & scale.keys()}
 
         # create a named_tuple for the region and update the list of regions
-        xa, ya, za = location[0]
-        xb, yb, zb = location[1]
-        r = self.region(xa/self.xscale, ya/self.xscale, za/self.xscale,
-                        xb/self.xscale, yb/self.xscale, zb/self.xscale, mat)
+        # xa, ya, za = location[0]
+        # xb, yb, zb = location[1]
+        # r = self.region(xa/self.xscale, ya/self.xscale, za/self.xscale,
+        #                 xb/self.xscale, yb/self.xscale, zb/self.xscale, mat)
+        r = self.region(location, mat)
         self.regions.append(r)
 
     def add_local_charges(self, location, local_E, local_N, local_Se,\
@@ -160,8 +170,7 @@ class Builder():
         if local_Sh == None:
             local_Sh = local_Se
 
-        d = self.charge(xa/self.xscale, ya/self.xscale, za/self.xscale,
-                        xb/self.xscale, yb/self.xscale, zb/self.xscale,
+        d = self.charge(xa, ya, za, xb, yb, zb,
                         local_E/self.vt, local_N/(self.N*self.xscale), 
                         local_Se/self.Sc, local_Sh/self.Sc)
         self.charges.append(d)
@@ -172,19 +181,22 @@ class Builder():
 
         Parameters
         ----------
-        location: list of two (x, y, z) tuples 
-            The coordinates in [m] define the region of doping (a rectangle in
-            2D). Use zeros for unused dimensions.
+        location: Boolean function
+            Definition of the region containing the doping. This function must
+            take actual coordinates as parameters and return True (False) if the
+            a lattice node is inside (outside) the region.
         density: float
-            Doping density [m^-3].
+            Doping density [m\ :sup:`-3`].
         """
 
-        xa, ya, za = location[0]
-        xb, yb, zb = location[1]
+        # xa, ya, za = location[0]
+        # xb, yb, zb = location[1]
 
-        d = self.dopant(xa/self.xscale, ya/self.xscale, za/self.xscale,
-                        xb/self.xscale, yb/self.xscale, zb/self.xscale, 
-                        density/self.N)
+        # d = self.dopant(xa/self.xscale, ya/self.xscale, za/self.xscale,
+        #                 xb/self.xscale, yb/self.xscale, zb/self.xscale, 
+        #                 density/self.N)
+
+        d = self.dopant(location, density/self.N)
         self.dopants.append(d)
 
     def add_donor(self, location, density):
@@ -193,27 +205,17 @@ class Builder():
     def add_acceptor(self, location, density):
         self.doping_profile(location, -density)
 
-    def illumination(self, f, scale=True):
+    def illumination(self, f):
         """
         Distribution of photogenerated carriers.
 
         Parameters
         ----------
         f: function 
-            Generation rate [m^-3].
-        scale: boolean 
-            Determines if scaling should be applied (True) or not (False).
+            Generation rate [m\ :sup:`-3`].
         """
-
-        if scale:
-            self.illumination = lambda x, y, z: f(x, y, z) / self.U
-        else:
-            self.illumination = lambda x, y, z: f(x, y, z)
+        self.illumination = f
         self.g = 1
-
-    def generation(self, g):
-        self.g = g
-        
 
     def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """
@@ -233,7 +235,7 @@ class Builder():
 
         Notes
         -----
-        Use 10^50 for infinite surface recombination velocities.
+        Use 10\ :sup:`50` for infinite surface recombination velocities.
         """
 
         self.Scn = [Scn_left/self.Sc, Scn_right/self.Sc]
@@ -253,21 +255,21 @@ class Builder():
             Mesh points in the z-direction in [m].
         """
 
-        self.xpts = xpts / self.xscale
-        self.dx = self.xpts[1:] - self.xpts[:-1]
+        self.xpts = xpts
+        self.dx = (self.xpts[1:] - self.xpts[:-1]) / self.xscale
         self.nx = xpts.shape[0]
 
         self.ypts = ypts
         if ypts is not None:
-            self.ypts = ypts / self.xscale
-            self.dy = self.ypts[1:] - self.ypts[:-1]
+            self.ypts = ypts
+            self.dy = (self.ypts[1:] - self.ypts[:-1]) / self.xscale
             self.ny = ypts.shape[0]
             self.dimension = 2
 
         self.zpts = zpts
         if zpts is not None:
-            self.zpts = zpts / self.xscale
-            self.dz = self.zpts[1:] - self.zpts[:-1]
+            self.zpts = zpts
+            self.dz = (self.zpts[1:] - self.zpts[:-1]) / self.xscale
             self.nz = zpts.shape[0]
             self.dimension = 3
 
@@ -279,12 +281,21 @@ class Builder():
         # mesh parameters
         nx, ny, nz = self.nx, self.ny, self.nz
 
-        def get_sites(xa, ya, za, xb, yb, zb):
-            if yb == self.ny: yb = self.ny-1
-            if zb == self.nz: yb = self.nz-1
-            s = [i + j*nx + k*nx*ny for k in range(za, zb+1) 
-                                    for j in range(ya, yb+1) 
-                                    for i in range(xa, xb+1)]
+        # create interators to make all combinations of indices possible
+        def get_sites(location):
+            if self.dimension == 1:
+                s = [c for c in range(nx)]
+            if self.dimension == 2:
+                nodes = product(range(nx), range(ny))
+                f = lambda node: location(self.xpts[node[0]], 
+                                          self.ypts[node[1]])
+                s = [c[0] + c[1]*nx for c in filter(f, nodes)]
+            if self.dimension == 3:
+                nodes = product(range(nx), range(ny), range(nz))
+                f = lambda node: location(self.xpts[node[0]], 
+                                          self.ypts[node[1]], 
+                                          self.zpts[node[2]])
+                s = [c[0] + c[1]*nx + c[2]*nx*ny for c in filter(f, nodes)]
             return s
 
 
@@ -301,9 +312,9 @@ class Builder():
         self.p1 = np.zeros((nx*ny*nz,), dtype=float)
         self.bl = np.zeros((nx*ny*nz,), dtype=float)
         for r in self.regions:
-            xa, ya, za = get_indices(self, (r.xa, r.ya, r.za))
-            xb, yb, zb = get_indices(self, (r.xb, r.yb, r.zb))
-            s = get_sites(xa, ya, za, xb, yb, zb)
+
+            # sites inside the regions
+            s = get_sites(r.location)
 
             self.Nc[s] = r.material['Nc']
             self.Nv[s] = r.material['Nv']
@@ -321,9 +332,7 @@ class Builder():
         # set the electrostatic charge from the doping profile
         self.rho = np.zeros((nx*ny*nz,), dtype=float)
         for d in self.dopants:
-            xa, ya, za = get_indices(self, (d.xa, d.ya, d.za))
-            xb, yb, zb = get_indices(self, (d.xb, d.yb, d.zb))
-            s = get_sites(xa, ya, za, xb, yb, zb)
+            s = get_sites(d.location)
             self.rho[s] = d.density # divided by epsilon later
 
         # additional extra charges
@@ -414,12 +423,12 @@ class Builder():
             self.g = np.zeros((nx*ny*nz,), dtype=float)
         else:
             if self.dimension == 1:
-                g = [self.illumination(x, 0, 0) for x in self.xpts*self.xscale]
+                g = [self.illumination(x) for x in self.xpts]
             elif self.dimension == 2:
-                g = [self.illumination(x, y, 0) for y in self.ypts*self.xscale 
-                                                for x in self.xpts*self.xscale]
+                g = [self.illumination(x, y) for y in self.ypts 
+                                             for x in self.xpts]
             elif self.dimension == 3:
-                g = [self.illumination(x, y, z) for z in self.zpts*self.xscale 
-                                                for y in self.ypts*self.xscale
-                                                for x in self.xpts*self.xscale]
-            self.g = np.asarray(g)
+                g = [self.illumination(x, y, z) for z in self.zpts 
+                                                for y in self.ypts
+                                                for x in self.xpts]
+            self.g = np.asarray(g) / self.U

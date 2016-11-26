@@ -83,8 +83,8 @@ def extra_charges_path(sys, start, end):
     This only works in 2D.
     """
     # Return the path and the sites
-    xa, ya = start[0]/sys.xscale, start[1]/sys.xscale
-    xb, yb = end[0]/sys.xscale, end[1]/sys.xscale
+    xa, ya = start[0], start[1]
+    xb, yb = end[0], end[1]
 
     # reorder the points do that they are in ascending order
     if ya <= yb:
@@ -141,7 +141,7 @@ def extra_charges_path(sys, start, end):
     # put everyting back to original order if inverted=True
     if xa > xb:
         s.reverse()
-        X = np.flipud(X[-1] - X)
+        X = np.flipud(X[-1] - X) * sys.xscale
         xcoord = np.flipud(xcoord)
         ycoord = np.flipud(ycoord)
     return s, X, xcoord, ycoord
