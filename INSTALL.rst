@@ -41,10 +41,12 @@ in the root directory of the Sesame distribution::
 
 Depending on your system, you might have to run the second command with
 administrator privileges. The installation
-step can be done locally either by using the ``--user`` prefix or by specifying
-the location where to install the package files::
+step can be done locally either by using the ``--user`` prefix::
 
-    python3 setup.py install --prefix=/path/of/directory
+    python3 setup.py install --user
+
+or by specifying the location where to install the package files with
+``--prefix=/path/of/directory``.
 
 The tutorial examples can be found in the directory ``examples`` inside the root
 directory of the Sesame source distribution.
@@ -80,7 +82,9 @@ done, Sphinx may mistakenly use PNG files for PDF output or other problems may
 appear.
 
 As an alternative if ``make`` is not available, the documentation can be built
-using the command ``python3 setup.py build_sphinx``.
+using the command::
+
+    python3 setup.py build_sphinx
 
 Hints for specific platforms
 .............................
@@ -104,4 +108,6 @@ Microsoft Windows
 +++++++++++++++++++
 As the only recommended way to compile Python extensions on Windows is using
 Visual C++, we are not able to provide guidelines as to how to build with the
-MUMPS library. 
+MUMPS library.
+
+The generic installation instructions also apply on Windows.

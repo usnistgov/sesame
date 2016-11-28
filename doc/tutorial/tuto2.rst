@@ -132,6 +132,11 @@ mobility across the system::
 
     sesame.map2D(sys, sys.mu_e, 1e-6)
 
+.. image:: 2dpnGB.png
+   :align: center
+   :scale: 50 %
+
+We have successfully created two regions with different mobilities.
 The exhaustive list of all the parameters accessible (like mobility, bulk
 lifetime) is in the documentation of the :func:`~sesame.builder.Builder` class
 itself.
@@ -140,10 +145,6 @@ We can also visualize the line defects, as shown below::
 
     sesame.plot_line_defects(sys, 1e-6)
 
-which generates the following figure
-
-.. image:: system_plot.svg
+.. image:: system_plot.png
    :align: center
-
-
-
+   :scale: 50 %

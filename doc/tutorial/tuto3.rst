@@ -80,10 +80,10 @@ later on. Because of our geometry the potential on the left and right read
 which is computed as follows::
     
     sys = system()
-    v_left  = np.log(abs(sys.rho[0])/sys.Nc[0])
+    v_left  = np.log(sys.rho[0]/sys.Nc[0])
     v_right = -sys.Eg[0] - np.log(abs(sys.rho[sys.nx-1])/sys.Nv[sys.nx-1])
 
-Observe the absolute value of the charge taken on the first line. This is
+Observe the absolute value of the charge taken on the second line. This is
 because the static charge there is negative (from the acceptors).
 In order to solve the Poisson equation we need an initial guess (linear here)
 and call the solver::

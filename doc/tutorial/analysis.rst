@@ -104,6 +104,7 @@ recombination along the x-axis, then we do the same along the y-axis::
 
     sp = spline(sys.ypts, u)
     JR = sp.integral(sys.ypts[0], sys.ypts[-1])
+
 Again, because this is very useful we implemented this function in
 :func:`sesame.utils.bulk_recombination_current`.
 
@@ -138,6 +139,10 @@ current along the grain boundary::
     sp = spline(X, R)
     JGB = sp.integral(X[0], X[-1])
 
+Observe how we accessed the dimension of the surface recombination velocity with
+``sys.scaling.velocity``. Other dimensions can be obtained similarly with the
+self-explanatory field names density, energy, mobility, time, length,
+generation.
 
 Once the defect sites are known, the raw data at these sites are accessible
 via::

@@ -17,7 +17,7 @@ Fig. 1.
 .. figure:: site_link.svg
    :align: center
 
-   Fig. 1: Sites versus links.  I take the indexing convention that :math:`\Delta
+   Fig. 1: Sites versus links.  We take the indexing convention that :math:`\Delta
    x^i` represents the space between sites :math:`i` and :math:`i+1`.
 
 We consider a one-dimensional system to illustrate how the discretization of the
@@ -67,10 +67,10 @@ which enables the integral on the left hand side above to be performed:
 .. math::
     \int_{x_i}^{x_{i+1}} \mathrm{d}x e^{\pm q\phi(x)/k_BT} = \pm
     \frac{k_BT}{q} \Delta x^i \frac{e^{\pm q\phi_{i+1}/k_BT} - e^{\pm
-    q\phi_i / k_BT}}{\phi_{i+1} - \phi_i}.
-   :label: eqxx
+    q\phi_i / k_BT}}{\phi_{i+1} - \phi_i}
+   :label: eqx2
 
-Plugging Eq. :eq:`eqxx` into Eq. :eq:eqx and solving for :math:`J_p^i` yields
+Plugging Eq. :eq:`eqx2` into Eq. :eq:`eqx` and solving for :math:`J_p^i` yields
 
 .. math::
     J_p^i = - \frac{q^2/k_BT}{\Delta x^i}
@@ -117,11 +117,11 @@ conditions given in introduction.
 
 
 We use a Newton-Raphson method to solve the above set of equations.  The idea
-behind the method is clearest in a simple one-dimensional case.  Given a general
-nonlinear function :math:`f(x)`, we want to find its root :math:`\bar x: f(\bar
-x)=0`.  Given an initial guess :math:`x_1`, one can estimate the error
-:math:`\delta x` in this guess, assuming that the function varies linearly all
-the way to its root
+behind the method is clearest in a simple one-dimensional case as illustrated in
+Fig. 2.  Given a general nonlinear function :math:`f(x)`, we want to find its
+root :math:`\bar x: f(\bar x)=0`.  Given an initial guess :math:`x_1`, one can
+estimate the error :math:`\delta x` in this guess, assuming that the function
+varies linearly all the way to its root
 
 .. math::
     \delta x= \left(\frac{df}{dx} (x_1)\right)^{-1}f\left(x_1\right)
@@ -129,13 +129,10 @@ the way to its root
 
 An updated guess is provided by :math:`x_2 = x_1 - \delta x`.
 
-.. \begin{figure}[h!]
-.. \begin{center}
-.. \vskip 0.2 cm
-.. \includegraphics[width=2.5in]{NR.eps}
-.. \vskip 0.2 cm \caption{Schematic of the newton-raphson method for root finding.  root finding is ubiquotous and, at times, extremely difficult.}\label{fig:hopping}
-.. \end{center}
-.. \end{figure}
+.. figure:: NR.svg
+    :align: center
+
+    Fig. 2: Schematic for the Newton-Raphson method for root finding.
 
 In multiple dimensions the last term in Eq. :eq:`eq1d` is replaced by the
 inverse of the Jacobian, which is the multi-dimensional generalization
@@ -229,17 +226,17 @@ where :math:`n_x` (:math:`n_y`) is the number of sites in the
 
 Using sparse matrix techniques is key fast to fast computation. We provide below
 the number of non-zero elements in the Jacobian for periodic boundary conditions
-in the :math:`y`- and :math:`z`-direction.
+in the :math:`y`- and :math:`z`-directions.
 
-=========      ===========================================
-Dimension      Non-zero elements in Jacobian
-=========      ===========================================
- 1              :math:`19\times (n_x-2) + 20`
- 2              :math:`n_y\times [29\times (n_x-2) + 28]`
- 3              to be determined 
-=========      ===========================================
-
-
++------------------------+-------------------------------------------------------+
+| Dimension              | Number of stored values in the Jacobian               |
++========================+=======================================================+
+|          1             |  19 (n\ :sub:`x`-2) + 20                              |
++------------------------+-------------------------------------------------------+
+|          2             |  n\ :sub:`y` [29 (n\ :sub:`x` - 2) + 28]              |
++------------------------+-------------------------------------------------------+
+|          3             |  n\ :sub:`y` n\ :sub:`z` [39 (n\ :sub:`x` - 2) + 36]  |
++------------------------+-------------------------------------------------------+
 
 
 

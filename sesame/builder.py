@@ -159,10 +159,6 @@ class Builder():
         density, energy, mobility, time, length, generation, velocity.
     """
 
-    # named tuple of all the dimensions
-    dimensions = namedtuple('dimensions', 
-                 ['density', 'energy', 'mobility', 'time',\
-                  'length', 'generation', 'velocity'])
 
     def __init__(self, xpts, ypts=None, zpts=None, T=300):
         # T is temperature in Kelvin
@@ -182,7 +178,12 @@ class Builder():
         U = (N * mu * vt) / xscale**2 
         # recombination velocities
         Sc = xscale / t0
-        self.scaling = self.dimensions(N, vt, mu, t0, xscale, U, Sc)
+
+        # named tuple of all the dimensions
+        dimensions = namedtuple('dimensions', 
+                     ['density', 'energy', 'mobility', 'time',\
+                      'length', 'generation', 'velocity'])
+        self.scaling = dimensions(N, vt, mu, t0, xscale, U, Sc)
 
 
         self.xpts = xpts
@@ -220,6 +221,7 @@ class Builder():
         self.bl      = np.zeros((nx*ny*nz,), dtype=float)
         self.rho     = np.zeros((nx*ny*nz,), dtype=float)
         self.g       = np.zeros((nx*ny*nz,), dtype=float)
+        self.ni      = np.zeros((nx*ny*nz,), dtype=float)
 
 
         # list of lines defects
@@ -272,6 +274,7 @@ class Builder():
         self.n1[s]      = self.Nc[s] * np.exp(-self.Eg[s]/2 + Etrap)
         self.p1[s]      = self.Nv[s] * np.exp(-self.Eg[s]/2 - Etrap)
 
+        self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
     def add_line_defects(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
@@ -327,7 +330,6 @@ class Builder():
                     local_Sh / self.scaling.velocity)
 
         self.planes_defects.append(d)
-
 
 
     def doping_profile(self, density, location=lambda pos: True):
@@ -407,9 +409,6 @@ class Builder():
 
         # mesh parameters
         nx, ny, nz = self.nx, self.ny, self.nz
-
-        # intrinsic density across the entire system
-        self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
         # additional extra charges
         c = len(self.lines_defects) + len(self.planes_defects)

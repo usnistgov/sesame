@@ -7,7 +7,17 @@ and the set of equations that it solves.
 Geometry and governing equations
 .................................
 
-The steady state dimension-ful drift-diffusion-Poisson equations read
+Our model system is shown below. It is a semiconductor device connected to two
+contacts in :math:`x=0` and :math:`x=L` (where :math:`L` is the the length of
+the device in the :math:`x`-direction). The doped regions are drawn for the
+example only, any doping profile can be considered.
+
+.. image:: model.svg
+   :align: center
+
+
+The steady state of this system under nonequilibrium conditions is treated with
+the drift-diffusion-Poisson equations
 
 .. math:: 
    \vec{\nabla}\cdot \vec{J}_n &= -e(G-R)\\
