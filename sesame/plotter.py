@@ -1,5 +1,6 @@
 import numpy as np
 from sesame.utils import get_indices
+import warnings
 
 try:
     import matplotlib.pyplot as plt
