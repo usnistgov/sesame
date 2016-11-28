@@ -33,47 +33,49 @@ def plot_line_defects(sys, scale=1e-6, ls='-o'):
                            "for plot()")
 
     for c in sys.lines_defects:
-        if c.ya <= c.yb:
-            xa, ya, _ = get_indices(sys, (c.xa, c.ya, 0))
-            xb, yb, _ = get_indices(sys, (c.xb, c.yb, 0))
+        xa, ya = c.location[0]
+        xb, yb = c.location[1]
+        if ya <= yb:
+            ia, ja, _ = get_indices(sys, (xa, ya, 0))
+            ib, jb, _ = get_indices(sys, (xb, yb, 0))
         else:
-            xa, ya, _ = get_indices(sys, (c.xb, c.yb, 0))
-            xb, yb, _ = get_indices(sys, (c.xa, c.ya, 0))
+            ia, ja, _ = get_indices(sys, (xb, yb, 0))
+            ib, jb, _ = get_indices(sys, (xa, ya, 0))
 
         # find the sites closest to the straight line defined by
         # (xa,ya,za) and (xb,yb,zb) and the associated dl       
         distance = lambda x, y:\
-            abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
-                np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
+            abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
+                np.sqrt((yb-ya)**2 + (xb-xa)**2)
 
-        def condition(x, y):
-            if xa <= xb:
-                return x <= xb and y <= yb and x < sys.nx-1 and y < sys.ny-1
+        def condition(i, j):
+            if ia <= ib:
+                return i <= ib and j <= jb and i < sys.nx-1 and j < sys.ny-1
             else:
-                return x >= xb and y <= yb and x > 1 and y < sys.ny-1
+                return i >= ib and j <= jb and i > 1 and j < sys.ny-1
 
-        x, y = xa, ya
-        xcoord, ycoord = [xa], [ya]
-        while condition(x, y):
-            # distance between the point above (x,y) and the segment
-            d1 = distance(sys.xpts[x], sys.ypts[y+1])
-            # distance between the point right of (x,y) and the segment
-            d2 = distance(sys.xpts[x+1], sys.ypts[y])
-            # distance between the point left of (x,y) and the segment
-            d3 = distance(sys.xpts[x-1], sys.ypts[y])
+        i, j = ia, ja
+        xcoord, ycoord = [ia], [ja]
+        while condition(i, j):
+            # distance between the point above (i,j) and the segment
+            d1 = distance(sys.xpts[i], sys.ypts[j+1])
+            # distance between the point right of (i,j) and the segment
+            d2 = distance(sys.xpts[i+1], sys.ypts[j])
+            # distance between the point left of (i,j) and the segment
+            d3 = distance(sys.xpts[i-1], sys.ypts[j])
 
-            if xa < xb: # overall direction is to the right
+            if ia < ib: # overall direction is to the right
                 if d1 < d2:
-                    x, y = x, y+1
+                    i, j = i, j+1
                 else:
-                    x, y = x+1, y
+                    i, j = i+1, j
             else: # overall direction is to the left
                 if d1 < d3:
-                    x, y = x, y+1
+                    i, j = i, j+1
                 else:
-                    x, y = x-1, y
-            xcoord.append(x)
-            ycoord.append(y)
+                    i, j = i-1, j
+            xcoord.append(i)
+            ycoord.append(j)
 
         # plot the path of added charges
         plt.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
