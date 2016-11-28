@@ -22,10 +22,21 @@ We start by importing the sesame package and numpy::
     import sesame
     import numpy as np
 
+A crucial point is the creation of a mesh of our system. A mesh too coarse will
+give inaccurate results, and a mesh to fine will make the simulation slow. Also,
+because of the strong variations of potential and densities throughout the
+system, we need an irregular grid. After the tutorials the user should have a
+sense of what makes an appropriate grid. In this example, we create a mesh which
+contains more nodes in the pn junction depletion region::
+
+    L = 3e-6 # length of the system in the x-direction [m]
+    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
+                        np.linspace(1.2e-6, L, 100)))
+
 To make a system we need to create an instance of the
 :func:`~sesame.builder.Builder`::
 
-    sys = sesame.Builder()
+    sys = sesame.Builder(x)
 
 Note that  we accessed :func:`~sesame.builder.Builder` by the name
 ``sesame.Builder``. We could have written ``sesame.builder.Builder`` instead.
@@ -96,19 +107,6 @@ which is parametrized by surface recombination velocities at the contacts::
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
-A crucial point is the creation of a mesh of our system. A mesh too coarse will
-give inaccurate results, and a mesh to fine will make the simulation slow. Also,
-because of the strong variations of potential and densities throughout the
-system, we need an irregular grid. After the tutorials the user should have a
-sense of what makes an appropriate grid. In this example we create a mesh which
-contains more nodes in the pn junction depletion region (lengths in [m]), and we
-pass it to the system::
-
-    L = 3e-6 # length of the system in the x-direction [m]
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, L, 100)))
-    sys.mesh(x)
-
 If we want to make a J(V) curve, we need a generation profile. This is defined
 as follows::
 
@@ -119,8 +117,8 @@ as follows::
     f = lambda x: phi * alpha * np.exp(-alpha * x)
     sys.generation(f)
 
-The final step of the creation of the system is to discretize the continuous
-system based on the mesh we provided::
+At the end of the creation of the system, some additional arrays need to be
+created internally. Use this command to do that::
 
     sys.finalize()
 

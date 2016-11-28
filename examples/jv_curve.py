@@ -2,13 +2,20 @@ import sesame
 import numpy as np
 
 def system():
-    sys = sesame.Builder()
-    
     # Dimensions of the system
     Lx = 3e-6 # [m]
     Ly = 5e-6 # [m]
     # extent of the junction from the left contact [m]
     junction = 10e-9 
+
+    # Mesh
+    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
+                        np.linspace(1.2e-6, Lx, 100)))
+    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
+                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
+                        np.linspace(2.75e-6, Ly, 100)))
+
+    sys = sesame.Builder()
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -21,15 +28,6 @@ def system():
     # Use perfectly selective contacts
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
-
-
-    # Mesh
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, Lx, 100)))
-    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                        np.linspace(2.75e-6, Ly, 100)))
-    sys.mesh(x, y)
 
     # Region 1
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,

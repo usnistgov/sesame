@@ -37,9 +37,6 @@ Attribute                                   Syntax
 grid nodes                                   ``sys.xpts``, ``sys.ypts``, ``sys.zpts``
 number of grid nodes                         ``sys.nx, ``sys.ny``, ``sys.nz``
 grid distances                               ``sys.dx``, ``sys.dy``, ``sys.dz``
-density scale                                ``sys.N``
-length scale                                 ``sys.xscale``
-energy scale                                 ``sys.vt``
 =============================               ==========================
 
 The exhaustive list of all accessible attributes is in the
@@ -132,7 +129,7 @@ current along the grain boundary::
     p = get_p(sys, efp, v, GBsites)
 
     # Compute the normalized surface recombination velocity and the recombination
-    S = 1e5*1e-2 / sys.Sc
+    S = 1e5*1e-2 / sys.scaling.velocity
     ni = sys.ni[0] # intrinsic density taken at the first site (random)
     R = S * (n*p - ni**2) / (n + nGB + p + pGB)
 

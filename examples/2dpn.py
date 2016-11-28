@@ -1,13 +1,21 @@
 import sesame
 import numpy as np
 
-sys = sesame.Builder()
 
 # dimensions of the system
 Lx = 3e-6 #[m]
 Ly = 5e-6 #[m]
 # extent of the junction from the left contact [m]
 junction = 10e-9 
+
+# Mesh
+x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
+                    np.linspace(1.2e-6, Lx, 100)))
+y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
+                    np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
+                    np.linspace(2.75e-6, Ly, 100)))
+
+sys = sesame.Builder(x, y)
 
 def region(pos):
     x, y = pos
@@ -25,14 +33,6 @@ sys.add_acceptor(nA, region2)
 # Use perfectly selective contacts
 Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
 sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
-
-# Mesh
-x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                    np.linspace(1.2e-6, Lx, 100)))
-y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                    np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                    np.linspace(2.75e-6, Ly, 100)))
-sys.mesh(x, y)
 
 def region1(pos):
     x, y = pos

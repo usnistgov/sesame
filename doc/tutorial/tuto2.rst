@@ -16,20 +16,28 @@ line of defects as depicted below.
 .. image:: geometry.svg
    :align: center
 
-As usual, we start by importing the sesame package and numpy, followed by the
-creation of an instance of the :func:`~sesame.builder.Builder`. This step and
-the creation of the pn junction with its contacts are done below::
+As usual, we start by importing the sesame package and numpy. We construct the
+mesh of the system and make an instance of the :func:`~sesame.builder.Builder`.
+We will consider a line defects at :math:`y=2.5~\mathrm{\mu m}`, so we use a
+grid with a finer lattice around it::
 
     import sesame
     import numpy as np
 
-    sys = sesame.Builder()
     
     # dimensions of the system
     Lx = 3e-6 # [m]
     Ly = 5e-6 # [m]
     # extent of the junction from the left contact [m]
     junction = 10e-9 
+
+    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
+                        np.linspace(1.2e-6, Lx, 100)))
+    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
+                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
+                        np.linspace(2.75e-6, Ly, 100)))
+
+    sys = sesame.Builder(x, y)
 
     def region(pos):
         x, y = pos
@@ -49,18 +57,8 @@ the creation of the pn junction with its contacts are done below::
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
 
-We will consider a line defects at :math:`y=2.5~\mathrm{\mu m}`, so we use a
-grid with a finer lattice around it::
-
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, Lx, 100)))
-    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                        np.linspace(2.75e-6, Ly, 100)))
-    sys.mesh(x, y)
-
-We want to have a reduced mobility at the line defects compared to the rest of
-the system. Therefore we need to define two regions in our system, two large
+We want to have a reduced mobility around the line defects compared to the rest
+of the system. Therefore we need to define two regions in our system, two large
 regions with mobility :math:`200~ \mathrm{cm^2/(V\cdot s)}` and a smaller one
 around the line defect with mobility :math:`20~\mathrm{cm^2/(V\cdot s)}`. The
 function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
@@ -120,8 +118,7 @@ define a defect gap state as follows::
 
         sys.add_line_defects([p1, p2], E, N, Sn, Sp)
 
-The final step of the creation of the system is to discretize the continuous
-system based on the mesh we provided::
+As usual we finalize the creation of the system with::
 
     sys.finalize()
 
