@@ -61,8 +61,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'Sesame'
-copyright = '2016, Benoit H. Gaury'
-author = 'Benoit H. Gaury'
+copyright = '2016, Benoit H. Gaury, Paul M. Haney'
+author = 'Benoit H. Gaury, Paul M. Haney'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -277,7 +277,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'Sesame.tex', 'Sesame Documentation',
-     'Benoit H. Gaury', 'manual'),
+     'Benoit H. Gaury, Paul M. Haney', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

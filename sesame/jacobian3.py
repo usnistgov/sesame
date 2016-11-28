@@ -725,6 +725,8 @@ def getJ(sys, v, efn, efp, with_mumps):
     sites = np.asarray(sites)
 
     # lattice distances
+    dx = np.tile(sys.dx[1:], Nz-2)
+    dxm1 = np.tile(sys.dx[:-1], Nz-2)
     dy = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
     dz = np.repeat(sys.dz[1:], (Nx-2))
     dym1 = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
@@ -747,10 +749,8 @@ def getJ(sys, v, efn, efp, with_mumps):
     sites = np.asarray(sites)
 
     # lattice distances
-    dx = np.tile(sys.dx[1:], Nz-2)
     dy = np.repeat((sys.dy[0] + sys.dy[-1])/2., (Nx-2)*(Nz-2))
     dz = np.repeat(sys.dz[1:], Nx-2)
-    dxm1 = np.tile(sys.dx[:-1], Nz-2)
     dym1 = np.repeat(sys.dy[0], (Nx-2)*(Nz-2))
     dzm1 = np.repeat(sys.dz[:-1], Nx-2)
 

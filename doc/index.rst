@@ -12,7 +12,7 @@ Sesame |version| documentation
 
    :Version: |version|
    :Date: |today|
-   :Author: Benoit H. Gaury
+   :Authors: Benoit H. Gaury, Paul M. Haney
 
 .. topic:: About Sesame
 

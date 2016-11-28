@@ -48,8 +48,8 @@ def system():
     E = -0.25                # energy of gap state (eV) from midgap
     N = 2e14 * 1e4           # defect density [1/m^2]
 
-    p1 = (20e-9, 2.5e-6, 0)   #[m]
-    p2 = (2.9e-6, 2.5e-6, 0)  #[m]
+    p1 = (20e-9, 2.5e-6)   #[m]
+    p2 = (2.9e-6, 2.5e-6)  #[m]
 
     sys.add_line_defects([p1, p2], E, N, S)
 

@@ -99,8 +99,8 @@ define a defect gap state as follows::
     N = 2e14 * 1e4           # defect density [1/m^2]
 
     # Specify the two points that make the line containing additional charges
-    p1 = (20e-9, 2.5e-6, 0)   #[m]
-    p2 = (2.9e-6, 2.5e-6, 0)  #[m]
+    p1 = (20e-9, 2.5e-6)   #[m]
+    p2 = (2.9e-6, 2.5e-6)  #[m]
 
     # Pass the information to the system
     sys.add_line_defects([p1, p2], E, N, S)

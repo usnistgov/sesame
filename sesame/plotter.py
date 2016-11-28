@@ -14,7 +14,7 @@ except ImportError:
     warnings.warn("matplotlib is not available", RuntimeWarning)
     mpl_enabled = False
 
-def plot_line_defects(sys, scale, ls='-o'):
+def plot_line_defects(sys, scale=1e-6, ls='-o'):
     """
     Plot the sites containing additional charges. The length scale of the the
     graph is 1 micrometer.
@@ -32,13 +32,13 @@ def plot_line_defects(sys, scale, ls='-o'):
         raise RuntimeError("matplotlib was not found, but is required "
                            "for plot()")
 
-    for c in sys.charges:
+    for c in sys.lines_defects:
         if c.ya <= c.yb:
-            xa, ya, za = get_indices(sys, (c.xa, c.ya, c.za))
-            xb, yb, zb = get_indices(sys, (c.xb, c.yb, c.zb))
+            xa, ya, _ = get_indices(sys, (c.xa, c.ya, 0))
+            xb, yb, _ = get_indices(sys, (c.xb, c.yb, 0))
         else:
-            xa, ya, za = get_indices(sys, (c.xb, c.yb, c.zb))
-            xb, yb, zb = get_indices(sys, (c.xa, c.ya, c.za))
+            xa, ya, _ = get_indices(sys, (c.xb, c.yb, 0))
+            xb, yb, _ = get_indices(sys, (c.xa, c.ya, 0))
 
         # find the sites closest to the straight line defined by
         # (xa,ya,za) and (xb,yb,zb) and the associated dl       
@@ -84,7 +84,7 @@ def plot_line_defects(sys, scale, ls='-o'):
     plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
     plt.show()
 
-def map2D(sys, data, scale, cmap='gnuplot', alpha=1):
+def map2D(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):
     """
     Plot a 2D map of data across the system.
 
@@ -116,7 +116,7 @@ def map2D(sys, data, scale, cmap='gnuplot', alpha=1):
     plt.ylabel('y')
     plt.show()
 
-def map3D(sys, data, scale, cmap='gnuplot', alpha=1):
+def map3D(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):
     """
     Plot a 3D map of data across the system.
 

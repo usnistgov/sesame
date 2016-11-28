@@ -77,26 +77,28 @@ class Builder():
         self.Sc = self.xscale / self.t0
 
         # list of the regions in the system
-        # self.region = namedtuple('region', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'material'])
-        # self.regions = []
-        # self.dopant = namedtuple('dopant', ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'density'])
-        # self.dopants = []
-
         self.region = namedtuple('region', ['location', 'material'])
         self.regions = []
+
+        # list of doped regions
         self.dopant = namedtuple('dopant', ['location', 'density'])
         self.dopants = []
 
-        self.charge = namedtuple('charge', ['xa', 'ya', 'za', 'xb', 'yb', 'zb',
-                                            'energy', 'density', 'Se', 'Sh'])
-        self.charges = []
+        # list of lines defects
+        self.line_defects = namedtuple('line_defects', \
+        ['xa', 'ya', 'xb', 'yb', 'energy', 'density', 'Se', 'Sh'])
+        self.lines_defects = []
+
+        # list of planes defects
+        self.plane_defects = namedtuple('plane_defects', \
+        ['xa', 'ya', 'za', 'xb', 'yb', 'zb', 'energy', 'density', 'Se', 'Sh'])
+        self.planes_defects = []
 
         # generation of carriers
         self.g = 0 # no generation by default 
         # length of mesh in x, y, z directions
         self.nx, self.ny, self.nz = 1, 1, 1
         self.dimension = 1
-
 
 
     def add_material(self, mat, location=lambda pos: True):
@@ -152,7 +154,7 @@ class Builder():
 
         Warnings
         --------
-        * Only works in 2D.
+        * Addition of line defects is defined for two-dimensional systems only.
 
         * We assume that no additional charge is on the contacts.
 
@@ -162,48 +164,35 @@ class Builder():
 
         """
         
-        xa, ya, za = location[0]
-        xb, yb, zb = location[1]
+        xa, ya = location[0]
+        xb, yb = location[1]
         
         # if one wants same S for electrons and holes
         if local_Sh == None:
             local_Sh = local_Se
 
-        d = self.charge(xa, ya, za, xb, yb, zb,
+        d = self.line_defects(xa, ya, xb, yb,
                         local_E/self.vt, local_N/(self.N*self.xscale), 
                         local_Se/self.Sc, local_Sh/self.Sc)
-        self.charges.append(d)
+        self.lines_defects.append(d)
 
     def add_plane_defects(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
-        """
-        Add additional charges in a plane to the total
-        charge of the system.
+        xa, ya, za = location[0]
+        xb, yb, zb = location[1]
+        xc, yc, zc = location[2]
+        xd, yd, zd = location[3]
+        
+        # if one wants same S for electrons and holes
+        if local_Sh == None:
+            local_Sh = local_Se
 
-        Parameters
-        ----------
-        location: TODO
-            The coordinates in [m] define a plane of defects in 3D.
-        local_E: float 
-            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
-        local_N: float
-            Defect density of states [m\ :sup:`-2` ].
-        local_Se: float
-            Surface recombination velocity of electrons [m/s].
-        local_Sh: float
-            Surface recombination velocity of holes [m/s].
+        d = self.plane_defects(xa, ya, za, xb, yb, zb,
+                        local_E/self.vt, local_N/(self.N*self.xscale), 
+                        local_Se/self.Sc, local_Sh/self.Sc)
+        self.planes_defects.append(d)
 
-        Warnings
-        --------
-        * Only works in 3D.
 
-        * We assume that no additional charge is on the contacts.
-
-        See Also
-        --------
-        add_line_defects
-
-        """
 
     def doping_profile(self, density, location=lambda pos: True):
         """
@@ -324,35 +313,37 @@ class Builder():
                 s = [c[0] + c[1]*nx + c[2]*nx*ny for c in filter(f, nodes)]
             return s
 
+        # arrays
+        self.Nc      = np.zeros((nx*ny*nz,), dtype=float)
+        self.Nv      = np.zeros((nx*ny*nz,), dtype=float)
+        self.Eg      = np.zeros((nx*ny*nz,), dtype=float)
+        self.epsilon = np.zeros((nx*ny*nz,), dtype=float)
+        self.mu_e    = np.zeros((nx*ny*nz,), dtype=float)
+        self.mu_h    = np.zeros((nx*ny*nz,), dtype=float)
+        self.tau_e   = np.zeros((nx*ny*nz,), dtype=float)
+        self.tau_h   = np.zeros((nx*ny*nz,), dtype=float)
+        self.n1      = np.zeros((nx*ny*nz,), dtype=float)
+        self.p1      = np.zeros((nx*ny*nz,), dtype=float)
+        self.bl      = np.zeros((nx*ny*nz,), dtype=float)
 
         # materials properties
-        self.Nc = np.zeros((nx*ny*nz,), dtype=float)
-        self.Nv = np.zeros((nx*ny*nz,), dtype=float)
-        self.Eg = np.zeros((nx*ny*nz,), dtype=float)
-        self.epsilon = np.zeros((nx*ny*nz,), dtype=float)
-        self.mu_e = np.zeros((nx*ny*nz,), dtype=float)
-        self.mu_h = np.zeros((nx*ny*nz,), dtype=float)
-        self.tau_e = np.zeros((nx*ny*nz,), dtype=float)
-        self.tau_h = np.zeros((nx*ny*nz,), dtype=float)
-        self.n1 = np.zeros((nx*ny*nz,), dtype=float)
-        self.p1 = np.zeros((nx*ny*nz,), dtype=float)
-        self.bl = np.zeros((nx*ny*nz,), dtype=float)
         for r in self.regions:
-
             # sites inside the regions
             s = get_sites(r.location)
 
-            self.Nc[s] = r.material['Nc']
-            self.Nv[s] = r.material['Nv']
-            self.Eg[s] = r.material['Eg']
+            self.Nc[s]      = r.material['Nc']
+            self.Nv[s]      = r.material['Nv']
+            self.Eg[s]      = r.material['Eg']
             self.epsilon[s] = r.material['epsilon']
-            self.mu_e[s] = r.material['mu_e']
-            self.mu_h[s] = r.material['mu_h']
-            self.tau_e[s] = r.material['tau_e']
-            self.tau_h[s] = r.material['tau_h']
-            self.n1[s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + r.material['RCenergy'])
-            self.p1[s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - r.material['RCenergy'])
-            self.bl[s] = r.material['band_offset']
+            self.mu_e[s]    = r.material['mu_e']
+            self.mu_h[s]    = r.material['mu_h']
+            self.tau_e[s]   = r.material['tau_e']
+            self.tau_h[s]   = r.material['tau_h']
+            self.n1[s]      = self.Nc[s] * np.exp(-self.Eg[s]/2 +\
+                                              r.material['RCenergy'])
+            self.p1[s]      = self.Nv[s] * np.exp(-self.Eg[s]/2 -\
+                                              r.material['RCenergy'])
+            self.bl[s]      = r.material['band_offset']
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
         # set the electrostatic charge from the doping profile
@@ -362,87 +353,36 @@ class Builder():
             self.rho[s] = d.density # divided by epsilon later
 
         # additional extra charges
-        #!!! DO NOT add extra charges on the contact sites
-
-        if len(self.charges) != 0:
-            self.Nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
-            self.Seextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
-            self.Shextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
-            self.nextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
-            self.pextra = np.zeros((len(self.charges), nx*ny*nz), dtype=float)
+        c = len(self.lines_defects) + len(self.planes_defects)
+        if c != 0:
+            self.Nextra  = np.zeros((c, nx*ny*nz), dtype=float)
+            self.Seextra = np.zeros((c, nx*ny*nz), dtype=float)
+            self.Shextra = np.zeros((c, nx*ny*nz), dtype=float)
+            self.nextra  = np.zeros((c, nx*ny*nz), dtype=float)
+            self.pextra  = np.zeros((c, nx*ny*nz), dtype=float)
             self.extra_charge_sites = []
-            for cdx, c in enumerate(self.charges):
-                # XXX TODO generalize to 3D (extremities must be in ascending
-                # order
-                if c.ya <= c.yb:
-                    xa, ya, za = get_indices(self, (c.xa, c.ya, c.za))
-                    xb, yb, zb = get_indices(self, (c.xb, c.yb, c.zb))
-                else:
-                    xa, ya, za = get_indices(self, (c.xb, c.yb, c.zb))
-                    xb, yb, zb = get_indices(self, (c.xa, c.ya, c.za))
-                    
 
-                # find the sites closest to the straight line defined by
-                # (xa,ya,za) and (xb,yb,zb) and the associated dl       
+            # fill in charges from lines defects
+            for cdx, c in enumerate(self.lines_defects):
+                s, dl = get_line_defects_sites(self, c)
 
-                # XXX TODO generalize to 3D and the distance to a plane
-                distance = lambda x, y:\
-                    abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
-                        np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
-
-                s = [xa + ya*nx]
-                dl = []
-                x, y = xa, ya
-                def condition(x, y):
-                    if xa <= xb:
-                        return x <= xb and y <= yb and x < nx-1 and y < ny-1
-                    else:
-                        return x >= xb and y <= yb and x > 1 and y < ny-1
-                        
-                while condition(x, y):
-                    # distance between the point above (x,y) and the segment
-                    d1 = distance(self.xpts[x], self.ypts[y+1])
-                    # distance between the point right of (x,y) and the segment
-                    d2 = distance(self.xpts[x+1], self.ypts[y])
-                    # distance between the point left of (x,y) and the segment
-                    d3 = distance(self.xpts[x-1], self.ypts[y])
-                    
-                    if xa < xb: # overall direction is to the right
-                        if d1 < d2:
-                            x, y = x, y+1
-                            # set dl for the previous node
-                            dl.append((self.dx[x] + self.dx[x-1])/2.)
-                        else:
-                            x, y = x+1, y
-                            # set dl for the previous node
-                            dl.append((self.dy[y] + self.dy[y-1])/2.)
-                    else: # overall direction is to the left
-                        if d1 < d3:
-                            x, y = x, y+1
-                            # set dl for the previous node
-                            dl.append((self.dx[x] + self.dx[x-1])/2.)
-                        else:
-                            x, y = x-1, y
-                            # set dl for the previous node
-                            dl.append((self.dy[y] + self.dy[y-1])/2.)
-                    s.append(x + y*nx)
-                dl.append(dl[-1])
-                dl = np.asarray(dl)
-
-                if nz > 1: # no tilted planes
-                    s = get_sites(xa, ya, za, xb, yb, zb)
-
-                # fill arrays of DOS and surface recombination velocities
                 self.extra_charge_sites += [s]
-                self.Nextra[cdx, s] = c.density
-                self.Seextra[cdx, s] = c.Se
-                self.Shextra[cdx, s] = c.Sh
-                if ny > 1 and nz == 1: # meaning a 2D problem
-                    self.Nextra[cdx, s] = self.Nextra[cdx, s] / dl
-                    self.Seextra[cdx, s] = self.Seextra[cdx, s] / dl
-                    self.Shextra[cdx, s] = self.Shextra[cdx, s] / dl
+
+                self.Nextra[cdx, s]  = self.Nextra[cdx, s] / dl
+                self.Seextra[cdx, s] = self.Seextra[cdx, s] / dl
+                self.Shextra[cdx, s] = self.Shextra[cdx, s] / dl
                 self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
                 self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
+            # fill in charges from plane defects
+            for cdx, c in enumerate(self.planes_defects):
+                s = get_plane_defects_sites(self, c)
+
+                self.extra_charge_sites += [s]
+
+                self.Nextra[cdx, s]  = c.density
+                self.Seextra[cdx, s] = c.Se
+                self.Shextra[cdx, s] = c.Sh
+
 
         # generation
         if self.g == 0:
@@ -458,3 +398,69 @@ class Builder():
                                        for y in self.ypts
                                        for x in self.xpts]
             self.g = np.asarray(g) / self.U
+
+
+def get_line_defects_sites(system, line_defects):
+    c = line_defects
+    # put end points of the line in ascending order
+    if c.ya <= c.yb:
+        xa, ya, _ = get_indices(system, (c.xa, c.ya, 0))
+        xb, yb, _ = get_indices(system, (c.xb, c.yb, 0))
+    else:
+        xa, ya, _ = get_indices(system, (c.xb, c.yb, 0))
+        xb, yb, _ = get_indices(system, (c.xa, c.ya, 0))
+        
+    # find the sites closest to the straight line defined by
+    # (xa,ya,za) and (xb,yb,zb) and the associated orthogonal dl       
+    distance = lambda x, y:\
+        abs((c.yb-c.ya)*x - (c.xb-c.xa)*y + c.xb*c.ya - c.yb*c.xa)/\
+            np.sqrt((c.yb-c.ya)**2 + (c.xb-c.xa)**2)
+
+    xpts, ypts = system.xpts, system.ypts
+    dx, dy = system.dx, system.dy
+    nx, ny = system.nx, system.ny
+
+    s = [xa + ya*nx]
+    dl = []
+    x, y = xa, ya
+    def condition(x, y):
+        if xa <= xb:
+            return x <= xb and y <= yb and x < nx-1 and y < ny-1
+        else:
+            return x >= xb and y <= yb and x > 1 and y < ny-1
+            
+    while condition(x, y):
+        # distance between the point above (x,y) and the segment
+        d1 = distance(xpts[x], ypts[y+1])
+        # distance between the point right of (x,y) and the segment
+        d2 = distance(xpts[x+1], ypts[y])
+        # distance between the point left of (x,y) and the segment
+        d3 = distance(xpts[x-1], ypts[y])
+        
+        if xa < xb: # overall direction is to the right
+            if d1 < d2:
+                x, y = x, y+1
+                # set dl for the previous node
+                dl.append((dx[x] + dx[x-1])/2.)
+            else:
+                x, y = x+1, y
+                # set dl for the previous node
+                dl.append((dy[y] + dy[y-1])/2.)
+        else: # overall direction is to the left
+            if d1 < d3:
+                x, y = x, y+1
+                # set dl for the previous node
+                dl.append((dx[x] + dx[x-1])/2.)
+            else:
+                x, y = x-1, y
+                # set dl for the previous node
+                dl.append((dy[y] + dy[y-1])/2.)
+        s.append(x + y*nx)
+    dl.append(dl[-1])
+    dl = np.asarray(dl)
+    return s, dl
+
+def get_plane_defects_sites(system, plane_defects):
+    c = plane_defects
+    #TODO finish the function
+ 
