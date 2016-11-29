@@ -111,7 +111,7 @@ output after each step::
     efp = np.zeros((sys.nx*sys.ny,))
 
     # Loop over the applied potentials made dimensionless
-    applied_voltages = np.linspace(0, 1, 41) / sys.vt
+    applied_voltages = np.linspace(0, 1, 41) / sys.scaling.energy
     for idx, vapp in enumerate(applied_voltages):
         # Apply the contacts boundary conditions
         for i in range(0, sys.nx*(sys.ny-1)+1, sys.nx):
