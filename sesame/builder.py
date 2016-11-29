@@ -57,6 +57,7 @@ def get_line_defects_sites(system, line_defects):
         else:
             return i >= ib and j <= jb and i > 1 and j < ny-1
             
+    # TODO if a point is at ypts[-1], this crashes!
     while condition(i, j):
         # distance between the point above (i,j) and the segment
         d1 = distance(xpts[i], ypts[j+1])
@@ -91,11 +92,61 @@ def get_line_defects_sites(system, line_defects):
 def get_plane_defects_sites(system, plane_defects):
     c = plane_defects
     #TODO finish the function
+    # This will only work for planes parallel to at least one direction. These
+    # planes should be defined by two parallel lines
 
+    # first line
     xa, ya, za = c.location[0]
     xb, yb, zb = c.location[1]
+    # second line
     xc, yc, zc = c.location[2]
     xd, yd, zd = c.location[3]
+
+    # determine the direction parallel to the plane 
+    ## vectors within the plane
+    v1 = (xb-xa, yb-ya, zb-za)
+    v2 = (xc-xa, yc-ya, zc-za)
+    ## vector perpendicular to the plane
+    vperp = np.cross(v1, v2)
+    A, B, C = vperp
+    D = -A*xa - B*ya - C*za
+
+    distance = lambda x, y, z: abs(A*x + B*y + C*z + D) / \
+                               np.sqrt(A**2 + B**2 + C**2)
+
+
+    ia, ja, ka = get_indices(system, (xa, ya, za))
+    ib, jb, kb = get_indices(system, (xb, yb, zb))
+    ic, jc, kc = get_indices(system, (xc, yc, zc))
+    idd, jd, kd = get_indices(system, (xd, yd, zd))
+
+    nx, ny, nz = system.nx, system.ny, system.nz
+    sites = []
+
+    # sites making the first line
+    sites += [i + j*nx + ka*nx*nz for j in range(ja, jb+1) for i in range(ia, ib+1)]
+
+
+    # if vperp[0] == 0 and vperp[1] != 0 and vperp[1] != 0: # x is orthogonal to plane
+    #     # determine if next line is at the same z, or down, or up
+    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
+    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
+    #     d2 = distance(system.xpts[i], system.ypts[j], system.zpts[k+1])
+
+
+
+
+    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] != 0: # y is orthogonal to plane
+
+    # if vperp[0] != 0 and vperp[1] != 0 and vperp[2] == 0: # z is orthogonal to plane
+
+    # if vperp[0] == 0 and vperp[1] == 0 and vperp[2] != 0:
+
+    # if vperp[0] == 0 and vperp[1] != 0 and vperp[2] == 0:
+
+    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] == 0:
+
+
 
 
 
