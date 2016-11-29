@@ -74,8 +74,8 @@ potential. This will provide a guess for the drift diffusion Poisson solver
 later on. Because of our geometry the potential on the left and right read
 
 .. math::
-   \phi(0, y) &= \frac{k_BT}{e}\ln\left(N_D/N_C \right)\\
-   \phi(L, y) &= -E_g - \frac{k_BT}{e}\ln\left(N_A/N_V \right)
+   \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
+   \phi(L, y) &= -E_g - \frac{k_BT}{q}\ln\left(N_A/N_V \right)
 
 which is computed as follows::
     

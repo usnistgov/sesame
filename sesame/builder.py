@@ -426,11 +426,12 @@ class Builder():
 
                 self.extra_charge_sites += [s]
 
-                self.Nextra[cdx, s]  = self.Nextra[cdx, s] / dl
-                self.Seextra[cdx, s] = self.Seextra[cdx, s] / dl
-                self.Shextra[cdx, s] = self.Shextra[cdx, s] / dl
+                self.Nextra[cdx, s]  = c.density / dl
+                self.Seextra[cdx, s] = c.Se / dl
+                self.Shextra[cdx, s] = c.Sh / dl
                 self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
                 self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
+
             # fill in charges from plane defects
             for cdx, c in enumerate(self.planes_defects):
                 s = get_plane_defects_sites(self, c)
@@ -440,6 +441,8 @@ class Builder():
                 self.Nextra[cdx, s]  = c.density
                 self.Seextra[cdx, s] = c.Se
                 self.Shextra[cdx, s] = c.Sh
+                self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
+                self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
 
 
 

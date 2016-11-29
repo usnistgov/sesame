@@ -12,12 +12,12 @@ spatial discretization.  Recall that densities are defined on sites, and fluxes
 (such as current flux, electric field flux) are defined on links.  This is a
 very common technique, and it is always important to remember that *sites* and
 *links* in the discretized grid are fundamentally different objects, as shown in
-Fig. 1.
+the figure below.
 
-.. figure:: site_link.svg
+.. figure:: site_link.*
    :align: center
 
-   Fig. 1: Sites versus links.  We take the indexing convention that :math:`\Delta
+   Sites versus links.  We take the indexing convention that :math:`\Delta
    x^i` represents the space between sites :math:`i` and :math:`i+1`.
 
 We consider a one-dimensional system to illustrate how the discretization of the
@@ -46,7 +46,7 @@ We plug this form of :math:`p` into Eq. :eq:`ji`, then multiply both sides of
 the hole current  by :math:`e^{q\phi(x)/k_BT}\ dx`, 
 
 .. math::
-    J_p^i = -q \mu_p N_V e^{\left(b_l-E_g+E_{F_p}-\phi(x)\right)/k_BT}
+    J_p^i = -q \mu_p N_V e^{\left(b_l-E_g+E_{F_p}-q\phi(x)\right)/k_BT}
     \frac{\partial E_{F_p}}{\partial x} 
     
 and integrate over link :math:`i`
@@ -117,8 +117,8 @@ conditions given in introduction.
 
 
 We use a Newton-Raphson method to solve the above set of equations.  The idea
-behind the method is clearest in a simple one-dimensional case as illustrated in
-Fig. 2.  Given a general nonlinear function :math:`f(x)`, we want to find its
+behind the method is clearest in a simple one-dimensional case as illustrated on
+the figure below.  Given a general nonlinear function :math:`f(x)`, we want to find its
 root :math:`\bar x: f(\bar x)=0`.  Given an initial guess :math:`x_1`, one can
 estimate the error :math:`\delta x` in this guess, assuming that the function
 varies linearly all the way to its root
@@ -129,10 +129,10 @@ varies linearly all the way to its root
 
 An updated guess is provided by :math:`x_2 = x_1 - \delta x`.
 
-.. figure:: NR.svg
+.. figure:: NR.*
     :align: center
 
-    Fig. 2: Schematic for the Newton-Raphson method for root finding.
+    Schematic for the Newton-Raphson method for root finding.
 
 In multiple dimensions the last term in Eq. :eq:`eq1d` is replaced by the
 inverse of the Jacobian, which is the multi-dimensional generalization

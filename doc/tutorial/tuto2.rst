@@ -13,7 +13,7 @@ Multiple regions in a two-dimensional system
 Suppose we want to simulate a two-dimensional pn junction (homojunction) with a
 line of defects as depicted below.  
 
-.. image:: geometry.svg
+.. image:: geometry.*
    :align: center
 
 As usual, we start by importing the sesame package and numpy. We construct the

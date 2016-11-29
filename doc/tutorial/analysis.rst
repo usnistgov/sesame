@@ -31,13 +31,13 @@ easily, and the quantities used to make the system of equations dimensionless::
 In the table below we show the syntax used to get some attributes of the
 :func:`~sesame.builder.Builder`
 
-=============================               ==========================
+=============================               =============================================
 Attribute                                   Syntax
-=============================               ==========================
+=============================               =============================================
 grid nodes                                   ``sys.xpts``, ``sys.ypts``, ``sys.zpts``
-number of grid nodes                         ``sys.nx, ``sys.ny``, ``sys.nz``
+number of grid nodes                         ``sys.nx``, ``sys.ny``, ``sys.nz``
 grid distances                               ``sys.dx``, ``sys.dy``, ``sys.dz``
-=============================               ==========================
+=============================               =============================================
 
 The exhaustive list of all accessible attributes is in the
 documentation of the :func:`~sesame.builder.Builder` class itself.
@@ -51,7 +51,7 @@ generated a file called ``data.vapp_idx_1.npy``::
 The quantities ``efn``, ``efp``, ``v`` are one-dimensional arrays that will be
 used to compute and plot physical quantities. For instance, a 3D map of the
 electrostatic potential of a 2D system is obtained as follows (requires
-matplotlib)::
+Matplotlib)::
 
     from sesame.plotter import map3D
     map3D(sys, v, 1e-6)

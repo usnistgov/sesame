@@ -15,7 +15,7 @@ def system():
                         np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
                         np.linspace(2.75e-6, Ly, 100)))
 
-    sys = sesame.Builder()
+    sys = sesame.Builder(x, y)
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -58,7 +58,7 @@ def system():
 
 if __name__ == '__main__':
     sys = system()
-    v_left  = np.log(abs(sys.rho[0])/sys.Nc[0])
+    v_left  = np.log(sys.rho[0]/sys.Nc[0])
     v_right = -sys.Eg[0] - np.log(abs(sys.rho[sys.nx-1])/sys.Nv[sys.nx-1])
 
     # Initial guess

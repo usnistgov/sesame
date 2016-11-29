@@ -12,7 +12,7 @@ contacts in :math:`x=0` and :math:`x=L` (where :math:`L` is the the length of
 the device in the :math:`x`-direction). The doped regions are drawn for the
 example only, any doping profile can be considered.
 
-.. image:: model.svg
+.. image:: model.*
    :align: center
 
 
@@ -20,27 +20,27 @@ The steady state of this system under nonequilibrium conditions is treated with
 the drift-diffusion-Poisson equations
 
 .. math:: 
-   \vec{\nabla}\cdot \vec{J}_n &= -e(G-R)\\
-   \vec{\nabla}\cdot \vec{J}_p &= e(G-R)\\
+   \vec{\nabla}\cdot \vec{J}_n &= -q(G-R)\\
+   \vec{\nabla}\cdot \vec{J}_p &= q(G-R)\\
    \Delta \phi &= \frac{\rho}{\epsilon}
    :label: ddp
 
 with the currents
 
 .. math:: 
-   \vec{J}_n &= -e\mu_n n \vec{\nabla} \phi + eD_n \vec{\nabla}n 
+   \vec{J}_n &= -q\mu_n n \vec{\nabla} \phi + eD_n \vec{\nabla}n 
    
-   \vec{J}_p &= -e\mu_p p \vec{\nabla} \phi - eD_p \vec{\nabla}p
+   \vec{J}_p &= -q\mu_p p \vec{\nabla} \phi - eD_p \vec{\nabla}p
 
 where :math:`n, p` are the electron and hole number densities, and :math:`\phi`
 is the electrostatic potential. :math:`J_{n(p)}` is the charge current density
-of electrons (holes). Here :math:`e` is positive (the electron charge is
-:math:`-e`). :math:`\rho` is the local charge and :math:`\epsilon` is the
-dielectric constant of the material. :math:`\mu_{n,p}` is the electron/hole
+of electrons (holes). Here :math:`q` is the absolute value of the electron
+charge. :math:`\rho` is the local charge and :math:`\epsilon` is the dielectric
+constant of the material. :math:`\mu_{n,p}` is the electron/hole
 mobility, and is related the diffusion :math:`D _{n,p}` by :math:`D_{n,p} =
-k_BT\mu_{n,p}/e`.  :math:`G` is the generation rate density, :math:`R` is the
+k_BT\mu_{n,p}/q`.  :math:`G` is the generation rate density, :math:`R` is the
 recombination. The natural length scale is the Debye length, given by
-:math:`\lambda = \epsilon k_B T /(e^2 N )`, where :math:`N` is the concentration
+:math:`\lambda = \epsilon k_B T /(q^2 N )`, where :math:`N` is the concentration
 relevant to the problem. 
 
 We suppose that the recombination is through a Shockley-Read-Hall mechanism. The
@@ -78,10 +78,10 @@ parameterized with the surface recombination velocities for electrons and holes
 at the contacts, denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
 
 .. math::
-   \vec{J}_n(0,y,z) \cdot \vec{u}_x &= eS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
-   \vec{J}_p(0,y,z) \cdot \vec{u}_x &= -eS_{c_p} (p(0,y,z) - p_{\rm eq}(0,y,z))\\
-   \vec{J}_n(L,y,z) \cdot \vec{u}_x &= -eS_{c_n} (n(L,y,z) - n_{\rm eq}(L,y,z))\\
-   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= -eS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
+   \vec{J}_n(0,y,z) \cdot \vec{u}_x &= qS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
+   \vec{J}_p(0,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(0,y,z) - p_{\rm eq}(0,y,z))\\
+   \vec{J}_n(L,y,z) \cdot \vec{u}_x &= -qS_{c_n} (n(L,y,z) - n_{\rm eq}(L,y,z))\\
+   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
    :label: BCs
 
 where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.
@@ -103,7 +103,7 @@ within the gap, which may lead to charging of the grain boundary, and increased
 recombination at the grain boundary
 
 .. math::
-    Q = e\sum_j\frac{\rho_j}{2}(1-2f_j)
+    Q = q\sum_j\frac{\rho_j}{2}(1-2f_j)
 
 where :math:`\rho_j` is the 2D defect density of the state at energy :math:`E_j`.
 The occupancy of the `j`-th defect level :math:`f_j` is given by [SHOXX]
@@ -164,15 +164,15 @@ are convenient in part because they guarantee that carrier densities are always
 positive. While carrier densities vary by many orders of magnitude, quasi-Fermi
 levels require much less variation to describe the system. The signs in Eq.
 :eq:`np` can be confusing; they are such that the carrier density is larger if
-its quasi-Fermi level is more positive, see Fig. 1. 
+its quasi-Fermi level is more positive, see the figure below.
 
-.. figure:: bands.svg
+.. figure:: bands.*
    :align: center
    :figwidth: 500
 
-   Fig. 2: Equilibrium energy level diagrams showing the electron quasi-Fermi
+   Equilibrium energy level diagrams showing the electron quasi-Fermi
    level in an n-type (p-type) semiconductor on the left (right). We chose
-   :math:`e\phi = -E_g/2` to make electron and hole quasi-Fermi levels
+   :math:`q\phi = -E_g/2` to make electron and hole quasi-Fermi levels
    symmetric. 
 
 On an energy diagram, this
@@ -191,8 +191,8 @@ The electron and hole current can be shown to be proportional to the spatial
 gradient of the quasi-Fermi level
 
 .. math::
-   \vec{J}_n &= e\mu_n n \vec{\nabla} E_{F_n}\\
-   \vec{J}_p &= -e\mu_p p \vec{\nabla} E_{F_p}
+   \vec{J}_n &= q\mu_n n \vec{\nabla} E_{F_n}\\
+   \vec{J}_p &= -q\mu_p p \vec{\nabla} E_{F_p}
 
 These relations for the currents will be used in the discretization of Eq.
 :eq:`ddp`.
