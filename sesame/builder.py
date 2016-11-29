@@ -2,7 +2,7 @@ import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
 from sesame.utils import get_indices
-from itertools import product
+from itertools import product, chain
 
 
 def get_sites(sys, location):
@@ -120,12 +120,63 @@ def get_plane_defects_sites(system, plane_defects):
     ic, jc, kc = get_indices(system, (xc, yc, zc))
     idd, jd, kd = get_indices(system, (xd, yd, zd))
 
+    xpts, ypts, zpts = system.xpts, system.ypts, system.zpts
     nx, ny, nz = system.nx, system.ny, system.nz
-    sites = []
 
     # sites making the first line
-    sites += [i + j*nx + ka*nx*nz for j in range(ja, jb+1) for i in range(ia, ib+1)]
+    sites = [i + j*nx + k*nx*nz for k in range(ka, kb+1) for j in range(ja, jb+1) 
+                                for i in range(ia, ib+1)]
 
+    i, j, k = ia, ja, ka
+    def condition(i, j, k):
+        return j <= jd and j < ny-1 and k <= kd and k < nz-1
+
+    icoord = [i for i in range(ia, ib+1)]
+    jcoord = [ja for i in range(ia, ib+1)]
+    kcoord = [ka for i in range(ia, ib+1)]
+    print(k)
+    while condition(i, j, k):
+        d1 = distance(xpts[i], ypts[j], zpts[k+1])
+        d2 = distance(xpts[i], ypts[j+1], zpts[k])
+
+        if d1 < d2:
+            j, k = j, k+1
+        else:
+            j, k = j+1, k
+        print(k)
+
+        new_sites = [i + j*nx + k*nx*ny for i in range(ia, ib+1)]
+        sites = chain(sites, new_sites)
+
+        # new_i = [i for i in range(ia, ib+1)]
+        # new_j = [ja for i in range(ia, ib+1)]
+        new_k = [k for ix in range(ia, ib+1)]
+        # kccord = chain(kcoord, new_k)
+        kcoord.extend(new_k)
+
+    z = []
+    for u in kcoord:
+        z.append(zpts[u]/1e-6)
+    z = np.asarray(z)
+    import matplotlib.pyplot as plt
+    from mpl_toolkits import mplot3d
+    scale = 1e-6
+    x, y = xpts[icoord] / scale, ypts[jcoord] / scale
+    print(len(x), len(y), len(z))
+    nx, ny = len(x), len(y)
+    data_xy = z.reshape(ny, nx).T
+    X, Y = np.meshgrid(x, y)
+    fig = plt.figure(figsize=(8,6))
+    ax = fig.add_subplot(1,1,1, projection='3d')
+    Z = data_xy.T
+    ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
+    ax.mouse_init(rotate_btn=1, zoom_btn=3)
+    plt.xlabel('x')
+    plt.ylabel('y')
+    plt.show()
+
+
+    return sites        
 
     # if vperp[0] == 0 and vperp[1] != 0 and vperp[1] != 0: # x is orthogonal to plane
     #     # determine if next line is at the same z, or down, or up
