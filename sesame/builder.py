@@ -114,6 +114,10 @@ def get_plane_defects_sites(system, plane_defects):
     distance = lambda x, y, z: abs(A*x + B*y + C*z + D) / \
                                np.sqrt(A**2 + B**2 + C**2)
 
+    # determine what direction the plane is parallel to
+    if np.dot(vperp, (1,0,0)) == 0: parallel = 'x'
+    if np.dot(vperp, (0,1,0)) == 0: parallel = 'y'
+    if np.dot(vperp, (1,0,1)) == 0: parallel = 'z'
 
     ia, ja, ka = get_indices(system, (xa, ya, za))
     ib, jb, kb = get_indices(system, (xb, yb, zb))
@@ -129,30 +133,85 @@ def get_plane_defects_sites(system, plane_defects):
 
     i, j, k = ia, ja, ka
     def condition(i, j, k):
-        return j <= jd and j < ny-1 and k <= kd and k < nz-1
+        if parallel == 'x':
+            if ja < jb:
+                return j <= jd and j < ny-1 and k <= kd and k < nz-1
+            else:
+                return j >= jd and j > 1 and k <= kd and k < nz-1
+        if parallel == 'y':
+            if ia < ib:
+                return i <= idd and i < nx-1 and k <= kd and k < nz-1
+            else:
+                return i >= idd and i > 1 and k <= kd and k < nz-1
+        if parallel == 'z':
+            if ja < jb:
+                return i <= idd and i < nx-1 and j <= jd and j < ny-1
+            else:
+                return i >= idd and i < 1 and j <= jd and j < ny-1
 
-    icoord = [i for i in range(ia, ib+1)]
-    jcoord = [ja for i in range(ia, ib+1)]
-    kcoord = [ka for i in range(ia, ib+1)]
-    print(k)
+    # icoord = [i for i in range(ia, ib+1)]
+    # jcoord = [ja]
+    # kcoord = [ka for i in range(ia, ib+1)]
+    # step = 1
     while condition(i, j, k):
+        # plane parallel to x
         d1 = distance(xpts[i], ypts[j], zpts[k+1])
-        d2 = distance(xpts[i], ypts[j+1], zpts[k])
-
-        if d1 < d2:
-            j, k = j, k+1
+        if ja < jb: # ascending direction in y going to Ly
+            d2 = distance(xpts[i], ypts[j+1], zpts[k])
+            if d1 < d2: j, k = j, k+1
+            else: j, k = j+1, k
         else:
-            j, k = j+1, k
-        print(k)
-
+            d2 = distance(xpts[i], ypts[j-1], zpts[k])
+            if d1 < d2: j, k = j, k+1
+            else: j, k = j-1, k
         new_sites = [i + j*nx + k*nx*ny for i in range(ia, ib+1)]
-        sites = chain(sites, new_sites)
+        sites = sites.extend(new_sites)
 
-        # new_i = [i for i in range(ia, ib+1)]
-        # new_j = [ja for i in range(ia, ib+1)]
-        new_k = [k for ix in range(ia, ib+1)]
-        # kccord = chain(kcoord, new_k)
-        kcoord.extend(new_k)
+
+        # plane parallel to y
+        d1 = distance(xpts[i], ypts[j], zpts[k+1])
+        if ia < ib: # ascending direction in x going to Lx
+            d2 = distance(xpts[i+1], ypts[j], zpts[k])
+            if d1 < d2: i, k = i, k+1
+            else: i, k = i+1, k
+        else:
+            d2 = distance(xpts[i-1], ypts[j], zpts[k])
+            if d1 < d2: i, k = i, k+1
+            else: i, k = i-1, k
+        new_sites = [i + j*nx + k*nx*ny for j in range(ja, jb+1)]
+        sites = sites.extend(new_sites)
+
+
+        # plane parallel to z
+        d1 = distance(xpts[i], ypts[j+1], zpts[k])
+        if ja < jb: # ascending direction toward increasing y
+            d2 = distance(xpts[i+1], ypts[j], zpts[k])
+            if d1 < d2: i, j = i, j+1
+            else: i, j = i+1, j
+        else:
+            d2 = distance(xpts[i-1], ypts[j], zpts[k])
+            if d1 < d2: i, j = i, j+1
+            else: i, j = i-1, j
+        new_sites = [i + j*nx + k*nx*ny for k in range(ka, kb+1)]
+        sites = sites.extend(new_sites)
+
+
+
+        ## plotting stuff
+        # step += 1
+        # new_j = [j]
+        # new_k = [k for ix in range(ia, ib+1)]
+        # jcoord.extend(new_j)
+        # kcoord.extend(new_k)
+
+
+
+
+
+
+
+
+
 
     z = []
     for u in kcoord:
@@ -162,14 +221,15 @@ def get_plane_defects_sites(system, plane_defects):
     from mpl_toolkits import mplot3d
     scale = 1e-6
     x, y = xpts[icoord] / scale, ypts[jcoord] / scale
-    print(len(x), len(y), len(z))
     nx, ny = len(x), len(y)
-    data_xy = z.reshape(ny, nx).T
+
     X, Y = np.meshgrid(x, y)
+
+    data_xy = z.reshape(step, nx).T
     fig = plt.figure(figsize=(8,6))
     ax = fig.add_subplot(1,1,1, projection='3d')
     Z = data_xy.T
-    ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
+    ax.plot_surface(X, Y, Z)#,  alpha=alpha, cmap=cmap)
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
     plt.xlabel('x')
     plt.ylabel('y')
