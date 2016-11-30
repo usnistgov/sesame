@@ -115,9 +115,17 @@ def get_plane_defects_sites(system, plane_defects):
                                np.sqrt(A**2 + B**2 + C**2)
 
     # determine what direction the plane is parallel to
-    if np.dot(vperp, (1,0,0)) == 0: parallel = 'x'
-    if np.dot(vperp, (0,1,0)) == 0: parallel = 'y'
-    if np.dot(vperp, (1,0,1)) == 0: parallel = 'z'
+    parallel = None
+    if np.dot(vperp, (1,0,0)) == 0.0: 
+        parallel = 'x'
+    if np.dot(vperp, (0,1,0)) == 0.0: 
+        parallel = 'y'
+    if np.dot(vperp, (1,0,1)) == 0.0: 
+        parallel = 'z'
+
+    # if parallel is None:
+    #     print('The plane defect orientation is not handled.')
+    #     exit(1)
 
     ia, ja, ka = get_indices(system, (xa, ya, za))
     ib, jb, kb = get_indices(system, (xb, yb, zb))
@@ -131,15 +139,14 @@ def get_plane_defects_sites(system, plane_defects):
     sites = [i + j*nx + k*nx*nz for k in range(ka, kb+1) for j in range(ja, jb+1) 
                                 for i in range(ia, ib+1)]
 
-    i, j, k = ia, ja, ka
     def condition(i, j, k):
         if parallel == 'x':
-            if ja < jb:
-                return j <= jd and j < ny-1 and k <= kd and k < nz-1
+            if ka < kc:
+                return j <= jd and j < ny-1 and k <= kc and k < nz-1
             else:
-                return j >= jd and j > 1 and k <= kd and k < nz-1
+                return j >= jd and j > 1 and k <= kc and k < nz-1
         if parallel == 'y':
-            if ia < ib:
+            if ka < kb:
                 return i <= idd and i < nx-1 and k <= kd and k < nz-1
             else:
                 return i >= idd and i > 1 and k <= kd and k < nz-1
@@ -149,60 +156,76 @@ def get_plane_defects_sites(system, plane_defects):
             else:
                 return i >= idd and i < 1 and j <= jd and j < ny-1
 
-    # icoord = [i for i in range(ia, ib+1)]
-    # jcoord = [ja]
-    # kcoord = [ka for i in range(ia, ib+1)]
-    # step = 1
+    ################
+    ##  * Define the planes by two lines parallel to eachother, that are
+    ##    parallel to one direction of the basis (ie either x, y, or z)
+    ##  * The parallel thing does not work when parallel to 2 directions
+    ################
+    if parallel == 'x':
+        icoord = [i for i in range(ia, ib+1)]
+        jcoord = [ja]
+        kcoord = [ka for i in range(ia, ib+1)]
+    if parallel == 'y':
+        icoord = [ia]
+        jcoord = [j for j in range(ja, jb+1)]
+        kcoord = [ka for j in range(ja, jb+1)]
+    if parallel == 'z':
+        icoord = [ia]
+        jcoord = [ja]
+        kcoord = [k for k in range(ka, kb+1)]
+    step = 1
+
+    i, j, k = ia, ja, ka
     while condition(i, j, k):
         # plane parallel to x
-        d1 = distance(xpts[i], ypts[j], zpts[k+1])
-        if ja < jb: # ascending direction in y going to Ly
-            d2 = distance(xpts[i], ypts[j+1], zpts[k])
-            if d1 < d2: j, k = j, k+1
-            else: j, k = j+1, k
-        else:
-            d2 = distance(xpts[i], ypts[j-1], zpts[k])
-            if d1 < d2: j, k = j, k+1
-            else: j, k = j-1, k
-        new_sites = [i + j*nx + k*nx*ny for i in range(ia, ib+1)]
-        sites = sites.extend(new_sites)
-
+        if parallel == 'x':
+            d1 = distance(xpts[i], ypts[j], zpts[k+1])
+            if ka < kc: # ascending direction in y going to Ly
+                d2 = distance(xpts[i], ypts[j+1], zpts[k])
+                if d1 < d2: j, k = j, k+1
+                else: j, k = j+1, k
+            else:
+                d2 = distance(xpts[i], ypts[j-1], zpts[k])
+                if d1 < d2: j, k = j, k+1
+                else: j, k = j-1, k
+            new_sites = [i + j*nx + k*nx*ny for i in range(ia, ib+1)]
+            new_j = [j]
+            new_k = [k for ix in range(ia, ib+1)]
 
         # plane parallel to y
-        d1 = distance(xpts[i], ypts[j], zpts[k+1])
-        if ia < ib: # ascending direction in x going to Lx
-            d2 = distance(xpts[i+1], ypts[j], zpts[k])
-            if d1 < d2: i, k = i, k+1
-            else: i, k = i+1, k
-        else:
-            d2 = distance(xpts[i-1], ypts[j], zpts[k])
-            if d1 < d2: i, k = i, k+1
-            else: i, k = i-1, k
-        new_sites = [i + j*nx + k*nx*ny for j in range(ja, jb+1)]
-        sites = sites.extend(new_sites)
-
+        if parallel == 'y':
+            d1 = distance(xpts[i], ypts[j], zpts[k+1])
+            if ka < kc: # ascending direction in x going to Lx
+                d2 = distance(xpts[i+1], ypts[j], zpts[k])
+                if d1 < d2: i, k = i, k+1
+                else: i, k = i+1, k
+            else:
+                d2 = distance(xpts[i-1], ypts[j], zpts[k])
+                if d1 < d2: i, k = i, k+1
+                else: i, k = i-1, k
+            new_sites = [i + j*nx + k*nx*ny for j in range(ja, jb+1)]
 
         # plane parallel to z
-        d1 = distance(xpts[i], ypts[j+1], zpts[k])
-        if ja < jb: # ascending direction toward increasing y
-            d2 = distance(xpts[i+1], ypts[j], zpts[k])
-            if d1 < d2: i, j = i, j+1
-            else: i, j = i+1, j
-        else:
-            d2 = distance(xpts[i-1], ypts[j], zpts[k])
-            if d1 < d2: i, j = i, j+1
-            else: i, j = i-1, j
-        new_sites = [i + j*nx + k*nx*ny for k in range(ka, kb+1)]
-        sites = sites.extend(new_sites)
+        if parallel == 'z':
+            d1 = distance(xpts[i], ypts[j+1], zpts[k])
+            if ja < jb: # ascending direction toward increasing y
+                d2 = distance(xpts[i+1], ypts[j], zpts[k])
+                if d1 < d2: i, j = i, j+1
+                else: i, j = i+1, j
+            else:
+                d2 = distance(xpts[i-1], ypts[j], zpts[k])
+                if d1 < d2: i, j = i, j+1
+                else: i, j = i-1, j
+            new_sites = [i + j*nx + k*nx*ny for k in range(ka, kb+1)]
+
+        step += 1
+        sites.extend(new_sites)
 
 
 
         ## plotting stuff
-        # step += 1
-        # new_j = [j]
-        # new_k = [k for ix in range(ia, ib+1)]
-        # jcoord.extend(new_j)
-        # kcoord.extend(new_k)
+        jcoord.extend(new_j)
+        kcoord.extend(new_k)
 
 
 
