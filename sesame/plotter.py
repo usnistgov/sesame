@@ -1,5 +1,5 @@
 import numpy as np
-from sesame.utils import get_indices
+from sesame.utils import Bresenham2d, extra_charges_plane
 import warnings
 
 try:
@@ -17,8 +17,8 @@ except ImportError:
 
 def plot_line_defects(sys, scale=1e-6, ls='-o'):
     """
-    Plot the sites containing additional charges. The length scale of the the
-    graph is 1 micrometer.
+    Plot the sites containing additional charges located on lines in 2D. The
+    length scale of the graph is 1 micrometer by default.
 
     Parameters
     ----------
@@ -36,53 +36,56 @@ def plot_line_defects(sys, scale=1e-6, ls='-o'):
     for c in sys.lines_defects:
         xa, ya = c.location[0]
         xb, yb = c.location[1]
-        if ya <= yb:
-            ia, ja, _ = get_indices(sys, (xa, ya, 0))
-            ib, jb, _ = get_indices(sys, (xb, yb, 0))
-        else:
-            ia, ja, _ = get_indices(sys, (xb, yb, 0))
-            ib, jb, _ = get_indices(sys, (xa, ya, 0))
 
-        # find the sites closest to the straight line defined by
-        # (xa,ya,za) and (xb,yb,zb) and the associated dl       
-        distance = lambda x, y:\
-            abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
-                np.sqrt((yb-ya)**2 + (xb-xa)**2)
-
-        def condition(i, j):
-            if ia <= ib:
-                return i <= ib and j <= jb and i < sys.nx-1 and j < sys.ny-1
-            else:
-                return i >= ib and j <= jb and i > 1 and j < sys.ny-1
-
-        i, j = ia, ja
-        xcoord, ycoord = [ia], [ja]
-        while condition(i, j):
-            # distance between the point above (i,j) and the segment
-            d1 = distance(sys.xpts[i], sys.ypts[j+1])
-            # distance between the point right of (i,j) and the segment
-            d2 = distance(sys.xpts[i+1], sys.ypts[j])
-            # distance between the point left of (i,j) and the segment
-            d3 = distance(sys.xpts[i-1], sys.ypts[j])
-
-            if ia < ib: # overall direction is to the right
-                if d1 < d2:
-                    i, j = i, j+1
-                else:
-                    i, j = i+1, j
-            else: # overall direction is to the left
-                if d1 < d3:
-                    i, j = i, j+1
-                else:
-                    i, j = i-1, j
-            xcoord.append(i)
-            ycoord.append(j)
+        _, xcoord, ycoord, _ = Bresenham2d(sys, (xa, ya,0), (xb,yb,0))
 
         # plot the path of added charges
         plt.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
-        plt.xlabel('x')
-        plt.ylabel('y')
 
+    plt.xlabel('x')
+    plt.ylabel('y')
+
+    plt.xlim(xmin=0, xmax=sys.xpts[-1]/scale)
+    plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
+    plt.show()
+
+def plot_plane_defects(sys, scale=1e-6):
+    """
+    Plot the sites containing additional charges located on planes in 3D. The
+    length scale of the graph is 1 micrometer by default.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    scale: float
+        Relevant scaling to apply to the axes.
+    """
+    if not mpl_enabled:
+        raise RuntimeError("matplotlib was not found, but is required "
+                           "for plot()")
+
+    for c in sys.planes_defects:
+        # first line
+        P1 = np.asarray(c.location[0])
+        P2 = np.asarray(c.location[1])
+        # second line
+        P3 = np.asarray(c.location[2])
+        P4 = np.asarray(c.location[3])
+
+        _, X, Y, Z = extra_charges_plane(sys, P1, P2, P3, P4) 
+
+        X = X / scale
+        Y = Y / scale
+        Z = Z / scale
+
+        fig = plt.figure(figsize=(8,6))
+        ax = fig.add_subplot(1,1,1, projection='3d')
+        ax.plot_surface(X, Y, Z)
+
+    ax.mouse_init(rotate_btn=1, zoom_btn=3)
+    plt.xlabel('x')
+    plt.ylabel('y')
     plt.xlim(xmin=0, xmax=sys.xpts[-1]/scale)
     plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
     plt.show()
@@ -121,7 +124,7 @@ def map2D(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):
 
 def map3D(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):
     """
-    Plot a 3D map of data across the system.
+    Plot a 3D map of data across the entire system.
 
     Parameters
     ----------

@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from sesame.utils import get_indices
-from itertools import product, chain
+from sesame.utils import get_indices, extra_charges_plane
+from itertools import product
 
 
 def get_sites(sys, location):
@@ -27,260 +27,67 @@ def get_sites(sys, location):
     return s
 
 def get_line_defects_sites(system, line_defects):
-    c = line_defects
-    xa, ya = c.location[0]
-    xb, yb = c.location[1]
-    # put end points of the line in ascending order
-    if ya <= yb:
-        ia, ja, _ = get_indices(system, (xa, ya, 0))
-        ib, jb, _ = get_indices(system, (xb, yb, 0))
-    else:
-        ia, ja, _ = get_indices(system, (xb, yb, 0))
-        ib, jb, _ = get_indices(system, (xa, ya, 0))
-        
     # find the sites closest to the straight line defined by
-    # (xa,ya) and (xb,yb) and the associated orthogonal dl       
-    distance = lambda x, y:\
-        abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
-            np.sqrt((yb-ya)**2 + (xb-xa)**2)
+    # (xa,ya,za) and (xb,yb,zb) 
 
-    xpts, ypts = system.xpts, system.ypts
-    dx, dy = system.dx, system.dy
-    nx, ny = system.nx, system.ny
+    xa, ya = line_defects.location[0]
+    xb, yb = line_defects.location[1]
+    ia, ja, _ = get_indices(system, (xa, ya, 0))
+    ib, jb, _ = get_indices(system, (xb, yb, 0))
 
-    s = [ia + ja*nx]
-    dl = []
+    Dx = abs(ib - ia)    # distance to travel in X
+    Dy = abs(jb - ja)    # distance to travel in Y
+    if ia < ib:
+        incx = 1           # x will increase at each step
+    elif ia > ib:
+        incx = -1          # x will decrease at each step
+    else:
+        incx = 0
+    if ja < jb:
+        incy = 1           # y will increase at each step
+    elif ja > jb:
+        incy = -1          # y will decrease at each step
+    else:
+        incy = 0
+
+    # take the numerator of the distance of a point to the line
+    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
+
     i, j = ia, ja
-    def condition(i, j):
-        if ia <= ib:
-            return i <= ib and j <= jb and i < nx-1 and j < ny-1
+    perp_dl = []
+    sites = [i + j*system.nx]
+    for _ in range(Dx + Dy):
+        e1 = error(system.xpts[i], system.ypts[j+incy])
+        e2 = error(system.xpts[i+incx], system.ypts[j])
+        if e1 < e2:
+            j += incy
+            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
         else:
-            return i >= ib and j <= jb and i > 1 and j < ny-1
-            
-    # TODO if a point is at ypts[-1], this crashes!
-    while condition(i, j):
-        # distance between the point above (i,j) and the segment
-        d1 = distance(xpts[i], ypts[j+1])
-        # distance between the point right of (i,j) and the segment
-        d2 = distance(xpts[i+1], ypts[j])
-        # distance between the point left of (i,j) and the segment
-        d3 = distance(xpts[i-1], ypts[j])
-        
-        if ia < ib: # overall direction is to the right
-            if d1 < d2:
-                i, j = i, j+1
-                # set dl for the previous node
-                dl.append((dx[i] + dx[i-1])/2.)
-            else:
-                i, j = i+1, j
-                # set dl for the previous node
-                dl.append((dy[j] + dy[j-1])/2.)
-        else: # overall direction is to the left
-            if d1 < d3:
-                i, j = i, j+1
-                # set dl for the previous node
-                dl.append((dx[i] + dx[i-1])/2.)
-            else:
-                i, j = i-1, j
-                # set dl for the previous node
-                dl.append((dy[j] + dy[j-1])/2.)
-        s.append(i + j*nx)
-    dl.append(dl[-1])
-    dl = np.asarray(dl)
-    return s, dl
+            i += incx
+            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+        sites.append(i + j*system.nx)
+    perp_dl.append(perp_dl[-1])
+    perp_dl = np.asarray(perp_dl)
+
+    return sites, perp_dl
+
+
 
 def get_plane_defects_sites(system, plane_defects):
-    c = plane_defects
-    #TODO finish the function
     # This will only work for planes parallel to at least one direction. These
-    # planes should be defined by two parallel lines
+    # planes should be defined by two parallel lines orthogonal to the z-axis,
+    # and be rectangles.
 
     # first line
-    xa, ya, za = c.location[0]
-    xb, yb, zb = c.location[1]
+    P1 = np.asarray(plane_defects.location[0])
+    P2 = np.asarray(plane_defects.location[1])
     # second line
-    xc, yc, zc = c.location[2]
-    xd, yd, zd = c.location[3]
+    P3 = np.asarray(plane_defects.location[2])
+    P4 = np.asarray(plane_defects.location[3])
 
-    # determine the direction parallel to the plane 
-    ## vectors within the plane
-    v1 = (xb-xa, yb-ya, zb-za)
-    v2 = (xc-xa, yc-ya, zc-za)
-    ## vector perpendicular to the plane
-    vperp = np.cross(v1, v2)
-    A, B, C = vperp
-    D = -A*xa - B*ya - C*za
-
-    distance = lambda x, y, z: abs(A*x + B*y + C*z + D) / \
-                               np.sqrt(A**2 + B**2 + C**2)
-
-    # determine what direction the plane is parallel to
-    parallel = None
-    if np.dot(vperp, (1,0,0)) == 0.0: 
-        parallel = 'x'
-    if np.dot(vperp, (0,1,0)) == 0.0: 
-        parallel = 'y'
-    if np.dot(vperp, (1,0,1)) == 0.0: 
-        parallel = 'z'
-
-    # if parallel is None:
-    #     print('The plane defect orientation is not handled.')
-    #     exit(1)
-
-    ia, ja, ka = get_indices(system, (xa, ya, za))
-    ib, jb, kb = get_indices(system, (xb, yb, zb))
-    ic, jc, kc = get_indices(system, (xc, yc, zc))
-    idd, jd, kd = get_indices(system, (xd, yd, zd))
-
-    xpts, ypts, zpts = system.xpts, system.ypts, system.zpts
-    nx, ny, nz = system.nx, system.ny, system.nz
-
-    # sites making the first line
-    sites = [i + j*nx + k*nx*nz for k in range(ka, kb+1) for j in range(ja, jb+1) 
-                                for i in range(ia, ib+1)]
-
-    def condition(i, j, k):
-        if parallel == 'x':
-            if ka < kc:
-                return j <= jd and j < ny-1 and k <= kc and k < nz-1
-            else:
-                return j >= jd and j > 1 and k <= kc and k < nz-1
-        if parallel == 'y':
-            if ka < kb:
-                return i <= idd and i < nx-1 and k <= kd and k < nz-1
-            else:
-                return i >= idd and i > 1 and k <= kd and k < nz-1
-        if parallel == 'z':
-            if ja < jb:
-                return i <= idd and i < nx-1 and j <= jd and j < ny-1
-            else:
-                return i >= idd and i < 1 and j <= jd and j < ny-1
-
-    ################
-    ##  * Define the planes by two lines parallel to eachother, that are
-    ##    parallel to one direction of the basis (ie either x, y, or z)
-    ##  * The parallel thing does not work when parallel to 2 directions
-    ################
-    if parallel == 'x':
-        icoord = [i for i in range(ia, ib+1)]
-        jcoord = [ja]
-        kcoord = [ka for i in range(ia, ib+1)]
-    if parallel == 'y':
-        icoord = [ia]
-        jcoord = [j for j in range(ja, jb+1)]
-        kcoord = [ka for j in range(ja, jb+1)]
-    if parallel == 'z':
-        icoord = [ia]
-        jcoord = [ja]
-        kcoord = [k for k in range(ka, kb+1)]
-    step = 1
-
-    i, j, k = ia, ja, ka
-    while condition(i, j, k):
-        # plane parallel to x
-        if parallel == 'x':
-            d1 = distance(xpts[i], ypts[j], zpts[k+1])
-            if ka < kc: # ascending direction in y going to Ly
-                d2 = distance(xpts[i], ypts[j+1], zpts[k])
-                if d1 < d2: j, k = j, k+1
-                else: j, k = j+1, k
-            else:
-                d2 = distance(xpts[i], ypts[j-1], zpts[k])
-                if d1 < d2: j, k = j, k+1
-                else: j, k = j-1, k
-            new_sites = [i + j*nx + k*nx*ny for i in range(ia, ib+1)]
-            new_j = [j]
-            new_k = [k for ix in range(ia, ib+1)]
-
-        # plane parallel to y
-        if parallel == 'y':
-            d1 = distance(xpts[i], ypts[j], zpts[k+1])
-            if ka < kc: # ascending direction in x going to Lx
-                d2 = distance(xpts[i+1], ypts[j], zpts[k])
-                if d1 < d2: i, k = i, k+1
-                else: i, k = i+1, k
-            else:
-                d2 = distance(xpts[i-1], ypts[j], zpts[k])
-                if d1 < d2: i, k = i, k+1
-                else: i, k = i-1, k
-            new_sites = [i + j*nx + k*nx*ny for j in range(ja, jb+1)]
-
-        # plane parallel to z
-        if parallel == 'z':
-            d1 = distance(xpts[i], ypts[j+1], zpts[k])
-            if ja < jb: # ascending direction toward increasing y
-                d2 = distance(xpts[i+1], ypts[j], zpts[k])
-                if d1 < d2: i, j = i, j+1
-                else: i, j = i+1, j
-            else:
-                d2 = distance(xpts[i-1], ypts[j], zpts[k])
-                if d1 < d2: i, j = i, j+1
-                else: i, j = i-1, j
-            new_sites = [i + j*nx + k*nx*ny for k in range(ka, kb+1)]
-
-        step += 1
-        sites.extend(new_sites)
-
-
-
-        ## plotting stuff
-        jcoord.extend(new_j)
-        kcoord.extend(new_k)
-
-
-
-
-
-
-
-
-
-
-    z = []
-    for u in kcoord:
-        z.append(zpts[u]/1e-6)
-    z = np.asarray(z)
-    import matplotlib.pyplot as plt
-    from mpl_toolkits import mplot3d
-    scale = 1e-6
-    x, y = xpts[icoord] / scale, ypts[jcoord] / scale
-    nx, ny = len(x), len(y)
-
-    X, Y = np.meshgrid(x, y)
-
-    data_xy = z.reshape(step, nx).T
-    fig = plt.figure(figsize=(8,6))
-    ax = fig.add_subplot(1,1,1, projection='3d')
-    Z = data_xy.T
-    ax.plot_surface(X, Y, Z)#,  alpha=alpha, cmap=cmap)
-    ax.mouse_init(rotate_btn=1, zoom_btn=3)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.show()
-
+    sites, _, _, _ = extra_charges_plane(system, P1, P2, P3, P4) 
 
     return sites        
-
-    # if vperp[0] == 0 and vperp[1] != 0 and vperp[1] != 0: # x is orthogonal to plane
-    #     # determine if next line is at the same z, or down, or up
-    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
-    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
-    #     d2 = distance(system.xpts[i], system.ypts[j], system.zpts[k+1])
-
-
-
-
-    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] != 0: # y is orthogonal to plane
-
-    # if vperp[0] != 0 and vperp[1] != 0 and vperp[2] == 0: # z is orthogonal to plane
-
-    # if vperp[0] == 0 and vperp[1] == 0 and vperp[2] != 0:
-
-    # if vperp[0] == 0 and vperp[1] != 0 and vperp[2] == 0:
-
-    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] == 0:
-
-
 
 
 
