@@ -9,21 +9,18 @@ def get_sites(sys, location):
     # find the sites which belongs to a region
     nx, ny, nz = sys.nx, sys.ny, sys.nz
     if sys.dimension == 1:
-        s = [c for c in range(nx)]
         nodes = range(nx)
-        f = lambda node: location(sys.xpts[node])
-        s = [c for c in filter(f, nodes)]
+        s = [i for i in range(nx) if location(sys.xpts[i])]
     if sys.dimension == 2:
         nodes = product(range(nx), range(ny))
-        f = lambda node: location((sys.xpts[node[0]], 
-                                   sys.ypts[node[1]]))
-        s = [c[0] + c[1]*nx for c in filter(f, nodes)]
+        s = [i + j*nx for i, j in nodes if location((sys.xpts[i], sys.ypts[j]))]
     if sys.dimension == 3:
         nodes = product(range(nx), range(ny), range(nz))
-        f = lambda node: location((sys.xpts[node[0]], 
-                                   sys.ypts[node[1]], 
-                                   sys.zpts[node[2]]))
-        s = [c[0] + c[1]*nx + c[2]*nx*ny for c in filter(f, nodes)]
+        s = [i + j*nx + k*nx*ny for i, j, k in nodes if location((sys.xpts[i], 
+                                                                  sys.ypts[j], 
+                                                                  sys.zpts[k])
+                                                                )
+            ]
     return s
 
 def get_line_defects_sites(system, line_defects):

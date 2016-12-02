@@ -357,6 +357,11 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
     This only works in 3D.
     """
 
+    # transform points into numpy arrays if not the case
+    for P in [P1, P2, P3, P4]:
+        if type(P).__module__ != np.__name__:
+            P = np.asarray(P)
+
     # check plane first
     check_plane(P1, P2, P3, P4)
 
