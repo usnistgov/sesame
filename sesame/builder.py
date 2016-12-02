@@ -1,152 +1,90 @@
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from sesame.utils import get_indices
 from itertools import product
+from . import utils
 
 
 def get_sites(sys, location):
     # find the sites which belongs to a region
     nx, ny, nz = sys.nx, sys.ny, sys.nz
     if sys.dimension == 1:
-        s = [c for c in range(nx)]
         nodes = range(nx)
-        f = lambda node: location(sys.xpts[node])
-        s = [c for c in filter(f, nodes)]
+        s = [i for i in range(nx) if location(sys.xpts[i])]
     if sys.dimension == 2:
         nodes = product(range(nx), range(ny))
-        f = lambda node: location((sys.xpts[node[0]], 
-                                   sys.ypts[node[1]]))
-        s = [c[0] + c[1]*nx for c in filter(f, nodes)]
+        s = [i + j*nx for i, j in nodes if location((sys.xpts[i], sys.ypts[j]))]
     if sys.dimension == 3:
         nodes = product(range(nx), range(ny), range(nz))
-        f = lambda node: location((sys.xpts[node[0]], 
-                                   sys.ypts[node[1]], 
-                                   sys.zpts[node[2]]))
-        s = [c[0] + c[1]*nx + c[2]*nx*ny for c in filter(f, nodes)]
+        s = [i + j*nx + k*nx*ny for i, j, k in nodes if location((sys.xpts[i], 
+                                                                  sys.ypts[j], 
+                                                                  sys.zpts[k])
+                                                                )
+            ]
     return s
 
 def get_line_defects_sites(system, line_defects):
-    c = line_defects
-    xa, ya = c.location[0]
-    xb, yb = c.location[1]
-    # put end points of the line in ascending order
-    if ya <= yb:
-        ia, ja, _ = get_indices(system, (xa, ya, 0))
-        ib, jb, _ = get_indices(system, (xb, yb, 0))
-    else:
-        ia, ja, _ = get_indices(system, (xb, yb, 0))
-        ib, jb, _ = get_indices(system, (xa, ya, 0))
-        
     # find the sites closest to the straight line defined by
-    # (xa,ya) and (xb,yb) and the associated orthogonal dl       
-    distance = lambda x, y:\
-        abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
-            np.sqrt((yb-ya)**2 + (xb-xa)**2)
+    # (xa,ya,za) and (xb,yb,zb) 
 
-    xpts, ypts = system.xpts, system.ypts
-    dx, dy = system.dx, system.dy
-    nx, ny = system.nx, system.ny
+    xa, ya = line_defects.location[0]
+    xb, yb = line_defects.location[1]
+    ia, ja, _ = utils.get_indices(system, (xa, ya, 0))
+    ib, jb, _ = utils.get_indices(system, (xb, yb, 0))
 
-    s = [ia + ja*nx]
-    dl = []
+    Dx = abs(ib - ia)    # distance to travel in X
+    Dy = abs(jb - ja)    # distance to travel in Y
+    if ia < ib:
+        incx = 1           # x will increase at each step
+    elif ia > ib:
+        incx = -1          # x will decrease at each step
+    else:
+        incx = 0
+    if ja < jb:
+        incy = 1           # y will increase at each step
+    elif ja > jb:
+        incy = -1          # y will decrease at each step
+    else:
+        incy = 0
+
+    # take the numerator of the distance of a point to the line
+    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
+
     i, j = ia, ja
-    def condition(i, j):
-        if ia <= ib:
-            return i <= ib and j <= jb and i < nx-1 and j < ny-1
+    perp_dl = []
+    sites = [i + j*system.nx]
+    for _ in range(Dx + Dy):
+        e1 = error(system.xpts[i], system.ypts[j+incy])
+        e2 = error(system.xpts[i+incx], system.ypts[j])
+        if e1 < e2:
+            j += incy
+            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
         else:
-            return i >= ib and j <= jb and i > 1 and j < ny-1
-            
-    # TODO if a point is at ypts[-1], this crashes!
-    while condition(i, j):
-        # distance between the point above (i,j) and the segment
-        d1 = distance(xpts[i], ypts[j+1])
-        # distance between the point right of (i,j) and the segment
-        d2 = distance(xpts[i+1], ypts[j])
-        # distance between the point left of (i,j) and the segment
-        d3 = distance(xpts[i-1], ypts[j])
-        
-        if ia < ib: # overall direction is to the right
-            if d1 < d2:
-                i, j = i, j+1
-                # set dl for the previous node
-                dl.append((dx[i] + dx[i-1])/2.)
-            else:
-                i, j = i+1, j
-                # set dl for the previous node
-                dl.append((dy[j] + dy[j-1])/2.)
-        else: # overall direction is to the left
-            if d1 < d3:
-                i, j = i, j+1
-                # set dl for the previous node
-                dl.append((dx[i] + dx[i-1])/2.)
-            else:
-                i, j = i-1, j
-                # set dl for the previous node
-                dl.append((dy[j] + dy[j-1])/2.)
-        s.append(i + j*nx)
-    dl.append(dl[-1])
-    dl = np.asarray(dl)
-    return s, dl
+            i += incx
+            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+        sites.append(i + j*system.nx)
+    perp_dl.append(perp_dl[-1])
+    perp_dl = np.asarray(perp_dl)
+
+    return sites, perp_dl
+
+
 
 def get_plane_defects_sites(system, plane_defects):
-    c = plane_defects
-    #TODO finish the function
     # This will only work for planes parallel to at least one direction. These
-    # planes should be defined by two parallel lines
+    # planes should be defined by two parallel lines orthogonal to the z-axis,
+    # and be rectangles.
 
     # first line
-    xa, ya, za = c.location[0]
-    xb, yb, zb = c.location[1]
+    P1 = np.asarray(plane_defects.location[0])
+    P2 = np.asarray(plane_defects.location[1])
     # second line
-    xc, yc, zc = c.location[2]
-    xd, yd, zd = c.location[3]
+    P3 = np.asarray(plane_defects.location[2])
+    P4 = np.asarray(plane_defects.location[3])
 
-    # determine the direction parallel to the plane 
-    ## vectors within the plane
-    v1 = (xb-xa, yb-ya, zb-za)
-    v2 = (xc-xa, yc-ya, zc-za)
-    ## vector perpendicular to the plane
-    vperp = np.cross(v1, v2)
-    A, B, C = vperp
-    D = -A*xa - B*ya - C*za
+    sites, _, _, _ = utils.extra_charges_plane(system, P1, P2, P3, P4) 
 
-    distance = lambda x, y, z: abs(A*x + B*y + C*z + D) / \
-                               np.sqrt(A**2 + B**2 + C**2)
-
-
-    ia, ja, ka = get_indices(system, (xa, ya, za))
-    ib, jb, kb = get_indices(system, (xb, yb, zb))
-    ic, jc, kc = get_indices(system, (xc, yc, zc))
-    idd, jd, kd = get_indices(system, (xd, yd, zd))
-
-    nx, ny, nz = system.nx, system.ny, system.nz
-    sites = []
-
-    # sites making the first line
-    sites += [i + j*nx + ka*nx*nz for j in range(ja, jb+1) for i in range(ia, ib+1)]
-
-
-    # if vperp[0] == 0 and vperp[1] != 0 and vperp[1] != 0: # x is orthogonal to plane
-    #     # determine if next line is at the same z, or down, or up
-    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
-    #     d1 = distance(system.xpts[i], system.ypts[j], system.zpts[k-1])
-    #     d2 = distance(system.xpts[i], system.ypts[j], system.zpts[k+1])
-
-
-
-
-    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] != 0: # y is orthogonal to plane
-
-    # if vperp[0] != 0 and vperp[1] != 0 and vperp[2] == 0: # z is orthogonal to plane
-
-    # if vperp[0] == 0 and vperp[1] == 0 and vperp[2] != 0:
-
-    # if vperp[0] == 0 and vperp[1] != 0 and vperp[2] == 0:
-
-    # if vperp[0] != 0 and vperp[1] == 0 and vperp[2] == 0:
-
-
+    return sites        
 
 
 
@@ -331,11 +269,11 @@ class Builder():
                           local_Sh=None):
         """
         Add additional charges (for a grain boundary for instance) to the total
-        charge of the system.
+        charge of the system. These charges are distributed on a line.
 
         Parameters
         ----------
-        location: list of two (x, y) tuples 
+        location: list of two array_like coordinates [(x1, y1), (x2, y2)] 
             The coordinates in [m] define a line of defects in 2D.
         local_E: float 
             Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
@@ -354,8 +292,7 @@ class Builder():
 
         See Also
         --------
-        add_plane_defects
-
+        add_plane_defects for adding plane defects in 3D.
         """
         
         # if one wants same S for electrons and holes
@@ -370,7 +307,39 @@ class Builder():
 
     def add_plane_defects(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
-        
+        """
+        Add additional charges (for a grain boundary for instance) to the total
+        charge of the system. These charges are distributed on a plane.
+
+        Parameters
+        ----------
+        location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)] 
+            The coordinates in [m] define a plane of defects in 2D. The first
+            two coordinates define a line that must be parallel to the line
+            defined by the last two points.
+        local_E: float 
+            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
+        local_N: float
+            Defect density of states [m\ :sup:`-2` ].
+        local_Se: float
+            Surface recombination velocity of electrons [m/s].
+        local_Sh: float
+            Surface recombination velocity of holes [m/s].
+
+        Warnings
+        --------
+        * The planes must be rectangles with at least one edge parallel to
+          either the x or y or z-axis.
+
+        * Addition of plane defects is defined for three-dimensional systems only.
+
+        * We assume that no additional charge is on the contacts.
+
+        See Also
+        --------
+        add_line_defects for adding line defects in 2D.
+        """
+
         # if one wants same S for electrons and holes
         if local_Sh == None:
             local_Sh = local_Se

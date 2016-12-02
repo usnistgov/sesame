@@ -1,9 +1,9 @@
 ####################################
 # Newton-Raphson algorithm
 ####################################
-import sesame
 import numpy as np
 import warnings
+import importlib
 
 def refine(dv):
     # This damping procedure was taken from Solid-State Electronics, vol. 19,
@@ -52,9 +52,9 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
     # choose mumps solver or scipy
     if with_mumps:
         try:
-            from mumps import spsolve
+            from .mumps import spsolve
         except:
-            warnings.warn('Could not import mumps. Default back to scipy.', UserWarning)
+            warnings.warn('Could not import MUMPS. Default back to Scipy.', UserWarning)
             from scipy.sparse.linalg import spsolve
             with_mumps = False
     else:
@@ -62,15 +62,14 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
 
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
-        m = __import__('sesame.getFandJ_eq{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
+        mod = importlib.import_module('.getFandJ_eq{0}_abrupt'.format(sys.dimension), 'sesame')
     else:
-        m = __import__('sesame.getFandJ_eq{0}'.format(sys.dimension), globals(), locals(), ['getFandJ_eq'], 0)
+        mod = importlib.import_module('.getFandJ_eq{0}'.format(sys.dimension), 'sesame')
 
-    getFandJ_eq = m.getFandJ_eq
 
     # first step of the Newton Raphson solver
     v = guess
-    f, J = getFandJ_eq(sys, v, with_mumps)
+    f, J = mod.getFandJ_eq(sys, v, with_mumps)
 
     cc = 0
     clamp = 5.
@@ -95,14 +94,14 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
             # new correction and trial
             dv = dx / (1 + np.abs(dx/clamp))
             v = v + dv
-            f, J = getFandJ_eq(sys, v, with_mumps)
+            f, J = mod.getFandJ_eq(sys, v, with_mumps)
 
             
         # Start slowly this refinement method found in a paper
         else:
             dv = refine(dx)
             v = v + dv
-            f, J = getFandJ_eq(sys, v, with_mumps)
+            f, J = mod.getFandJ_eq(sys, v, with_mumps)
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:
@@ -118,7 +117,6 @@ def poisson_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,
     else:
         print("No solution found!\n")
         return None
-
 
 
 def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
@@ -157,9 +155,9 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
     # choose mumps solver or scipy
     if with_mumps:
         try:
-            from mumps import spsolve
+            from .mumps import spsolve
         except:
-            warnings.warn('Could not import mumps. Default back to scipy.', UserWarning)
+            warnings.warn('Could not import MUMPS. Default back to Scipy.', UserWarning)
             from scipy.sparse.linalg import spsolve
             with_mumps = False
     else:
@@ -167,20 +165,17 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
 
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
-        F = __import__('sesame.getF{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getF'], 0)
-        J = __import__('sesame.jacobian{0}_abrupt'.format(sys.dimension), globals(), locals(), ['getJ'], 0)
 
+        F = importlib.import_module('.getF{0}_abrupt'.format(sys.dimension), 'sesame')
+        J = importlib.import_module('.jacobian{0}_abrupt'.format(sys.dimension), 'sesame')
     else:
-        F = __import__('sesame.getF{0}'.format(sys.dimension), globals(), locals(), ['getF'], 0)
-        J = __import__('sesame.jacobian{0}'.format(sys.dimension), globals(), locals(), ['getJ'], 0)
-
-    getF = F.getF
-    getJ = J.getJ
+        F = importlib.import_module('.getF{0}'.format(sys.dimension), 'sesame')
+        J = importlib.import_module('.jacobian{0}'.format(sys.dimension), 'sesame')
 
     efn, efp, v = guess
 
-    f = getF(sys, v, efn, efp)
-    J = getJ(sys, v, efn, efp, with_mumps)
+    f = F.getF(sys, v, efn, efp)
+    J = J.getJ(sys, v, efn, efp, with_mumps)
     solution = {'v': v, 'efn': efn, 'efp': efp}
 
     cc = 0
@@ -220,8 +215,8 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
             efp = efp + defp
             v = v + dv
 
-            f = getF(sys, v, efn, efp)
-            J = getJ(sys, v, efn, efp, with_mumps)
+            f = F.getF(sys, v, efn, efp)
+            J = J.getJ(sys, v, efn, efp, with_mumps)
 
         # Start slowly with this refinement method found in a paper
         else:
@@ -238,8 +233,8 @@ def ddp_solver(sys, guess, tolerance, periodic_bcs=True, max_step=300,\
             efp = efp + defp
             v = v + dv
 
-            f = getF(sys, v, efn, efp)
-            J = getJ(sys, v, efn, efp, with_mumps)
+            f = F.getF(sys, v, efn, efp)
+            J = J.getJ(sys, v, efn, efp, with_mumps)
 
         # outputing status of solution procedure every so often
         if info != 0 and np.mod(cc, info) == 0:

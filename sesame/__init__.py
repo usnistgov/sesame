@@ -16,5 +16,6 @@ try:
 except:
     pass
 else:
-    __all__.extend(['plotter', 'plot_line_defects', 'map2D'])
+    __all__.extend(['plotter', 'plot_line_defects', 'map2D',
+    'plot_plane_defects'])
 

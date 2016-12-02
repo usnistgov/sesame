@@ -22,6 +22,8 @@ The following software is highly recommended though not strictly required:
    if MUMPS is used.  This is included in the ``mumps`` directory found in the
    root directory of the distribution. The package is built together with
    Sesame.
+ * `mpi4py <https://pypi.python.org/pypi/mpi4py>` necessary for the PyMUMPS
+   bindings.
  * An environment which allows to compile Python extensions written in C,
    C++ and Fortran.
  * `matplotlib <http://matplotlib.sourceforge.net/>`_ 1.1 or newer, for Sesame's
