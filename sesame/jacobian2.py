@@ -2,7 +2,7 @@ import numpy as np
 from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
-from sesame.observables import *
+from .observables import *
 
 def getJ(sys, v, efn, efp, with_mumps):
     ###########################################################################

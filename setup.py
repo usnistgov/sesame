@@ -1,10 +1,13 @@
 #!/usr/bin/env python
  
 import sys
+import configparser
 from setuptools import setup, Extension
 from distutils.command.build_ext import build_ext
 from distutils.errors import DistutilsPlatformError, DistutilsExecError, CCompilerError
 
+
+CONFIG_FILE = 'setup.cfg'
 
 ext_modules = [Extension('mumps._dmumps', sources=['mumps/_dmumps.c'])]
 
@@ -41,49 +44,61 @@ cmdclass = {'build_ext': ve_build_ext}
 
 
 def status_msgs(*msgs):
-    print('*' * 75)
+    print('=' * 75)
     for msg in msgs:
         print(msg)
-    print('*' * 75)
+    print('=' * 75)
 
 
 
-def run_setup(with_mumps):
-    if with_mumps:
-        kwargs = dict(ext_modules = ext_modules)
-    else:
-        kwargs = dict(ext_modules = [])
-
+def run_setup(ext_modules):
     setup(
         name = 'sesame',
         version = '0.1',
         author = 'Benoit H. Gaury',
         author_email = 'benoit.gaury@nist.gov',
-        packages = ['sesame'],
+        packages = ['sesame', 'sesame.mumps'],
         cmdclass = cmdclass,
+        ext_modules = ext_modules,
         classifiers = [
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',
         ],
-        **kwargs
     )
 
+
+config = configparser.ConfigParser()
 try:
-    run_setup(True)
+    with open(CONFIG_FILE) as f:
+        config.readfp(f)
+except IOError:
+    print("Could not open config file.")
 
-    status_msgs(
-        "BUILD SUMMARY: Build successful.")
+if 'mumps' in config.sections():
+    kwrds = {}
+    for name, value in config.items('mumps'):
+        kwrds[name] = value
 
-except BuildFailed as exc:
-    status_msgs(
-        exc.cause,
-        "WARNING: The MUMPS extension could not be compiled. " +
-        "Retrying the build without the MUMPS extension now."
-    )
+    ext_modules = [Extension(
+        'sesame.mumps._dmumps',
+        sources=['sesame/mumps/_dmumps.c'],  
+        libraries=[kwrds['libraries']],
+        library_dirs=[kwrds['library_dirs']],
+        include_dirs=[kwrds['include_dirs']])]
 
-    run_setup(False)
-
-    status_msgs(
-        "BUILD SUMMARY: The MUMPS extension could not be compiled. " +  
-        "Plain-Python build succeeded."
-    )
+    try:
+        run_setup(ext_modules)
+        status_msgs(
+            "Build summary: Build successful.")
+    except BuildFailed as exc:
+        status_msgs(
+            exc.cause,
+            "WARNING: The MUMPS extension could not be compiled. " +
+            "Retrying the build without the MUMPS extension now.")
+        run_setup([])
+        status_msgs(
+            "Build summary: The MUMPS extension could not be compiled. " +  
+            "Plain-Python build succeeded.")
+else:
+    run_setup([])
+    status_msgs( "Build summary: Plain-Python build succeeded.")

@@ -1,5 +1,5 @@
 import warnings
-from mumps import _dmumps
+from . import _dmumps
 
 __all__ = [
     'DMumpsContext',
@@ -243,7 +243,6 @@ class DMumpsContext(_MumpsBaseContext):
 
 def spsolve(A, b, comm=None):
     """Sparse solve A\b."""
-
     assert A.dtype == 'd' and b.dtype == 'd', "Only double precision supported."
     with DMumpsContext(par=1, sym=0, comm=comm) as ctx:
         if ctx.myid == 0:
@@ -254,6 +253,12 @@ def spsolve(A, b, comm=None):
 
         # Silence most messages
         ctx.set_silent()
+
+        # Ordering package
+        # 3: SCOTCH
+        # 4: PORD
+        # 5: METIS
+        ctx.set_icntl(7, 4)
 
         # Analysis + Factorization + Solve
         ctx.run(job=6)

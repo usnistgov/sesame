@@ -1,6 +1,6 @@
-from sesame.observables import get_jn, get_jp
 from scipy.interpolate import InterpolatedUnivariateSpline as spline
 import numpy as np
+from . import observables
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -177,11 +177,11 @@ def bulk_recombination_current(sys, efn, efp, v):
         s = [i + j*sys.nx for i in range(sys.nx)]
 
         # Carrier densities
-        n = get_n(sys, efn, v, s)
-        p = get_p(sys, efp, v, s)
+        n = observables.get_n(sys, efn, v, s)
+        p = observables.get_p(sys, efp, v, s)
 
         # Recombination
-        r = get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
+        r = observables.get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
         sp = spline(sys.xpts, r)
         u.append(sp.integral(sys.xpts[0], sys.xpts[-1]))
     if sys.ny == 1:
@@ -222,8 +222,8 @@ def full_current(sys, efn, efp, v):
     dl = sys.dx[sys.nx//2]
 
     # Compute the electron and hole currents
-    jn = get_jn(sys, efn, v, sites_i, sites_ip1, dl)
-    jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
+    jn = observables.get_jn(sys, efn, v, sites_i, sites_ip1, dl)
+    jp = observables.get_jp(sys, efp, v, sites_i, sites_ip1, dl)
 
     if sys.ny == 1:
         j = jn + jp
@@ -376,7 +376,7 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
 
     ## vector perpendicular to the plane
     A, B, C = np.cross(P2 - P1, P3 - P1)
-    D = -A*P1[0] - B*P1[2] - C*P1[2]
+    D = -A*P1[0] - B*P1[1] - C*P1[2]
 
     error = lambda x, y, z: abs(A*x + B*y + C*z + D)
     
@@ -405,7 +405,6 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
         incz = -1
        
     sites, xcoord, ycoord, zcoord = [], [], [], []
-    i, j, k = i1, j1, k1
 
     s, ic, jc, kc = Bresenham2d(sys, P1, P2)
 
@@ -451,6 +450,7 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
         x1, x2 = sys.xpts[i1], sys.xpts[i2]
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
         z1, z2 = sys.zpts[k1], sys.zpts[k2]
+
         s, ic, jc, kc = Bresenham2d(sys, (x1, y1, z1), (x2, y2, z2))
 
         sites.extend(s)

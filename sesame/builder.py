@@ -1,8 +1,8 @@
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from sesame.utils import get_indices, extra_charges_plane
 from itertools import product
+from . import utils
 
 
 def get_sites(sys, location):
@@ -29,8 +29,8 @@ def get_line_defects_sites(system, line_defects):
 
     xa, ya = line_defects.location[0]
     xb, yb = line_defects.location[1]
-    ia, ja, _ = get_indices(system, (xa, ya, 0))
-    ib, jb, _ = get_indices(system, (xb, yb, 0))
+    ia, ja, _ = utils.get_indices(system, (xa, ya, 0))
+    ib, jb, _ = utils.get_indices(system, (xb, yb, 0))
 
     Dx = abs(ib - ia)    # distance to travel in X
     Dy = abs(jb - ja)    # distance to travel in Y
@@ -82,7 +82,7 @@ def get_plane_defects_sites(system, plane_defects):
     P3 = np.asarray(plane_defects.location[2])
     P4 = np.asarray(plane_defects.location[3])
 
-    sites, _, _, _ = extra_charges_plane(system, P1, P2, P3, P4) 
+    sites, _, _, _ = utils.extra_charges_plane(system, P1, P2, P3, P4) 
 
     return sites        
 
@@ -269,11 +269,11 @@ class Builder():
                           local_Sh=None):
         """
         Add additional charges (for a grain boundary for instance) to the total
-        charge of the system.
+        charge of the system. These charges are distributed on a line.
 
         Parameters
         ----------
-        location: list of two (x, y) tuples 
+        location: list of two array_like coordinates [(x1, y1), (x2, y2)] 
             The coordinates in [m] define a line of defects in 2D.
         local_E: float 
             Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
@@ -292,8 +292,7 @@ class Builder():
 
         See Also
         --------
-        add_plane_defects
-
+        add_plane_defects for adding plane defects in 3D.
         """
         
         # if one wants same S for electrons and holes
@@ -308,7 +307,39 @@ class Builder():
 
     def add_plane_defects(self, location, local_E, local_N, local_Se,\
                           local_Sh=None):
-        
+        """
+        Add additional charges (for a grain boundary for instance) to the total
+        charge of the system. These charges are distributed on a plane.
+
+        Parameters
+        ----------
+        location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)] 
+            The coordinates in [m] define a plane of defects in 2D. The first
+            two coordinates define a line that must be parallel to the line
+            defined by the last two points.
+        local_E: float 
+            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
+        local_N: float
+            Defect density of states [m\ :sup:`-2` ].
+        local_Se: float
+            Surface recombination velocity of electrons [m/s].
+        local_Sh: float
+            Surface recombination velocity of holes [m/s].
+
+        Warnings
+        --------
+        * The planes must be rectangles with at least one edge parallel to
+          either the x or y or z-axis.
+
+        * Addition of plane defects is defined for three-dimensional systems only.
+
+        * We assume that no additional charge is on the contacts.
+
+        See Also
+        --------
+        add_line_defects for adding line defects in 2D.
+        """
+
         # if one wants same S for electrons and holes
         if local_Sh == None:
             local_Sh = local_Se
