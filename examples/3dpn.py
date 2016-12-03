@@ -12,12 +12,9 @@ Lz = 2e-6 #[m]
 junction = 10e-9 
 
 # Mesh
-x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                    np.linspace(1.2e-6, Lx, 100)))
-y = np.concatenate((np.linspace(0, 2.25e-6, 010, endpoint=False), 
-                    np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                    np.linspace(2.75e-6, Ly, 100)))
-
+x = np.concatenate((np.linspace(0,1.2e-6, 5, endpoint=False), 
+                    np.linspace(1.2e-6, Lx, 5)))
+y = np.linspace(0, Ly, 100)
 z = np.linspace(0, Lz, 100)
 
 sys = sesame.Builder(x, y, z)
@@ -63,11 +60,50 @@ q1 = (1.0e-6, 4.5e-6, 1e-9)   #[m]
 q2 = (3.0e-6, 4.5e-6, 1e-9)  #[m]
 
 
-print('add plane defects')
+# print('add plane defects')
 # Pass the information to the system
-sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
+# sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
 
 
 sys.finalize()
 
-sesame.plot_plane_defects(sys)
+
+import matplotlib.pyplot as plt
+from scipy.sparse import coo_matrix
+def plot_coo_matrix(m):
+    if not isinstance(m, coo_matrix):
+        m = coo_matrix(m)
+    fig = plt.figure()
+    ax = fig.add_subplot(111, axisbg='black')
+    ax.plot(m.col, m.row, 's', color='white', ms=1)
+    ax.set_xlim(0, m.shape[1])
+    ax.set_ylim(0, m.shape[0])
+    ax.set_aspect('equal')
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    ax.invert_yaxis()
+    ax.set_aspect('equal')
+    ax.set_xticks([])
+    ax.set_yticks([])
+    return ax
+
+
+
+# sesame.plot_plane_defects(sys)
+v = np.linspace(-5, -40, sys.nx)
+v = np.tile(v, sys.ny*sys.nz)
+
+from sesame.getF3 import getF
+from sesame.jacobian3 import getJ
+
+f = getF(sys, v, 0*v, v)
+J = getJ(sys, v, 0*v, v, with_mumps=True)
+
+plt.spy(J)
+plt.show()
+# ax = plot_coo_matrix(J)
+# ax.figure.show()
+
+# print("solving...")
+# from sesame.mumps import spsolve
+# spsolve(J, -f)
