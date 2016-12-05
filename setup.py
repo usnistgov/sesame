@@ -51,13 +51,13 @@ def status_msgs(*msgs):
 
 
 
-def run_setup(ext_modules):
+def run_setup(packages, ext_modules):
     setup(
         name = 'sesame',
         version = '0.1',
         author = 'Benoit H. Gaury',
         author_email = 'benoit.gaury@nist.gov',
-        packages = ['sesame', 'sesame.mumps'],
+        packages = packages,
         cmdclass = cmdclass,
         ext_modules = ext_modules,
         classifiers = [
@@ -74,6 +74,7 @@ try:
 except IOError:
     print("Could not open config file.")
 
+
 if 'mumps' in config.sections():
     kwrds = {}
     for name, value in config.items('mumps'):
@@ -86,8 +87,10 @@ if 'mumps' in config.sections():
         library_dirs=[kwrds['library_dirs']],
         include_dirs=[kwrds['include_dirs']])]
 
+    packages = ['sesame', 'sesame.mumps']
+
     try:
-        run_setup(ext_modules)
+        run_setup(packages, ext_modules)
         status_msgs(
             "Build summary: Build successful.")
     except BuildFailed as exc:
@@ -95,10 +98,10 @@ if 'mumps' in config.sections():
             exc.cause,
             "WARNING: The MUMPS extension could not be compiled. " +
             "Retrying the build without the MUMPS extension now.")
-        run_setup([])
+        run_setup(['sesame'], [])
         status_msgs(
             "Build summary: The MUMPS extension could not be compiled. " +  
             "Plain-Python build succeeded.")
 else:
-    run_setup([])
+    run_setup(['sesame'], [])
     status_msgs( "Build summary: Plain-Python build succeeded.")
