@@ -11,10 +11,9 @@ def system():
     # Mesh
     x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
                         np.linspace(1.2e-6, Lx, 100)))
-    # y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-    #                     np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-    #                     np.linspace(2.75e-6, Ly, 100)))
-    y=np.linspace(0, Ly, 10)
+    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
+                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
+                        np.linspace(2.75e-6, Ly, 100)))
 
     sys = sesame.Builder(x, y)
 
