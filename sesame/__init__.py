@@ -12,7 +12,7 @@ for module, names in available:
 
 try:
     from . import plotter
-    from .plotter import plot_line_defects, map2D
+    from .plotter import plot_line_defects, map2D, plot_plane_defects
 except:
     pass
 else:

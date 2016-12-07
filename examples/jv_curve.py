@@ -11,9 +11,10 @@ def system():
     # Mesh
     x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
                         np.linspace(1.2e-6, Lx, 100)))
-    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                        np.linspace(2.75e-6, Ly, 100)))
+    # y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
+    #                     np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
+    #                     np.linspace(2.75e-6, Ly, 100)))
+    y=np.linspace(0, Ly, 10)
 
     sys = sesame.Builder(x, y)
 
@@ -66,23 +67,25 @@ if __name__ == '__main__':
     v[:sys.nx] = np.linspace(v_left, v_right, sys.nx)
     v = np.tile(v, sys.ny) # replicate the guess in the y-direction
 
-    # Call Poisson solver with a tolerance of 10^-9
-    v = sesame.poisson_solver(sys, v, 1e-9, info=1, max_step=100)
+    # Call Poisson solver
+    v = sesame.poisson_solver(sys, v)
 
     # Initial arrays for the quasi-Fermi levels
     efn = np.zeros((sys.nx*sys.ny,))
     efp = np.zeros((sys.nx*sys.ny,))
 
     # Loop over the applied potentials made dimensionless
-    applied_voltages = np.linspace(0, 1, 41) / sys.vt
+    applied_voltages = np.linspace(0, 1, 40) / sys.scaling.energy
     for idx, vapp in enumerate(applied_voltages):
+        print(vapp)
         # Apply the contacts boundary conditions
         for i in range(0, sys.nx*(sys.ny-1)+1, sys.nx):
             v[i] = v_left
             v[i+sys.nx-1] = v_right + vapp
 
-        # Call the Drift Diffusion Poisson solver with tolerance 10^-9
-        result = sesame.ddp_solver(sys, (efn, efp, v), 1e-9, max_step=30, info=1)
+        # Call the Drift Diffusion Poisson solver
+        result = sesame.ddp_solver(sys, [efn, efp, v])
+        # result = sesame.ddp_solver(sys, [efn, efp, v], use_mumps=True)
         if result is not None:
             # Extract the results from the dictionary 'result'
             v = result['v']

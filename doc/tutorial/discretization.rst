@@ -204,6 +204,7 @@ sites and links, for the sake of writing things more compactly):
         \vdots
       \end{array}
     \right)
+    :label: corr
 
 Note that for this
 problem, finding derivatives numerically leads to major convergence problems. We
@@ -238,7 +239,13 @@ in the :math:`y`- and :math:`z`-directions.
 |          3             |  n\ :sub:`y` n\ :sub:`z` [39 (n\ :sub:`x` - 2) + 36]  |
 +------------------------+-------------------------------------------------------+
 
-
+By default the Newton correction is computed by a direct resolution of the
+system in :eq:`corr`. This is done using the default Scipy solver which gives
+quite poor performances. We recommend using the MUMPS library instead. Note that
+for large systems, and especially for 3D problems, the memory and the computing
+time required by the direct methods aforementioned become so large that they are
+impractical. It is possible to use an iterative method to solve :eq:`corr` in
+these cases.
 
 
 

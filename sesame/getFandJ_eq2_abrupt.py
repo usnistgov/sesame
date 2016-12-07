@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix
+from scipy.sparse import coo_matrix, csc_matrix
 from itertools import chain
 
 from .observables import get_n, get_p
@@ -236,5 +236,5 @@ def getFandJ_eq(sys, v, with_mumps):
     if with_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     else:
-        J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
+        J = csc_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     return vec, J

@@ -59,7 +59,8 @@ Build configuration
 
 The setup script of Sesame is used to link Sesame against MUMPS. The name of the
 library installed and its location are configured by editing the file ``setup.cfg`` in the
-root directory of the Sesame distribution. 
+root directory of the Sesame distribution. By default the section regarding
+MUMPS is commented.
 
 Building the documentation
 +++++++++++++++++++++++++++
@@ -110,4 +111,4 @@ As the only recommended way to compile Python extensions on Windows is using
 Visual C++, we are not able to provide guidelines as to how to build with the
 MUMPS library.
 
-The generic installation instructions also apply on Windows.
+The generic installation instructions given above also apply on Windows.

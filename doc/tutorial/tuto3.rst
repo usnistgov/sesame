@@ -93,8 +93,8 @@ and call the solver::
     v[:sys.nx] = np.linspace(v_left, v_right, sys.nx)
     v = np.tile(v, sys.ny) # replicate the guess in the y-direction
 
-    # Call Poisson solver with a tolerance of 10^-9
-    v = sesame.poisson_solver(sys, v, 1e-9, info=1, max_step=100)
+    # Call Poisson solver
+    v = sesame.poisson_solver(sys, v)
 
 By default the solver assumes periodic boundary conditions in all directions
 parallel to the contacts. One can change this setting to abrupt boundary
@@ -111,15 +111,15 @@ output after each step::
     efp = np.zeros((sys.nx*sys.ny,))
 
     # Loop over the applied potentials made dimensionless
-    applied_voltages = np.linspace(0, 1, 41) / sys.vt
+    applied_voltages = np.linspace(0, 1, 41) / sys.scaling.energy
     for idx, vapp in enumerate(applied_voltages):
         # Apply the contacts boundary conditions
         for i in range(0, sys.nx*(sys.ny-1)+1, sys.nx):
             v[i] = v_left
             v[i+sys.nx-1] = v_right + vapp
 
-        # Call the Drift Diffusion Poisson solver with tolerance 10^-9
-        result = sesame.ddp_solver(sys, (efn, efp, v), 1e-9, max_step=30, info=1)
+        # Call the Drift Diffusion Poisson solver
+        result = sesame.ddp_solver(sys, [efn, efp, v])
         if result is not None:
             # Extract the results from the dictionary 'result'
             v = result['v']
@@ -149,6 +149,8 @@ about the :ref:`algo`.
 
 **Solvers options:** Both :func:`~sesame.solvers.poisson_solver` and
 :func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
-was built against it. For that, pass the argument ``with_mumps=True`` to these
-functions. For more information about the parameters used in the code above,
-see the reference code :doc:`reference code <../reference/sesame.solvers>`.
+was built against it. For that, pass the argument ``use_mumps=True`` to these
+functions. For large systems where a direct computation of the Newton correction
+is impractical, we made possible to use an iterative solver. Use the argument
+``iterative=True`` to activate it. Note that we have not tested this feature
+extensively and a solution is not guaranteed.
