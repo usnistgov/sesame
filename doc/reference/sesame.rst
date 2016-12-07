@@ -21,6 +21,7 @@ From `sesame.plotter`
 
    map2D
    plot_line_defects
+   plot_plane_defects
 
 .. currentmodule:: sesame.solvers
 

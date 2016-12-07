@@ -84,9 +84,9 @@ Computing the current integrated across the system is done as follows::
     j = spline(sys.ypts, jn+jp).integral(sys.ypts[0], sys.ypts[-1])
 
 This is only given as an example of how to compute currents, as this particular
-function is available in :func:`sesame.utils.full_current`.
+function is available in :func:`~sesame.utils.full_current`.
 To compute the bulk recombination current we first interpolate and integrate the
-recombination along the x-axis, then we do the same along the y-axis:: 
+recombination along the :math:`x`-axis, then we do the same along the :math:`y`-axis:: 
 
     u = []
     for j in range(sys.ny):
@@ -106,7 +106,7 @@ recombination along the x-axis, then we do the same along the y-axis::
     JR = sp.integral(sys.ypts[0], sys.ypts[-1])
 
 Again, because this is very useful we implemented this function in
-:func:`sesame.utils.bulk_recombination_current`.
+:func:`~sesame.utils.bulk_recombination_current`.
 
 In order to get information about the densities at the defect sites, we need to
 get them. This is done by calling the function
@@ -117,8 +117,8 @@ current along the grain boundary::
     from sesame.utils import extra_charges_path
 
     # Get the defect sites, path along the lattice, x indices, y indices
-    p1 = (20e-9, 2.5e-6, 0)   #[m]
-    p2 = (2.9e-6, 2.5e-6, 0)  #[m]
+    p1 = (20e-9, 2.5e-6)   #[m]
+    p2 = (2.9e-6, 2.5e-6)  #[m]
     GBsites, X, xGB, yGB = extra_charges_path(sys, startGB, endGB)
 
     # Get the defect state equilibrium densities

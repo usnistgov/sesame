@@ -96,6 +96,12 @@ class Builder():
     care of all normalizations. The temperature of the system is specified when
     an instance is created. The default is 300 K. 
 
+    Parameters
+    ----------
+    xpts, ypts, zpts: numpy arrays of floats
+        Mesh with original dimensions.
+
+
     Attributes
     ----------
     xpts, ypts, zpts: numpy arrays of floats
@@ -314,7 +320,7 @@ class Builder():
         Parameters
         ----------
         location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)] 
-            The coordinates in [m] define a plane of defects in 2D. The first
+            The coordinates in [m] define a plane of defects in 3D. The first
             two coordinates define a line that must be parallel to the line
             defined by the last two points.
         local_E: float 
