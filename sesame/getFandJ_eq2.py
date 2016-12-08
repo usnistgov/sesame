@@ -1,11 +1,11 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import get_n, get_p
 # remember that efn and efp are zero at equilibrium
 
-def getFandJ_eq(sys, v, with_mumps):
+def getFandJ_eq(sys, v, use_mumps):
     Nx, Ny = sys.xpts.shape[0], sys.ypts.shape[0]
     
     # lists of rows, columns and data that will create the sparse Jacobian
@@ -249,8 +249,8 @@ def getFandJ_eq(sys, v, with_mumps):
     data += list(chain.from_iterable(dfv_data))
 
 
-    if with_mumps:
+    if use_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     else:
-        J = csc_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
+        J = csr_matrix((data, (rows, columns)), shape=(Nx*Ny, Nx*Ny), dtype=np.float64)
     return vec, J

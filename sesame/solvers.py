@@ -15,17 +15,17 @@ except:
 
 
 
-def refine( dv):
+def refine(dx):
     # This damping procedure was taken from Solid-State Electronics, vol. 19,
     # pp. 991-992 (1976).
-    for sdx, s in enumerate(dv):
+    for sdx, s in enumerate(dx):
         if abs(s) < 1:
-            dv[sdx] /= 2
+            dx[sdx] /= 2
         if 1 < abs(s) < 3.7:
-            dv[sdx] = np.sign(s) * abs(s)**(0.2)/2
+            dx[sdx] = np.sign(s) * abs(s)**(0.2)/2
         elif abs(s) >= 3.7:
-            dv[sdx] = np.sign(s) * np.log(abs(s))/2
-    return dv
+            dx[sdx] = np.sign(s) * np.log(abs(s))/2
+    return dx
 
 def sparse_solver(J, f, iterative=False, use_mumps=False):
     if not iterative:
@@ -34,20 +34,14 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
             if mumps_available:
                 spsolve = mumps.spsolve
             else:
-                J = J.tocsc()
+                J = J.tocsr()
                 warnings.warn('Could not import MUMPS. Default back to Scipy.', UserWarning)
         dx = spsolve(J, f)
         return dx
     else:
         n = len(f)
-        # Better than Scipy incomplete LU but not better than 1/diag(J)
-        # import pyamg
-        # ml = pyamg.smoothed_aggregation_solver(J)
-        # M = ml.aspreconditioner()
         M = spdiags(1.0 / J.diagonal(), [0], n, n)
-
         dx, info = lg.lgmres(J, f, M=M)
-
         if info == 0:
             return dx
         else:
@@ -107,28 +101,24 @@ def poisson_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,
 
     while converged != True:
         cc = cc + 1
-        #-------- solve linear system ---------------------
-        dx = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
-        dx = dx.transpose()
+        # solve linear system
+        dv = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
+        dv = dv.transpose()
 
-        #--------- choose the new step -----------------
-        error = max(np.abs(dx))
+        # compute error
+        error = max(np.abs(dv))
 
         if error < tolerance:
             converged = True
             v_final = v
             break 
-
-        # use the usual clamping once a proper direction has been found
-        elif error < 1:
-            # new correction and trial
-            dv = dx / (1 + np.abs(dx/clamp))
-            v = v + dv
-            f, J = mod.getFandJ_eq(sys, v, use_mumps)
-            
-        # Start slowly this refinement method found in a paper
-        else:
-            dv = refine(dx)
+        else: # modify dx and update new values for v
+            # Start slowly this refinement method found in a paper
+            if error > 1:
+                dv = refine(dv)
+            # use the usual clamping once a proper direction has been found
+            else:
+                dv = dv / (1 + np.abs(dv/clamp))
             v = v + dv
             f, J = mod.getFandJ_eq(sys, v, use_mumps)
 
@@ -136,7 +126,7 @@ def poisson_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,
         if info != 0 and np.mod(cc, info) == 0:
             print('step = {0}, error = {1}'.format(cc, error))
 
-        # if no solution found after maxiterations, break
+        # break if no solution found after maxiterations
         if cc > max_step:
             print('Poisson solver: too many iterations\n')
             break
@@ -208,53 +198,38 @@ def ddp_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,\
 
     while converged != True:
         cc = cc + 1
-        #-------- solve linear system ---------------------
+        # solve linear system
         dx = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
         dx = dx.transpose()
 
-        #--------- choose the new step -----------------
+        # compute error
         error = max(np.abs(dx))
        
         if error < tolerance:
             converged = True
             solution['efn'] = efn
             solution['efp'] = efp
-            solution['v'] = v
+            solution['v']   = v
             break 
-
-        # use the usual clamping once a proper direction has been found
-        elif error < 1:
-            # you can see how the variables are arranged: (efn, efp, v)
+        else: # modify dx and update new values of efn, efp, v
             defn = dx[0::3]
             defp = dx[1::3]
-            dv = dx[2::3]
-
-            defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
-            defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
-            dv = dv / (1 + np.abs(dv/clamp))
-
+            dv   = dx[2::3]
+            # Start slowly this refinement method found in a paper
+            if error > 1:
+                defn = refine(defn)
+                defp = refine(defp)
+                dv = refine(dv)
+            # use the usual clamping once a proper direction has been found
+            else:
+                defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
+                defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
+                dv = dv / (1 + np.abs(dv/clamp))
+            # new values of efn, efp, v
             efn = efn + defn
             efp = efp + defp
             v = v + dv
-
-            f = modF.getF(sys, v, efn, efp)
-            J = modJ.getJ(sys, v, efn, efp, use_mumps)
-
-        # Start slowly with this refinement method found in a paper
-        else:
-            # you can see how the variables are arranged: (efn, efp, v)
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv = dx[2::3]
-
-            defn = refine(defn)
-            defp = refine(defp)
-            dv = refine(dv)
-
-            efn = efn + defn
-            efp = efp + defp
-            v = v + dv
-
+            # new f and J
             f = modF.getF(sys, v, efn, efp)
             J = modJ.getJ(sys, v, efn, efp, use_mumps)
 
@@ -262,7 +237,7 @@ def ddp_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,\
         if info != 0 and np.mod(cc, info) == 0:
             print('step = {0}, error = {1}'.format(cc, error))
 
-        # if no solution found after maxiterations, break
+        # break if no solution found after max iterations
         if cc >= max_step:
             print('too many iterations\n')
             break

@@ -1,10 +1,10 @@
 import numpy as np
-from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import *
 
-def getJ(sys, v, efn, efp, with_mumps):
+def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
     #                     organization of the Jacobian matrix                 #
     ###########################################################################
@@ -776,8 +776,8 @@ def getJ(sys, v, efn, efp, with_mumps):
     data = [i for idx, i in enumerate(data) if 0 <= columns[idx] < 3*Nx*Ny*Nz]
     columns = [i for i in columns if 0 <= i < 3*Nx*Ny*Nz]
 
-    if with_mumps:
+    if use_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
     else:
-        J = csc_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
+        J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
     return J
