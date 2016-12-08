@@ -64,7 +64,7 @@ v_right = -sys.Eg[0] - np.log(abs(sys.rho[sys.nx-1])/sys.Nv[sys.nx-1])
 
 v = np.empty((sys.nx,), dtype=float) 
 v[:sys.nx] = np.linspace(v_left, v_right, sys.nx)
-v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y-direction
+v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y and z-direction
 
 v = sesame.poisson_solver(sys, v, iterative=True)
 np.save('electrostatic_potential', [x, y, z, v])

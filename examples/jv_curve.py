@@ -84,7 +84,6 @@ if __name__ == '__main__':
 
         # Call the Drift Diffusion Poisson solver
         result = sesame.ddp_solver(sys, [efn, efp, v])
-        # result = sesame.ddp_solver(sys, [efn, efp, v], use_mumps=True)
         if result is not None:
             # Extract the results from the dictionary 'result'
             v = result['v']
