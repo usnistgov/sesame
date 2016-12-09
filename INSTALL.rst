@@ -69,8 +69,7 @@ To build the documentation, the `Sphinx documentation generator
 <http://sphinx.pocoo.org/>`_ is required with ``numpydoc`` extension
 (version 0.5 or newer).  
 
-As a prerequisite for building the documentation, Sesame must have been built
-successfully using ``python3 setup.py build`` as described above.  HTML
+HTML
 documentation is built by entering the ``doc`` sub-directory of the Sesame
 package and executing ``make html``. Open the file ``index.html`` in the
 directory ``_build/html`` with a web browser to access the documentation. PDF
@@ -83,9 +82,17 @@ done, Sphinx may mistakenly use PNG files for PDF output or other problems may
 appear.
 
 As an alternative if ``make`` is not available, the HTML documentation can be built
-using the command::
+using the command from the root directory::
 
     python3 setup.py build_sphinx
+
+The documentation is produced in ``doc/_build/html``. To build the PDF file::
+
+    python3 setup.py build_sphinx -b latex
+    cd doc/_build/latex
+    make all-pdf
+
+The resulting PDF is produced in ``_build/latex``.
 
 Hints for specific platforms
 .............................

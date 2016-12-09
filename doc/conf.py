@@ -20,10 +20,7 @@
 import os, sys
 
 from distutils.util import get_platform
-sys.path.insert(0,
-os.path.abspath('../build/lib.{0}-{1}.{2}'.format(get_platform(),
-        *sys.version_info[:2])))
-import sesame
+sys.path.insert(0, os.path.abspath('..'))
 
 # -- General configuration ------------------------------------------------
 
