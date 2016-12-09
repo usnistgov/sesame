@@ -1,5 +1,12 @@
 :mod:`sesame.utils` -- Miscellaneous routines
 =============================================
 
-.. automodule:: sesame.utils
-   :members:
+.. module:: sesame.utils
+
+.. autosummary::
+   :toctree: generated/
+
+   bulk_recombination_current
+   extra_charges_path
+   extra_charges_plane
+   full_current
