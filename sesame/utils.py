@@ -60,10 +60,10 @@ def extra_charges_path(sys, start, end):
 
     sys: Builder
         The discretized system.
-    start: Tuple (x, y, z)
+    start: Tuple (x, y)
         Coordinates of the first point of the line containing additional
         charges in [m].
-    end: Tuple (x, y, z)
+    end: Tuple (x, y)
         Coordinates of the last point of the line containing additional
         charges [m].
 
