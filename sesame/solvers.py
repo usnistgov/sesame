@@ -14,18 +14,17 @@ except:
     pass
 
 
-
 def refine(dx):
     # This damping procedure was taken from Solid-State Electronics, vol. 19,
     # pp. 991-992 (1976).
-    for sdx, s in enumerate(dx):
-        if abs(s) < 1:
-            dx[sdx] /= 2
-        if 1 < abs(s) < 3.7:
-            dx[sdx] = np.sign(s) * abs(s)**(0.2)/2
-        elif abs(s) >= 3.7:
-            dx[sdx] = np.sign(s) * np.log(abs(s))/2
-    return dx
+
+    a = np.abs(dx) < 1
+    b = np.abs(dx) >= 3.7
+    c = a == b # intersection of a and b
+
+    dx[a] /= 2
+    dx[b] = np.sign(dx[b]) * np.log(abs(dx[b]))/2
+    dx[c] = np.sign(dx[c]) * abs(dx[c])**(0.2)/2
 
 def sparse_solver(J, f, iterative=False, use_mumps=False):
     if not iterative:
@@ -41,7 +40,7 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
     else:
         n = len(f)
         M = spdiags(1.0 / J.diagonal(), [0], n, n)
-        dx, info = lg.lgmres(J, f, M=M)
+        dx, info = lg.lgmres(J, f, M=M, tol=1e-5)
         if info == 0:
             return dx
         else:
@@ -115,7 +114,7 @@ def poisson_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,
         else: # modify dx and update new values for v
             # Start slowly this refinement method found in a paper
             if error > 1:
-                dv = refine(dv)
+                refine(dv)
             # use the usual clamping once a proper direction has been found
             else:
                 dv = dv / (1 + np.abs(dv/clamp))
@@ -212,16 +211,17 @@ def ddp_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,\
             solution['v']   = v
             break 
         else: # modify dx and update new values of efn, efp, v
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv   = dx[2::3]
             # Start slowly this refinement method found in a paper
             if error > 1:
-                defn = refine(defn)
-                defp = refine(defp)
-                dv = refine(dv)
+                refine(dx)
+                defn = dx[0::3]
+                defp = dx[1::3]
+                dv   = dx[2::3]
             # use the usual clamping once a proper direction has been found
             else:
+                defn = dx[0::3]
+                defp = dx[1::3]
+                dv   = dx[2::3]
                 defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
                 defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
                 dv = dv / (1 + np.abs(dv/clamp))
