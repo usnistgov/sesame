@@ -40,8 +40,7 @@ def getFandJ_eq(sys, v, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.array(range(1,Nx-1))
 
     # dxbar
     dxbar = (dx[sites] + dx[sites-1]) / 2.

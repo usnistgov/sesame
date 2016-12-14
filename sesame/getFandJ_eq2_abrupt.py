@@ -43,14 +43,14 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i + j*Nx for j in range(Ny) for i in range(Nx)]
+    _sites = np.array(range(Nx*Ny))
 
     # carrier densities
-    n = get_n(sys, 0*v, v, sites)
-    p = get_p(sys, 0*v, v, sites)
+    n = get_n(sys, 0*v, v, _sites)
+    p = get_p(sys, 0*v, v, _sites)
 
     # bulk charges
-    rho = sys.rho[sites] - n + p
+    rho = sys.rho[_sites] - n + p
     drho_dv = -n - p
 
     if hasattr(sys, 'Nextra'): 
@@ -71,9 +71,11 @@ def getFandJ_eq(sys, v, use_mumps):
                                 / (_n+_p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
-    rho = rho / sys.epsilon[sites]
-    drho_dv = drho_dv / sys.epsilon[sites]
+    rho = rho / sys.epsilon[_sites]
+    drho_dv = drho_dv / sys.epsilon[_sites]
 
+    # reshape the array as array[y-indices, x-indices]
+    _sites = _sites.reshape(Ny, Nx)
 
     ###########################################################################
     #       inside the system: 0 < i < Nx-1 and 0 < j < Ny-1                  #
@@ -82,8 +84,7 @@ def getFandJ_eq(sys, v, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -108,10 +109,8 @@ def getFandJ_eq(sys, v, use_mumps):
     dvpN = -1./(dy * dybar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [5*[s] for s in sites]
-
-    dfv_cols = [[s-Nx, s-1, s, s+1, s+Nx] for s in sites]
-
+    dfv_rows = zip(sites, sites, sites, sites, sites)
+    dfv_cols = zip(sites-Nx, sites-1, sites, sites+1, sites+Nx)
     dfv_data = zip(dvmN, dvm1, dv, dvp1, dvpN)
 
     rows += list(chain.from_iterable(dfv_rows))
@@ -123,46 +122,45 @@ def getFandJ_eq(sys, v, use_mumps):
     #                   left contact: i = 0 and 0 <= j <= Ny-1                #
     ###########################################################################
     # list of the sites on the left side
-    sites = [j*Nx for j in range(Ny)]
+    sites = _sites[:, 0].flatten()
 
     # update vector
-    av_rows = [s for s in sites]
+    av_rows = sites
     vec[av_rows] = 0 # to ensure Dirichlet BCs
 
     # update Jacobian
-    dav_rows = [s for s in sites]
-    dav_cols = [s for s in sites]
+    dav_rows = sites
+    dav_cols = sites
     dav_data = [1 for s in sites] # dv_s = 0
 
-    rows += dav_rows
-    columns += dav_cols
+    rows += dav_rows.tolist()
+    columns += dav_cols.tolist()
     data += dav_data
 
     ###########################################################################
     #                 right contact: i = Nx-1 and 0 <= j <= Ny-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx for j in range(Ny)]
+    sites = _sites[:, Nx-1].flatten()
 
     # update vector
-    bv_rows = [s for s in sites]
+    bv_rows = sites
     vec[bv_rows] = 0 # to ensure Dirichlet BCs
 
     # update Jacobian
-    dbv_rows = [s for s in sites]
-    dbv_cols = [s for s in sites]
+    dbv_rows = sites
+    dbv_cols = sites
     dbv_data = [1 for s in sites] # dv_s = 0
 
-    rows += dbv_rows
-    columns += dbv_cols
+    rows += dbv_rows.tolist()
+    columns += dbv_cols.tolist()
     data += dbv_data
 
     ###########################################################################
     #                  boundary: 0 < i < Nx-1 and j = Ny-1                    #
     ###########################################################################
-
     # list of sites
-    sites = np.asarray([i + (Ny-1)*Nx for i in range(1,Nx-1)])
+    sites = _sites[Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -187,8 +185,8 @@ def getFandJ_eq(sys, v, use_mumps):
     dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns
-    dfv_rows = [4*[s] for s in sites]
-    dfv_cols = [[s-Nx, s-1, s, s+1] for s in sites]
+    dfv_rows = zip(sites, sites, sites, sites)
+    dfv_cols = zip(sites-Nx, sites-1, sites, sites+1)
     dfv_data = zip(dvmN, dvm1, dv, dvp1)
 
     rows += list(chain.from_iterable(dfv_rows))
@@ -199,7 +197,7 @@ def getFandJ_eq(sys, v, use_mumps):
     #                     boundary: 0 < i < Nx-1 and j = 0                    #
     ###########################################################################
     # list of sites
-    sites = np.asarray([i for i in range(1,Nx-1)])
+    sites = _sites[0, 1:Nx-1].flatten()
 
     # dxbar and dybar
     dx = sys.dx[1:]
@@ -224,8 +222,8 @@ def getFandJ_eq(sys, v, use_mumps):
     dvpN = -1./(dy * dybar)
 
     # update the sparse matrix row and columns
-    dfv_rows = [4*[s] for s in sites]
-    dfv_cols = [[s-1, s, s+1, s+Nx] for s in sites]
+    dfv_rows = zip(sites, sites, sites, sites)
+    dfv_cols = zip(sites-1, sites, sites+1, sites+Nx)
     dfv_data = zip(dvm1, dv, dvp1, dvpN)
 
     rows += list(chain.from_iterable(dfv_rows))

@@ -49,11 +49,11 @@ def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i + j*Nx for j in range(Ny) for i in range(Nx)]
+    _sites = np.array(range(Nx*Ny))
 
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = get_n(sys, efn, v, _sites)
+    p = get_p(sys, efp, v, _sites)
 
     # bulk charges
     drho_defn_s = - n
@@ -62,7 +62,7 @@ def getJ(sys, v, efn, efp, use_mumps):
 
     # derivatives of the bulk recombination rates
     dr_defn_s, dr_defp_s, dr_dv_s = \
-    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)\
+    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)\
 
     # extra charge density
     if hasattr(sys, 'Nextra'): 
@@ -91,9 +91,11 @@ def getJ(sys, v, efn, efp, use_mumps):
             dr_dv_s[matches] += dv
 
     # charge is divided by epsilon
-    drho_defn_s = drho_defn_s / sys.epsilon[sites]
-    drho_defp_s = drho_defp_s / sys.epsilon[sites]
-    drho_dv_s = drho_dv_s / sys.epsilon[sites]
+    drho_defn_s = drho_defn_s / sys.epsilon[_sites]
+    drho_defp_s = drho_defp_s / sys.epsilon[_sites]
+    drho_dv_s = drho_dv_s / sys.epsilon[_sites]
+
+    _sites = _sites.reshape(Ny, Nx)
     
     def update(r, c, d):
         global rows, columns, data
@@ -195,8 +197,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -276,8 +277,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # left boundary of the system.
 
     # list of the sites on the left side
-    sites = [j*Nx for j in range(Ny)]
-    sites = np.asarray(sites)
+    sites = _sites[:, 0].flatten()
 
     #-------------------------- an derivatives --------------------------------
     defn_s, defn_sp1, dv_s, dv_sp1 = get_jn_derivs(sys, efn, v, sites, sites+1, sys.dx[0])
@@ -286,7 +286,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dv_s -= sys.Scn[0] * n[sites]
 
     # update the sparse matrix row and columns
-    dan_rows = [4*[3*s] for s in sites]
+    dan_rows = np.reshape(np.repeat(3*sites, 4), (len(sites), 4)).tolist()
 
     dan_cols = zip(3*sites, 3*sites+2, 3*(sites+1), 3*(sites+1)+2)
 
@@ -301,7 +301,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dv_s -= sys.Scp[0] * p[sites]
 
     # update the sparse matrix row and columns
-    dap_rows = [4*[3*s+1] for s in sites]
+    dap_rows = np.reshape(np.repeat(3*sites+1, 4), (len(sites), 4)).tolist()
 
     dap_cols = zip(3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
 
@@ -312,7 +312,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     #-------------------------- av derivatives --------------------------------
     dav_rows = (3*sites+2).tolist()
     dav_cols = (3*sites+2).tolist()
-    dav_data = [1 for s in sites]
+    dav_data = np.ones((len(sites,))).tolist()
 
     rows += dav_rows
     columns += dav_cols
@@ -325,8 +325,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # right boundary of the system.
 
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx for j in range(1,Ny-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Ny-1, Nx-1].flatten()
 
     # dxbar and dybar
     dxm1 = sys.dx[-1]
@@ -346,7 +345,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('electrons', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [9*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 9), (len(sites), 9)).tolist()
 
     dbn_cols = zip(3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2,
                    3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx), 3*(sites+Nx)+2)
@@ -367,7 +366,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('holes', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [9*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 9), (len(sites), 9)).tolist()
 
     dbp_cols = zip(3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,
                    3*sites, 3*sites+1, 3*sites+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2)
@@ -380,7 +379,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     #-------------------------- bv derivatives --------------------------------
     dbv_rows = (3*sites+2).tolist()
     dbv_cols = (3*sites+2).tolist()
-    dbv_data = [1 for s in sites] # dv_s = 0
+    dbv_data = np.ones((len(sites,))).tolist() # dv_s = 0
 
     rows += dbv_rows
     columns += dbv_cols
@@ -409,7 +408,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('electrons', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [7*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 7), (len(sites), 7)).tolist()
 
     dbn_cols = [3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,
                 3*(sites+Nx), 3*(sites+Nx)+2]
@@ -428,7 +427,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('holes', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [7*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 7), (len(sites), 7)).tolist()
 
     dbp_cols = [3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
                 3*(sites+Nx)+1, 3*(sites+Nx)+2]
@@ -440,7 +439,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     #-------------------------- bv derivatives --------------------------------
     dbv_rows = (3*sites+2).tolist()
     dbv_cols = (3*sites+2).tolist()
-    dbv_data = [1 for s in sites] # dv_s = 0
+    dbv_data = np.ones((len(sites,))).tolist() # dv_s = 0
 
     rows += dbv_rows
     columns += dbv_cols
@@ -469,7 +468,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('electrons', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbn_rows = [7*[3*s] for s in sites]
+    dbn_rows = np.reshape(np.repeat(3*sites, 7), (len(sites), 7)).tolist()
 
     dbn_cols = [3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2,\
                 3*sites, 3*sites+1, 3*sites+2]
@@ -488,7 +487,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     bn_derivatives('holes', djx_sm1, djy_s, djy_smN, dxbar, dybar, sites)
 
     # update the sparse matrix row and columns
-    dbp_rows = [7*[3*s+1] for s in sites]
+    dbp_rows = np.reshape(np.repeat(3*sites+1, 7), (len(sites), 7)).tolist()
 
     dbp_cols = [3*(sites-Nx)+1, 3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,\
                 3*sites, 3*sites+1, 3*sites+2]
@@ -500,7 +499,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     #-------------------------- bv derivatives --------------------------------
     dbv_rows = (3*sites+2).tolist()
     dbv_cols = (3*sites+2).tolist()
-    dbv_data = [1 for s in sites] # dv_s = 0
+    dbv_data = np.ones((len(sites,))).tolist() # dv_s = 0
 
     rows += dbv_rows
     columns += dbv_cols
@@ -513,8 +512,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # We apply drift diffusion equations.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -537,7 +535,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     f_derivatives('electrons', djx_s, djx_sm1, djy_s, djy_smN, dxbar, dybar, sites) 
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [9*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 9), (len(sites), 9)).tolist()
 
     dfn_cols = zip(3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,
                    3*(sites+1), 3*(sites+1)+2, 3*(sites+Nx), 3*(sites+Nx)+2)
@@ -560,7 +558,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     f_derivatives('holes', djx_s, djx_sm1, djy_s, djy_smN, dxbar, dybar, sites) 
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [9*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 9), (len(sites), 9)).tolist()
 
     dfp_cols = zip(3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,
                    3*(sites+1)+1, 3*(sites+1)+2, 3*(sites+Nx)+1, 3*(sites+Nx)+2)
@@ -580,7 +578,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dvpN = -1./(dy * dybar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [6*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 6), (len(sites), 6)).tolist()
 
     dfv_cols = zip(3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2,\
                    3*(sites+Nx)+2)
@@ -595,8 +593,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # We apply drift diffusion equations.
 
     # list of the sites inside the system
-    sites = [i + (Ny-1)*Nx for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -619,7 +616,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     f_derivatives('electrons', djx_s, djx_sm1, djy_s, djy_smN, dxbar, dybar, sites) 
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [9*[3*s] for s in sites]
+    dfn_rows = np.reshape(np.repeat(3*sites, 9), (len(sites), 9)).tolist()
 
     dfn_cols = zip(3*(sites-Nx), 3*(sites-Nx)+2, 3*(sites-1), 3*(sites-1)+2, 3*sites,\
                    3*sites+1, 3*sites+2, 3*(sites+1), 3*(sites+1)+2)
@@ -642,7 +639,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     f_derivatives('holes', djx_s, djx_sm1, djy_s, djy_smN, dxbar, dybar, sites) 
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [9*[3*s+1] for s in sites]
+    dfp_rows = np.reshape(np.repeat(3*sites+1, 9), (len(sites), 9)).tolist()
 
     dfp_cols = zip(3*(sites-Nx)+1,3*(sites-Nx)+2, 3*(sites-1)+1, 3*(sites-1)+2,\
                    3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
@@ -662,7 +659,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [6*[3*s+2] for s in sites]
+    dfv_rows = np.reshape(np.repeat(3*sites+2, 6), (len(sites), 6)).tolist()
 
     dfv_cols = zip(3*(sites-Nx)+2, 3*(sites-1)+2,
                    3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2)

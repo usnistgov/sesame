@@ -118,14 +118,14 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i + j*Nx + k*Nx*Ny for k in range(Nz) for j in range(Ny) for i in range(Nx)]
+    _sites = np.array(range(Nx*Ny*Nz))
 
     # carrier densities
-    n = get_n(sys, 0*v, v, sites)
-    p = get_p(sys, 0*v, v, sites)
+    n = get_n(sys, 0*v, v, _sites)
+    p = get_p(sys, 0*v, v, _sites)
 
     # bulk charges
-    rho = sys.rho[sites] - n + p
+    rho = sys.rho[_sites] - n + p
     drho_dv = -n - p
     
     # extra charge density
@@ -146,9 +146,11 @@ def getFandJ_eq(sys, v, use_mumps):
                                 / (_n+_p+nextra+pextra)**2
 
     # charge is divided by epsilon (Poisson equation)
-    rho = rho / sys.epsilon[sites]
-    drho_dv = drho_dv / sys.epsilon[sites]
+    rho = rho / sys.epsilon[_sites]
+    drho_dv = drho_dv / sys.epsilon[_sites]
 
+    # reshape the array as array[z-indices, y-indices, x-indices]
+    _sites = _sites.reshape(Nz, Ny, Nx)
      
     ###########################################################################
     #     inside the system: 0 < i < Nx-1,  0 < j < Ny-1, 0 < k < Nz-1        #
@@ -157,9 +159,7 @@ def getFandJ_eq(sys, v, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx + k*Nx*Ny for k in range(1,Nz-1) 
-                                for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], (Ny-2)*(Nz-2))
@@ -180,19 +180,19 @@ def getFandJ_eq(sys, v, use_mumps):
     #       left boundary: i = 0, 0 <= j <= Ny-1, 0 <= k <= Nz-1              #
     ###########################################################################
     # list of the sites on the left side
-    sites = [j*Nx + k*Nx*Ny for k in range(Nz) for j in range(Ny)]
+    sites = _sites[:, :, 0].flatten()
 
     # update vector
-    av_rows = [s for s in sites]
+    av_rows = sites
     vec[av_rows] = 0 # to ensure Dirichlet BCs
 
     # update Jacobian
-    dav_rows = [s for s in sites]
-    dav_cols = [s for s in sites]
+    dav_rows = sites
+    dav_cols = sites
     dav_data = [1 for s in sites] # dv_s = 0
 
-    rows += dav_rows
-    columns += dav_cols
+    rows += dav_rows.tolist()
+    columns += dav_cols.tolist()
     data += dav_data
 
 
@@ -200,19 +200,19 @@ def getFandJ_eq(sys, v, use_mumps):
     #       right boundary: i = Nx-1, 0 <= j <= Ny-1, 0 <= k <= Nz-1          #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx + k*Nx*Ny for k in range(Nz) for j in range(Ny)]
+    sites = _sites[:, :, Nx-1].flatten()
 
     # update vector
-    bv_rows = [s for s in sites]
+    bv_rows = sites
     vec[bv_rows] = 0 # to ensure Dirichlet BCs
 
     # update Jacobian
-    dbv_rows = [s for s in sites]
-    dbv_cols = [s for s in sites]
+    dbv_rows = sites
+    dbv_cols = sites
     dbv_data = [1 for s in sites] # dv_s = 0
 
-    rows += dbv_rows
-    columns += dbv_cols
+    rows += dbv_rows.tolist()
+    columns += dbv_cols.tolist()
     data += dbv_data
 
 
@@ -221,8 +221,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
 
     # list of the sites in the top row
-    sites = [i + (Ny-1)*Nx + k*Nx*Ny for k in range(1,Nz-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
@@ -244,8 +243,7 @@ def getFandJ_eq(sys, v, use_mumps):
     #          bottom boundary: 0 < i < Nx-1, j = 0, 0 < k < Nz-1             #
     ###########################################################################
     # list of the sites in the bottom row
-    sites = [i + k*Nx*Ny for k in range(1,Nz-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
@@ -264,8 +262,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #             boundary: 0 < i < Nx-1, 0 < j < Ny-1,  k = Nz-1             #
     ###########################################################################
-    sites = [i + j*Nx + (Nz-1)*Nx*Ny for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -284,8 +281,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #             boundary: 0 < i < Nx-1, 0 < j < Ny-1,  k = 0                #
     ###########################################################################
-    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -304,8 +300,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = 0,  k = 0                 #
     ###########################################################################
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -324,8 +319,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = 0,  k = Nz-1              #
     ###########################################################################
-    sites = [i + (Nz-1)*Nx*Ny for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -344,8 +338,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                   boundary: 0 < i < Nx-1, j = Ny-1,  k = 0              #
     ###########################################################################
-    sites = [i + (Ny-1)*Nx for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]
@@ -364,8 +357,7 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                boundary: 0 < i < Nx-1, j = Ny-1,  k = Nz-1              #
     ###########################################################################
-    sites = [i + (Ny-1)*Nx + (Nz-1)*Nx*Ny for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = sys.dx[1:]

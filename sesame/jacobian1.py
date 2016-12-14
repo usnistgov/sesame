@@ -41,7 +41,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i for i in range(Nx)]
+    sites = np.array(range(Nx))
 
     # carrier densities
     n = get_n(sys, efn, v, sites)
@@ -95,8 +95,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.array(range(1,Nx-1))
 
     # dxbar
     dx = sys.dx[1:]
@@ -125,7 +124,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dv_sp1 = djx_s_dv_sp1 / dxbar
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [7*[3*s] for s in sites]
+    dfn_rows = zip(3*sites, 3*sites,  3*sites, 3*sites, 3*sites, 3*sites, 3*sites)
 
     dfn_cols = zip(3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
                 3*(sites+1), 3*(sites+1)+2)
@@ -158,7 +157,8 @@ def getJ(sys, v, efn, efp, use_mumps):
     dv_sp1 = djx_s_dv_sp1 / dxbar
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [7*[3*s+1] for s in sites]
+    dfp_rows = zip(3*sites+1, 3*sites+1,  3*sites+1, 3*sites+1, 3*sites+1,
+                   3*sites+1, 3*sites+1)
 
     dfp_cols = zip(3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1,\
                  3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
@@ -180,7 +180,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [5*[3*s+2] for s in sites]
+    dfv_rows = zip(3*sites+2, 3*sites+2,  3*sites+2, 3*sites+2, 3*sites+2)
 
     dfv_cols = zip(3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2)
 

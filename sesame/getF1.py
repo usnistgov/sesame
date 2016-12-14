@@ -23,7 +23,7 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i for i in range(Nx)]
+    sites = range(Nx)
 
     # carrier densities
     n = get_n(sys, efn, v, sites)
@@ -64,8 +64,7 @@ def getF(sys, v, efn, efp):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.array([i for i in range(1,Nx-1)])
 
     # dxbar
     dx = sys.dx[1:]
@@ -99,7 +98,6 @@ def getF(sys, v, efn, efp):
     #                       left boundary: i = 0                              #
     ###########################################################################
     # compute the currents
-    s_sp1 = [(0, 1)]
     jnx = get_jn(sys, efn, v, 0, 1, sys.dx[0])
     jpx = get_jp(sys, efp, v, 0, 1, sys.dx[0])
 

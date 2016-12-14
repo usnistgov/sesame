@@ -24,17 +24,17 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i + j*Nx for j in range(Ny) for i in range(Nx)]
+    _sites = np.array(range(Nx*Ny))
 
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = get_n(sys, efn, v, _sites)
+    p = get_p(sys, efp, v, _sites)
 
     # bulk charges
     rho = sys.rho - n + p
 
     # recombination rates
-    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)
+    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)
 
     # extra charge density
     if hasattr(sys, 'Nextra'): 
@@ -55,7 +55,10 @@ def getF(sys, v, efn, efp):
             r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon[sites]
+    rho = rho / sys.epsilon[_sites]
+
+    # reshape the array as array[y-indices, x-indices]
+    _sites = _sites.reshape(Ny, Nx)
 
     ###########################################################################
     #       inside the system: 0 < i < Nx-1 and 0 < j < Ny-1                  #
@@ -64,8 +67,7 @@ def getF(sys, v, efn, efp):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -110,8 +112,7 @@ def getF(sys, v, efn, efp):
     #                 left boundary: i = 0 and 0 <= j <= Ny-1                 #
     ###########################################################################
     # list of the sites on the left side
-    sites = [j*Nx for j in range(Ny)]
-    sites = np.asarray(sites)
+    sites = _sites[:, 0].flatten()
 
     # compute the currents
     # s_sp1 = [i for i in zip(sites, sites + 1)]
@@ -141,8 +142,7 @@ def getF(sys, v, efn, efp):
     #               right boundary: i = Nx-1 and 0 < j < Ny-1                 #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx for j in range(1,Ny-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Ny-1, Nx-1].flatten()
 
     # dxbar and dybar
     dxm1 = sys.dx[-1]
@@ -185,7 +185,7 @@ def getF(sys, v, efn, efp):
     #                    right boundary: i = Nx-1 and j = 0                   #
     ###########################################################################
     # list of the sites
-    sites = np.array([Nx-1])
+    sites = _sites[0, Nx-1].flatten()
 
     # dxbar and dybar
     dxm1 = sys.dx[-1]
@@ -228,7 +228,7 @@ def getF(sys, v, efn, efp):
     #                 right boundary: i = Nx-1 and j = Ny-1                   #
     ###########################################################################
     # list of the sites
-    sites = np.array([Nx*Ny-1])
+    sites = _sites[Ny-1, Nx-1].flatten()
 
     # dxbar and dybar
     dxm1 = sys.dx[-1]
@@ -274,8 +274,7 @@ def getF(sys, v, efn, efp):
     # periodic boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 1:Nx-1]
 
     # lattice distances
     dx = sys.dx[1:]
@@ -322,8 +321,7 @@ def getF(sys, v, efn, efp):
     # periodic boundary conditions.
 
     # list of the sites inside the system
-    sites = [i + (Ny-1)*Nx for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Ny-1, 1:Nx-1]
 
     # lattice distances
     dx = sys.dx[1:]
