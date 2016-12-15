@@ -37,7 +37,7 @@ def plot_line_defects(sys, scale=1e-6, ls='-o'):
         xa, ya = c.location[0]
         xb, yb = c.location[1]
 
-        _, xcoord, ycoord, _ = utils.Bresenham2d(sys, (xa, ya,0), (xb,yb,0))
+        _, _, xcoord, ycoord, _ = utils.Bresenham2d(sys, (xa, ya,0), (xb,yb,0))
 
         # plot the path of added charges
         plt.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
@@ -73,7 +73,7 @@ def plot_plane_defects(sys, scale=1e-6):
         P3 = np.asarray(c.location[2])
         P4 = np.asarray(c.location[3])
 
-        _, X, Y, Z = utils.extra_charges_plane(sys, P1, P2, P3, P4) 
+        _, X, Y, Z = utils.plane_defects_sites(sys, P1, P2, P3, P4) 
 
         X = X / scale
         Y = Y / scale

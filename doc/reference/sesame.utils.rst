@@ -7,6 +7,6 @@
    :toctree: generated/
 
    bulk_recombination_current
-   extra_charges_path
-   extra_charges_plane
+   line_defects_sites
+   plane_defects_sites
    full_current

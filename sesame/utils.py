@@ -50,7 +50,7 @@ def get_dl(sys, sites):
 
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 
-def extra_charges_path(sys, start, end):
+def line_defects_sites(sys, start, end):
     """
     Get sites and coordinates of the locations containing additional charges
     distributed on a line.
@@ -74,78 +74,20 @@ def extra_charges_path(sys, start, end):
         Sites numbers.
     X: numpy array of floats
         Incremental sum of the lattice size between sites.
-    xccord: numpy array of floats
+    iccord: list of integers
         Indices of the x-coordinates of the sites on the discretized lattice.
-    yccord: numpy array of floats
+    jccord: list of integers
         Indices of the y-coordinates of the sites on the discretized lattice.
 
     Notes
     -----
     This only works in 2D.
     """
-    # Return the path and the sites
-    xa, ya = start[0], start[1]
-    xb, yb = end[0], end[1]
 
-    # reorder the points do that they are in ascending order
-    if ya <= yb:
-        ia, ja, ka = get_indices(sys, (xa, ya, 0))
-        ib, jb, kb = get_indices(sys, (xb, yb, 0))
-    else:
-        ia, ja, ka = get_indices(sys, (xb, yb, 0))
-        ib, jb, kb = get_indices(sys, (xa, ya, 0))
-
-    distance = lambda x, y:\
-        abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
-            np.sqrt((yb-ya)**2 + (xb-xa)**2)
-
-    def condition(x, y):
-        if ia <= ib:
-            return x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1
-        else:
-            return x >= ib and y <= jb and x > 1 and y < sys.ny-1
-                        
-    xcoord, ycoord = [], []
-    s = [ia + ja*sys.nx]
-    X = [0]
-    x, y = ia, ja
-    while condition(x, y):
-        # distance between the point above (x,y) and the segment
-        d1 = distance(sys.xpts[x], sys.ypts[y+1])
-        # distance between the point right of (x,y) and the segment
-        d2 = distance(sys.xpts[x+1], sys.ypts[y])
-        # distance between the point left of (x,y) and the segment
-        d3 = distance(sys.xpts[x-1], sys.ypts[y])
-
-        if ia < ib: # overall direction is to the right
-            if d1 < d2:
-                x, y = x, y+1
-                X.append(X[-1] + sys.dy[y])
-            else:
-                x, y = x+1, y
-                X.append(X[-1] + sys.dx[x])
-        else: # overall direction is to the left
-            if d1 < d3:
-                x, y = x, y+1
-                X.append(X[-1] + sys.dy[y])
-            else:
-                x, y = x-1, y
-                X.append(X[-1] + sys.dx[x-1])
-        s.append(x + y*sys.nx)
-        xcoord.append(x)
-        ycoord.append(y)
-        
+    sites, X, icoord, jcoord, _ = Bresenham2d(sys, p1, p2)
+    sites = np.asarray(sites)
     X = np.asarray(X)
-    xcoord = np.asarray(xcoord, dtype=int)
-    ycoord = np.asarray(ycoord, dtype=int)
-
-    # put everyting back to original order if inverted=True
-    if xa > xb:
-        s.reverse()
-        X = np.flipud(X[-1] - X) * sys.xscale
-        xcoord = np.flipud(xcoord)
-        ycoord = np.flipud(ycoord)
-    return s, X, xcoord, ycoord
+    return sites, X, icoord, jcoord
 
 def bulk_recombination_current(sys, efn, efp, v):
     """
@@ -171,6 +113,9 @@ def bulk_recombination_current(sys, efn, efp, v):
     --------
     Not implemented in 3D.
     """
+
+    x = sys.xpts / sys.scaling.length
+    y = sys.ypts / sys.scaling.length
     u = []
     for j in range(sys.ny):
         # List of sites
@@ -182,13 +127,13 @@ def bulk_recombination_current(sys, efn, efp, v):
 
         # Recombination
         r = observables.get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
-        sp = spline(sys.xpts, r)
-        u.append(sp.integral(sys.xpts[0], sys.xpts[-1]))
+        sp = spline(x, r)
+        u.append(sp.integral(x[0], x[-1]))
     if sys.ny == 1:
         JR = u[-1]
     if sys.ny > 1:
-        sp = spline(sys.ypts, u)
-        JR = sp.integral(sys.ypts[0], sys.ypts[-1])
+        sp = spline(y, u)
+        JR = sp.integral(y[0], y[-1])
     return JR
  
 def full_current(sys, efn, efp, v):
@@ -229,7 +174,8 @@ def full_current(sys, efn, efp, v):
         j = jn + jp
     if sys.ny > 1:
         # Interpolate the results and integrate over the y-direction
-        j = spline(sys.ypts, jn+jp).integral(sys.ypts[0], sys.ypts[-1])
+        y = sys.ypts / sys.scaling.length
+        j = spline(y, jn+jp).integral(y[0], y[-1])
 
     return j
 
@@ -260,6 +206,7 @@ def Bresenham2d(system, p1, p2):
 
     i, j = i1, j1
     sites = [i + j*system.nx + k1*system.nx*system.ny]
+    X = [0]
     icoord = [i]
     jcoord = [j]
     kcoord = [k1]
@@ -272,13 +219,15 @@ def Bresenham2d(system, p1, p2):
             condition = e1 < e2
         if condition:
             j += incy
+            X.append(X[-1] + system.dy[j])
         else:
             i += incx
+            X.append(X[-1] + system.dx[i])
         sites.append(i + j*system.nx + k1*system.nx*system.ny)
         icoord.append(i)
         jcoord.append(j)
         kcoord.append(k1)
-    return sites, icoord, jcoord, kcoord
+    return sites, X, icoord, jcoord, kcoord
 
 def check_plane(P1, P2, P3, P4):
     # check if plane is within what can be handled
@@ -327,7 +276,7 @@ def check_plane(P1, P2, P3, P4):
         print(msg)
         exit(1)
 
-def extra_charges_plane(sys, P1, P2, P3, P4):
+def plane_defects_sites(sys, P1, P2, P3, P4):
     """
     Get sites and coordinates of the locations containing additional charges
     distributed on a plane.
@@ -406,7 +355,7 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
        
     sites, xcoord, ycoord, zcoord = [], [], [], []
 
-    s, ic, jc, kc = Bresenham2d(sys, P1, P2)
+    s, _, ic, jc, kc = Bresenham2d(sys, P1, P2)
 
     sites.extend(s)
     xcoord.append(sys.xpts[ic])
@@ -451,7 +400,7 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
         z1, z2 = sys.zpts[k1], sys.zpts[k2]
 
-        s, ic, jc, kc = Bresenham2d(sys, (x1, y1, z1), (x2, y2, z2))
+        s, _, ic, jc, kc = Bresenham2d(sys, (x1, y1, z1), (x2, y2, z2))
 
         sites.extend(s)
         xcoord.append(sys.xpts[ic])

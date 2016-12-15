@@ -81,7 +81,8 @@ Computing the current integrated across the system is done as follows::
     jp = get_jp(sys, efp, v, sites_i, sites_ip1, dl)
 
     # Interpolate the results and integrate over the y-direction
-    j = spline(sys.ypts, jn+jp).integral(sys.ypts[0], sys.ypts[-1])
+    y = sys.ypts / sys.scaling.length
+    j = spline(y, jn+jp).integral(y[0], y[-1])
 
 This is only given as an example of how to compute currents, as this particular
 function is available in :func:`~sesame.utils.full_current`.
@@ -89,6 +90,9 @@ To compute the bulk recombination current we first interpolate and integrate the
 recombination along the :math:`x`-axis, then we do the same along the :math:`y`-axis:: 
 
     u = []
+    x = sys.xpts / sys.scaling.length
+    y = sys.ypts / sys.scaling.length
+
     for j in range(sys.ny):
         # List of sites
         s = [i + j*sys.nx for i in range(sys.nx)]
@@ -99,19 +103,21 @@ recombination along the :math:`x`-axis, then we do the same along the :math:`y`-
 
         # Recombination
         r = get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
-        sp = spline(sys.xpts, r)
-        u.append(sp.integral(sys.xpts[0], sys.xpts[-1]))
+        sp = spline(x, r)
+        u.append(sp.integral(x[0], x[-1]))
 
-    sp = spline(sys.ypts, u)
-    JR = sp.integral(sys.ypts[0], sys.ypts[-1])
+    sp = spline(y, u)
+    JR = sp.integral(y[0], y[-1])
 
 Again, because this is very useful we implemented this function in
 :func:`~sesame.utils.bulk_recombination_current`.
 
 In order to get information about the densities at the defect sites, we need to
 get them. This is done by calling the function
-``sesame.utils.extra_charges_path`` with the two points defining the line
-defects we are considering. As an example, let's compute the recombination
+``sesame.utils.line_defect_sites`` with the two points defining the line defects
+we are considering. This function also gives the curvilinear path followed by
+the line defects, and the coordinates of the sites.  As an example, let's
+compute the recombination
 current along the grain boundary::
 
     from sesame.utils import extra_charges_path
@@ -119,7 +125,7 @@ current along the grain boundary::
     # Get the defect sites, path along the lattice, x indices, y indices
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
-    GBsites, X, xGB, yGB = extra_charges_path(sys, startGB, endGB)
+    GBsites, X, xGB, yGB = line_defects_sites(sys, startGB, endGB)
 
     # Get the defect state equilibrium densities
     nGB = sys.nextra[0, GBsites]

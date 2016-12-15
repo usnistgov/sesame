@@ -82,7 +82,7 @@ def get_plane_defects_sites(system, plane_defects):
     P3 = np.asarray(plane_defects.location[2])
     P4 = np.asarray(plane_defects.location[3])
 
-    sites, _, _, _ = utils.extra_charges_plane(system, P1, P2, P3, P4) 
+    sites, _, _, _ = utils.plane_defects_sites(system, P1, P2, P3, P4) 
 
     return sites        
 
