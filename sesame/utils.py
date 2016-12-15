@@ -84,7 +84,10 @@ def line_defects_sites(sys, start, end):
     This only works in 2D.
     """
 
-    sites, X, icoord, jcoord, _ = Bresenham2d(sys, p1, p2)
+    x1, y1 = start
+    x2, y2 = end
+
+    sites, X, icoord, jcoord, _ = Bresenham2d(sys, (x1, y1, 0), (x2, y2, 0))
     sites = np.asarray(sites)
     X = np.asarray(X)
     return sites, X, icoord, jcoord
