@@ -40,7 +40,7 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
     else:
         n = len(f)
         M = spdiags(1.0 / J.diagonal(), [0], n, n)
-        dx, info = lg.lgmres(J, f, M=M, tol=1e-5)
+        dx, info = lg.lgmres(J, f, M=M, tol=1e-9)
         if info == 0:
             return dx
         else:
@@ -113,7 +113,7 @@ def poisson_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,
             break 
         else: # modify dx and update new values for v
             # Start slowly this refinement method found in a paper
-            if error > 1:
+            if error > 100:
                 refine(dv)
             # use the usual clamping once a proper direction has been found
             else:
@@ -212,7 +212,7 @@ def ddp_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,\
             break 
         else: # modify dx and update new values of efn, efp, v
             # Start slowly this refinement method found in a paper
-            if error > 1:
+            if error > 100:
                 refine(dx)
                 defn = dx[0::3]
                 defp = dx[1::3]

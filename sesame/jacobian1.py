@@ -41,7 +41,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = np.array(range(Nx))
+    sites = range(Nx)
 
     # carrier densities
     n = get_n(sys, efn, v, sites)
@@ -95,7 +95,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = np.array(range(1,Nx-1))
+    sites = np.arange(1,Nx-1)
 
     # dxbar
     dx = sys.dx[1:]

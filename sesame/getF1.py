@@ -64,7 +64,7 @@ def getF(sys, v, efn, efp):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = np.array([i for i in range(1,Nx-1)])
+    sites = np.arange(1,Nx-1, dtype=int)
 
     # dxbar
     dx = sys.dx[1:]

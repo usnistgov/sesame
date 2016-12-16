@@ -24,7 +24,7 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    _sites = np.array(range(Nx*Ny))
+    _sites = np.arange(Nx*Ny, dtype=int)
 
     # carrier densities
     n = get_n(sys, efn, v, _sites)
