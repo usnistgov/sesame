@@ -83,10 +83,10 @@ regions containing each type of dopants. A region is defined by a function::
         x = pos
         return x < junction
 
-The function ``region`` takes a single argument ``pos``, a position in real
-space, and returns ``True`` (``False``) if this  position is on the left (right)
-of the junction. The doping will be n-type for :math:`x<junction` and p-type for
-:math:`x>junction`::
+The function ``region`` takes a single argument ``pos``, a tuple containing
+coordinates in real space, and returns ``True`` (``False``) if this  position is
+on the left (right) of the junction. The doping will be n-type for
+:math:`x<junction` and p-type for :math:`x>junction`::
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]

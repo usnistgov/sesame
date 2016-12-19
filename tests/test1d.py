@@ -51,4 +51,4 @@ res = sesame.poisson_solver(sys, v, iterative=True)
 import matplotlib.pyplot as plt
 plt.plot(x*1e6, res[:sys.nx])
 plt.show()
-res = sesame.ddp_solver(sys, [0*v, 0*v, res], iterative=True, max_step=2)
+res = sesame.ddp_solver(sys, [0*v, 0*v, res], iterative=True, maxiter=2)

@@ -47,13 +47,13 @@ we rewrite inside its own function::
         reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
                 'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
                 'RCenergy':0, 'band_offset':0}
-        sys.add_material(reg1, lambda pos: pos[1] <= 2.4e-6 or pos[1] >= 2.6e-6)
+        sys.add_material(reg1, lambda pos: (pos[1] <= 2.4e-6) | (pos[1] >= 2.6e-6))
 
         # Region 2
         reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
                 'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
                 'RCenergy':0, 'band_offset':0}
-        sys.add_material(reg2, lambda pos: pos[1] > 2.4e-6 and pos[1] < 2.6e-6)
+        sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
 
         # gap state characteristics
         S = 1e5 * 1e-2           # trap recombination velocity [m/s]
@@ -135,7 +135,7 @@ the solution for the electron and hole quasi-Fermi levels, as well as the
 electrostatic potential. 
 
 While it is tempting to run the solver in parallel for each values of
-applied voltage, the solver will fail with this approach. Note that the
+applied voltage, the solver will likely fail with this approach. Note that the
 results extracted after each step of the for loop are used as a new guess for
 the next value of applied voltage. This method provides better chances to reach
 convergence at each step. More about the solver can be found in the section
@@ -147,10 +147,19 @@ about the :ref:`algo`.
    guess can be found. A similar approch can be used with the density of
    defects.
 
-**Solvers options:** Both :func:`~sesame.solvers.poisson_solver` and
+**Solvers options:** 
+* Both :func:`~sesame.solvers.poisson_solver` and
 :func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
 was built against it. For that, pass the argument ``use_mumps=True`` to these
-functions. For large systems where a direct computation of the Newton correction
+functions. 
+
+* For large systems where a direct computation of the Newton correction
 is impractical, we made possible to use an iterative solver. Use the argument
 ``iterative=True`` to activate it. Note that we have not tested this feature
 extensively and a solution is not guaranteed.
+
+* We implemented to ways of computing the Newton correction, one seems to
+give a slower convergence. It can be useful to use it when the default route
+fails to convergence. The parameter ``eps`` sets the Newton error above which
+the slow converging Newton correction is used. This seems to be useful when
+using the iterative inner solver.

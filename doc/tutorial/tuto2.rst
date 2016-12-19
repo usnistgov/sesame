@@ -66,7 +66,7 @@ function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
 
     def region1(pos):
         x, y = pos
-        return y < 2.4e-6 or y > 2.6e-6
+        return (y < 2.4e-6) | (y > 2.6e-6)
 
     # Dictionary with the material parameters
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
@@ -76,8 +76,11 @@ function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
     # Add the material to the system
     sys.add_material(reg1, region1)
 
-We can easily use ``region1`` to define the second region, since all sites not
-in region 1 will be in region 2::
+In the definition of ``region1``, observe how we define the statement OR. Here
+we use a bitwise logical operator. Other useful operators are ``&`` for AND,
+``~`` for NOT. Statements on each side of an operator must be in between
+parentheses.  We can easily use ``region1`` to define the second region, since
+all sites not in region 1 will be in region 2::
 
     # Dictionary with the material parameters
     reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,

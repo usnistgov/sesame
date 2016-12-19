@@ -3,6 +3,7 @@ from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import get_n, get_p
+from .defects  import defectsF, defectsJ
 # remember that efn and efp are zero at equilibrium
 
 def getFandJ_eq(sys, v, use_mumps):
@@ -55,23 +56,11 @@ def getFandJ_eq(sys, v, use_mumps):
     # bulk charges
     rho = sys.rho[_sites] - n + p
     drho_dv = -n - p
-    
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
 
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
-            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
-
-            drho_dv[matches] += - sys.Nextra[idx, matches]\
-                                * (_n*(_n+_p+nextra+pextra)-(_n+pextra)*(_n-_p))\
-                                / (_n+_p+nextra+pextra)**2
+    # charge defects
+    if len(sys.planes_defects) != 0:
+        defectsF(sys, n, p, rho)
+        defectsJ(sys, n, p, drho_dv)
 
     # charge is divided by epsilon (Poisson equation)
     rho = rho / sys.epsilon[_sites]

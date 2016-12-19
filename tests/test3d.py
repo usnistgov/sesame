@@ -11,9 +11,9 @@ junction = 10e-9
 
 # Mesh
 x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
-                    np.linspace(1.2e-6, Lx, 50)))
-y = np.linspace(0, Ly, 100)
-z = np.linspace(0, Lz, 100)
+                    np.linspace(1.2e-6, Lx, 20)))
+y = np.linspace(0, Ly, 50)
+z = np.linspace(0, Lz, 20)
 
 sys = sesame.Builder(x, y, z)
 
@@ -48,16 +48,18 @@ N = 2e14 * 1e4           # defect density [1/m^2]
 
 # Specify the two points that make the line containing additional charges
 p1 = (1e-6, .5e-6, 1e-6)    #[m]
-p2 = (3.0e-6, .5e-6, 1e-6)  #[m]
+p2 = (2.9e-6, .5e-6, 1e-6)  #[m]
 
 q1 = (1.0e-6, 4.5e-6, 1e-9) #[m]
-q2 = (3.0e-6, 4.5e-6, 1e-9) #[m]
+q2 = (2.9e-6, 4.5e-6, 1e-9) #[m]
 
 # Pass the information to the system
-# sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
+sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
 
 
 sys.finalize()
+
+# sesame.plot_plane_defects(sys)
 
 # Solve the Poisson equation
 v_left  = np.log(sys.rho[0]/sys.Nc[0])
@@ -69,8 +71,9 @@ v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y-direction
 
 print('solving...')
 res = sesame.poisson_solver(sys, v, iterative=True)
-np.save('electrostatic', res)
-import matplotlib.pyplot as plt
-plt.plot(x*1e6, res[:sys.nx])
-plt.show()
-res = sesame.ddp_solver(sys, [0*v, 0*v, res], iterative=True)
+# np.save('electrostatic', res)
+# import matplotlib.pyplot as plt
+# plt.plot(x*1e6, res[:sys.nx])
+# plt.show()
+print()
+res = sesame.ddp_solver(sys, [0*v, 0*v, res], iterative=True, eps=1e-4)

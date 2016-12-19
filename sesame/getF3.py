@@ -1,5 +1,6 @@
 import numpy as np
 from .observables import *
+from .defects import defectsF
 
 def getF(sys, v, efn, efp):
     ###########################################################################
@@ -43,6 +44,10 @@ def getF(sys, v, efn, efp):
 
     # recombination rates
     r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)
+
+    # charge defects
+    if len(sys.planes_defects) != 0:
+        defectsF(sys, n, p, rho, r)
 
     # extra charge density
     if hasattr(sys, 'Nextra'): 

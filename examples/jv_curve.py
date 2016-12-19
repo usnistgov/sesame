@@ -33,13 +33,13 @@ def system():
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
             'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
             'RCenergy':0, 'band_offset':0}
-    sys.add_material(reg1, lambda pos: pos[1] <= 2.4e-6 or pos[1] >= 2.6e-6)
+    sys.add_material(reg1, lambda pos: (pos[1] <= 2.4e-6) | (pos[1] >= 2.6e-6))
 
     # Region 2
     reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
             'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
             'RCenergy':0, 'band_offset':0}
-    sys.add_material(reg2, lambda pos: pos[1] > 2.4e-6 and pos[1] < 2.6e-6)
+    sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
 
     # gap state characteristics
     S = 1e5 * 1e-2           # trap recombination velocity [m/s]

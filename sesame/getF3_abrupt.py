@@ -1,5 +1,6 @@
 import numpy as np
 from .observables import *
+from .defects import defectsF
 
 def getF(sys, v, efn, efp):
     ###########################################################################
@@ -43,23 +44,9 @@ def getF(sys, v, efn, efp):
     # recombination rates
     r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)
 
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
-
-            # extra charge density
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
-            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
-
-            # extra charge recombination
-            r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
+    # charge defects
+    if len(sys.planes_defects) != 0:
+        defectsF(sys, n, p, rho, r)
 
     # charge devided by epsilon
     rho = rho / sys.epsilon[_sites]

@@ -4,87 +4,7 @@ from collections import namedtuple
 from itertools import product
 from . import utils
 
-
-def get_sites(sys, location):
-    # find the sites which belongs to a region
-    nx, ny, nz = sys.nx, sys.ny, sys.nz
-    if sys.dimension == 1:
-        nodes = range(nx)
-        s = [i for i in range(nx) if location(sys.xpts[i])]
-    if sys.dimension == 2:
-        nodes = product(range(nx), range(ny))
-        s = [i + j*nx for i, j in nodes if location((sys.xpts[i], sys.ypts[j]))]
-    if sys.dimension == 3:
-        nodes = product(range(nx), range(ny), range(nz))
-        s = [i + j*nx + k*nx*ny for i, j, k in nodes if location((sys.xpts[i], 
-                                                                  sys.ypts[j], 
-                                                                  sys.zpts[k])
-                                                                )
-            ]
-    return s
-
-def get_line_defects_sites(system, line_defects):
-    # find the sites closest to the straight line defined by
-    # (xa,ya,za) and (xb,yb,zb) 
-
-    xa, ya = line_defects.location[0]
-    xb, yb = line_defects.location[1]
-    ia, ja, _ = utils.get_indices(system, (xa, ya, 0))
-    ib, jb, _ = utils.get_indices(system, (xb, yb, 0))
-
-    Dx = abs(ib - ia)    # distance to travel in X
-    Dy = abs(jb - ja)    # distance to travel in Y
-    if ia < ib:
-        incx = 1           # x will increase at each step
-    elif ia > ib:
-        incx = -1          # x will decrease at each step
-    else:
-        incx = 0
-    if ja < jb:
-        incy = 1           # y will increase at each step
-    elif ja > jb:
-        incy = -1          # y will decrease at each step
-    else:
-        incy = 0
-
-    # take the numerator of the distance of a point to the line
-    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
-
-    i, j = ia, ja
-    perp_dl = []
-    sites = [i + j*system.nx]
-    for _ in range(Dx + Dy):
-        e1 = error(system.xpts[i], system.ypts[j+incy])
-        e2 = error(system.xpts[i+incx], system.ypts[j])
-        if e1 < e2:
-            j += incy
-            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
-        else:
-            i += incx
-            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
-        sites.append(i + j*system.nx)
-    perp_dl.append(perp_dl[-1])
-    perp_dl = np.asarray(perp_dl)
-
-    return sites, perp_dl
-
-
-
-def get_plane_defects_sites(system, plane_defects):
-    # This will only work for planes parallel to at least one direction. These
-    # planes should be defined by two parallel lines orthogonal to the z-axis,
-    # and be rectangles.
-
-    # first line
-    P1 = np.asarray(plane_defects.location[0])
-    P2 = np.asarray(plane_defects.location[1])
-    # second line
-    P3 = np.asarray(plane_defects.location[2])
-    P4 = np.asarray(plane_defects.location[3])
-
-    sites, _, _, _ = utils.plane_defects_sites(system, P1, P2, P3, P4) 
-
-    return sites        
+import numpy as np
 
 
 
@@ -221,12 +141,12 @@ class Builder():
 
         # list of lines defects
         self.line_defects = namedtuple('line_defects', \
-        ['location', 'energy', 'density', 'Se', 'Sh'])
+        ['location', 'energy', 'density', 'Se', 'Sh', 'defect_type'])
         self.lines_defects = []
 
         # list of planes defects
         self.plane_defects = namedtuple('plane_defects', \
-        ['location', 'energy', 'density', 'Se', 'Sh'])
+        ['location', 'energy', 'density', 'Se', 'Sh', 'defect_type'])
         self.planes_defects = []
 
 
@@ -272,7 +192,7 @@ class Builder():
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
     def add_line_defects(self, location, local_E, local_N, local_Se,\
-                          local_Sh=None):
+                          local_Sh=None, defect_type='u-center'):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a line.
@@ -289,6 +209,10 @@ class Builder():
             Surface recombination velocity of electrons [m/s].
         local_Sh: float
             Surface recombination velocity of holes [m/s].
+        defect_type: string
+            Type of the defect corresponding to the change of the defect charge
+            occuring at the neutral energy level. Possible types are 'acceptor',
+            'donor' or 'u-center' (default).
 
         Warnings
         --------
@@ -308,11 +232,12 @@ class Builder():
         d = self.line_defects(location, local_E / self.scaling.energy, \
                     local_N / (self.scaling.density * self.scaling.length), \
                     local_Se / self.scaling.velocity, 
-                    local_Sh / self.scaling.velocity)
+                    local_Sh / self.scaling.velocity,
+                    defect_type)
         self.lines_defects.append(d)
 
     def add_plane_defects(self, location, local_E, local_N, local_Se,\
-                          local_Sh=None):
+                          local_Sh=None, defect_type='u-center'):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a plane.
@@ -331,6 +256,10 @@ class Builder():
             Surface recombination velocity of electrons [m/s].
         local_Sh: float
             Surface recombination velocity of holes [m/s].
+        defect_type: string
+            Type of the defect corresponding to the change of the defect charge
+            occuring at the neutral energy level. Possible types are 'acceptor',
+            'donor' or 'u-center' (default).
 
         Warnings
         --------
@@ -353,14 +282,19 @@ class Builder():
         d = self.line_defects(location, local_E / self.scaling.energy, \
                     local_N / (self.scaling.density * self.scaling.length), \
                     local_Se / self.scaling.velocity, 
-                    local_Sh / self.scaling.velocity)
-
+                    local_Sh / self.scaling.velocity,
+                    defect_type)
         self.planes_defects.append(d)
 
 
-    def doping_profile(self, density, location=lambda pos: True):
+    def doping_profile(self, density, location):
+
+        s = get_sites(self, location)
+        self.rho[s] = density / self.scaling.density
+
+    def add_donor(self, density, location=lambda pos: True):
         """
-        Add dopant charges to the system.
+        Add donor dopants to the system.
 
         Parameters
         ----------
@@ -372,14 +306,22 @@ class Builder():
             and return True (False) if the lattice node is inside (outside) the
             region.
         """
-
-        s = get_sites(self, location)
-        self.rho[s] = density / self.scaling.density
-
-    def add_donor(self, density, location):
         self.doping_profile(density, location)
 
-    def add_acceptor(self, density, location):
+    def add_acceptor(self, density, location=lambda pos: True):
+        """
+        Add acceptor dopants to the system.
+
+        Parameters
+        ----------
+        density: float
+            Doping density [m\ :sup:`-3`].
+        location: Boolean function
+            Definition of the region containing the doping. This function must
+            take a tuple of real world coordinates (e.g. (x, y)) as parameters,
+            and return True (False) if the lattice node is inside (outside) the
+            region.
+        """
         self.doping_profile(-density, location)
 
     def generation(self, f):
@@ -455,8 +397,10 @@ class Builder():
                 self.Nextra[cdx, s]  = c.density / dl
                 self.Seextra[cdx, s] = c.Se / dl
                 self.Shextra[cdx, s] = c.Sh / dl
-                self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
-                self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
+                self.nextra[cdx, s] = self.Nc[s] *\
+                                      np.exp(-self.Eg[s]/2 + c.energy)
+                self.pextra[cdx, s] = self.Nv[s] *\
+                                      np.exp(-self.Eg[s]/2 - c.energy)
 
             # fill in charges from plane defects
             for cdx, c in enumerate(self.planes_defects):
@@ -467,8 +411,99 @@ class Builder():
                 self.Nextra[cdx, s]  = c.density
                 self.Seextra[cdx, s] = c.Se
                 self.Shextra[cdx, s] = c.Sh
-                self.nextra[cdx, s] = self.Nc[s] * np.exp(-self.Eg[s]/2 + c.energy)
-                self.pextra[cdx, s] = self.Nv[s] * np.exp(-self.Eg[s]/2 - c.energy)
+                self.nextra[cdx, s] = self.Nc[s] *\
+                                      np.exp(-self.Eg[s]/2 + c.energy)
+                self.pextra[cdx, s] = self.Nv[s] *\
+                                      np.exp(-self.Eg[s]/2 - c.energy)
+
+
+def get_sites(sys, location):
+    # find the sites which belongs to a region
+    nx, ny, nz = sys.nx, sys.ny, sys.nz
+    sites = np.arange(nx*ny*nz, dtype=int)
+ 
+    if sys.dimension == 1:
+        mask = location((sys.xpts))
+
+    if sys.dimension == 2:
+        pos = np.transpose([np.tile(sys.xpts, ny), np.repeat(sys.ypts, nx)])
+        mask = location((pos[:,0], pos[:,1]))
+
+    if sys.dimension == 3:
+        pos = np.reshape(np.concatenate((np.tile(sys.xpts, ny*nz),
+                                         np.repeat(sys.ypts, nx*nz),
+                                         np.repeat(sys.zpts, nx*ny)
+                                        )
+                                       ),
+                         (3, nx*ny*nz)
+                        ).T
+        mask = location((pos[:,0], pos[:,1], pos[:,2]))
+
+    if type(mask) == bool:
+        return sites
+    else:
+        return sites[mask.astype(bool)]
+
+
+def get_line_defects_sites(system, line_defects):
+    # find the sites closest to the straight line defined by
+    # (xa,ya,za) and (xb,yb,zb) 
+
+    xa, ya = line_defects.location[0]
+    xb, yb = line_defects.location[1]
+    ia, ja, _ = utils.get_indices(system, (xa, ya, 0))
+    ib, jb, _ = utils.get_indices(system, (xb, yb, 0))
+
+    Dx = abs(ib - ia)    # distance to travel in X
+    Dy = abs(jb - ja)    # distance to travel in Y
+    if ia < ib:
+        incx = 1           # x will increase at each step
+    elif ia > ib:
+        incx = -1          # x will decrease at each step
+    else:
+        incx = 0
+    if ja < jb:
+        incy = 1           # y will increase at each step
+    elif ja > jb:
+        incy = -1          # y will decrease at each step
+    else:
+        incy = 0
+
+    # take the numerator of the distance of a point to the line
+    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
+
+    i, j = ia, ja
+    perp_dl = []
+    sites = [i + j*system.nx]
+    for _ in range(Dx + Dy):
+        e1 = error(system.xpts[i], system.ypts[j+incy])
+        e2 = error(system.xpts[i+incx], system.ypts[j])
+        if e1 < e2:
+            j += incy
+            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
+        else:
+            i += incx
+            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+        sites.append(i + j*system.nx)
+    perp_dl.append(perp_dl[-1])
+    perp_dl = np.asarray(perp_dl)
+
+    return sites, perp_dl
 
 
 
+def get_plane_defects_sites(system, plane_defects):
+    # This will only work for planes parallel to at least one direction. These
+    # planes should be defined by two parallel lines orthogonal to the z-axis,
+    # and be rectangles.
+
+    # first line
+    P1 = np.asarray(plane_defects.location[0])
+    P2 = np.asarray(plane_defects.location[1])
+    # second line
+    P3 = np.asarray(plane_defects.location[2])
+    P4 = np.asarray(plane_defects.location[3])
+
+    sites, _, _, _ = utils.plane_defects_sites(system, P1, P2, P3, P4) 
+
+    return sites        

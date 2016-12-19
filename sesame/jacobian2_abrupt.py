@@ -3,6 +3,7 @@ from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import *
+from .defects  import defectsJ
 
 def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
@@ -64,31 +65,10 @@ def getJ(sys, v, efn, efp, use_mumps):
     dr_defn_s, dr_defp_s, dr_dv_s = \
     get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)\
 
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
-
-            # extra charge density
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            d = (Se*(_n+nextra)+Sh*(_p+pextra))**2
-            drho_defn_s[matches] += - sys.Nextra[idx, matches] *\
-                Se*_n * (Se*nextra + Sh*_p) / d
-            drho_defp_s[matches] += sys.Nextra[idx, matches] *\
-                (Se*_n + Sh*pextra) * Sh*_p / d
-            drho_dv_s[matches] += - sys.Nextra[idx, matches] *\
-                (Se**2*_n*nextra + 2*Sh*Se*_p*_n + Sh**2*_p*pextra) / d
-
-            # extra charge recombination
-            defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
-            dr_defn_s[matches] += defn
-            dr_defp_s[matches] += defp
-            dr_dv_s[matches] += dv
+    # charge defects
+    if len(sys.lines_defects) != 0:
+        defectsJ(sys, n, p, drho_dv_s, drho_defn_s, drho_defp_s, dr_defn_s,\
+                 dr_defp_s, dr_dv_s)
 
     # charge is divided by epsilon
     drho_defn_s = drho_defn_s / sys.epsilon[_sites]
