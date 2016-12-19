@@ -38,7 +38,6 @@ reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
 # Add the material to the system
 sys.add_material(reg1)
 
-sys.finalize()
 
 # Solve the Poisson equation
 v_left  = np.log(sys.rho[0]/sys.Nc[0])

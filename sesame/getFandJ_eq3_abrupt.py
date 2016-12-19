@@ -130,7 +130,7 @@ def getFandJ_eq(sys, v, use_mumps):
     drho_dv = -n - p
     
     # charge defects
-    if len(sys.planes_defects) != 0:
+    if len(sys.extra_charge_sites) != 0:
         defectsF(sys, n, p, rho)
         defectsJ(sys, n, p, drho_dv)
 

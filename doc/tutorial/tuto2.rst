@@ -121,10 +121,6 @@ define a defect gap state as follows::
 
         sys.add_line_defects([p1, p2], E, N, Sn, Sp)
 
-As usual we finalize the creation of the system with::
-
-    sys.finalize()
-
 
 Visualizing the system
 ........................

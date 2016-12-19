@@ -67,8 +67,6 @@ p2 = (2.9e-6, 2.5e-6)  #[m]
 sys.add_line_defects([p1, p2], E, N, S)
 
 
-sys.finalize()
-
 sesame.map2D(sys, sys.mu_e, 1e-6)
 
 sesame.plot_line_defects(sys, 1e-6)

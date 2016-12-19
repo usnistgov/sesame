@@ -57,8 +57,6 @@ q2 = (2.9e-6, 4.5e-6, 1e-9) #[m]
 sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
 
 
-sys.finalize()
-
 # sesame.plot_plane_defects(sys)
 
 # Solve the Poisson equation

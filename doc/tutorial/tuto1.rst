@@ -117,11 +117,6 @@ as follows::
     f = lambda x: phi * alpha * np.exp(-alpha * x)
     sys.generation(f)
 
-At the end of the creation of the system, some additional arrays need to be
-created internally. Use this command to do that::
-
-    sys.finalize()
-
 We can now use this system to solve the Poisson equation at thermal equilibrium
 and also compute a J(V) curve. More on these topics in  :doc:`tutorial 3
 <tuto3>`.

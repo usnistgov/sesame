@@ -65,7 +65,6 @@ we rewrite inside its own function::
 
         sys.add_line_defects([p1, p2], E, N, S)
 
-        sys.finalize()
         return sys
 
 

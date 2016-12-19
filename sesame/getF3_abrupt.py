@@ -45,7 +45,7 @@ def getF(sys, v, efn, efp):
     r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)
 
     # charge defects
-    if len(sys.planes_defects) != 0:
+    if len(sys.extra_charge_sites) != 0:
         defectsF(sys, n, p, rho, r)
 
     # charge devided by epsilon

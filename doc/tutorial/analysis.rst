@@ -128,8 +128,8 @@ current along the grain boundary::
     GBsites, X, xGB, yGB = line_defects_sites(sys, startGB, endGB)
 
     # Get the defect state equilibrium densities
-    nGB = sys.nextra[0, GBsites]
-    pGB = sys.pextra[0, GBsites]
+    nGB = sys.nextra[0]
+    pGB = sys.pextra[0]
 
     # Compute the carrier densities
     n = get_n(sys, efn, v, GBsites)

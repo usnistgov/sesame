@@ -31,11 +31,11 @@ def plot_line_defects(sys, scale=1e-6, ls='-o'):
     """
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
-                           "for plot()")
+                           "for plotting.")
 
-    for c in sys.lines_defects:
-        xa, ya = c.location[0]
-        xb, yb = c.location[1]
+    for c in sys.extra_charge_locations:
+        xa, ya = c[0]
+        xb, yb = c[1]
 
         _, _, xcoord, ycoord, _ = utils.Bresenham2d(sys, (xa, ya,0), (xb,yb,0))
 
@@ -63,15 +63,15 @@ def plot_plane_defects(sys, scale=1e-6):
     """
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
-                           "for plot()")
+                           "for plotting")
 
-    for c in sys.planes_defects:
+    for c in sys.extra_charge_locations:
         # first line
-        P1 = np.asarray(c.location[0])
-        P2 = np.asarray(c.location[1])
+        P1 = np.asarray(c[0])
+        P2 = np.asarray(c[1])
         # second line
-        P3 = np.asarray(c.location[2])
-        P4 = np.asarray(c.location[3])
+        P3 = np.asarray(c[2])
+        P4 = np.asarray(c[3])
 
         _, X, Y, Z = utils.plane_defects_sites(sys, P1, P2, P3, P4) 
 
