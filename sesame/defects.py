@@ -20,9 +20,9 @@ def defectsF(sys, n, p, rho, r=None):
             r[sites] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, sites) 
 
         # extra charge
-        if c == 'acceptor':
-            rho[sites] += sys.Nextra[cdx] * (1 - f)
         if c == 'donor':
+            rho[sites] += sys.Nextra[cdx] * (1 - f)
+        if c == 'acceptor':
             rho[sites] -= sys.Nextra[cdx] * f
         if c == 'u-center':
             rho[sites] += sys.Nextra[cdx] * (1./2. - f)
