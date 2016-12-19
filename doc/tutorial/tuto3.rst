@@ -4,7 +4,7 @@ In this tutorial we show how to solve the Poisson equation at thermal
 equilibrium and the drift diffusion Poisson equations under nonequilibrium
 conditions.
 
-.. seealso:: The example treated here is in the file ``sim.py`` in the
+.. seealso:: The example treated here is in the file ``jv_curve.py`` in the
    ``examples`` directory in the root directory of the distribution. 
 
 
@@ -148,18 +148,19 @@ about the :ref:`algo`.
    defects.
 
 **Solvers options:** 
+
 * Both :func:`~sesame.solvers.poisson_solver` and
-:func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
-was built against it. For that, pass the argument ``use_mumps=True`` to these
-functions. 
+  :func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
+  was built against it. For that, pass the argument ``use_mumps=True`` to these
+  functions. 
 
 * For large systems where a direct computation of the Newton correction
-is impractical, we made possible to use an iterative solver. Use the argument
-``iterative=True`` to activate it. Note that we have not tested this feature
-extensively and a solution is not guaranteed.
+  is impractical, we made possible to use an iterative solver. Use the argument
+  ``iterative=True`` to activate it. Note that we have not tested this feature
+  extensively and a solution is not guaranteed.
 
-* We implemented to ways of computing the Newton correction, one seems to
-give a slower convergence. It can be useful to use it when the default route
-fails to convergence. The parameter ``eps`` sets the Newton error above which
-the slow converging Newton correction is used. This seems to be useful when
-using the iterative inner solver.
+* We implemented two ways of computing the Newton correction, one seems to
+  give a slower convergence. It can be useful to use it when the default route
+  fails to convergence. The parameter ``eps`` sets the Newton error above which
+  the slow converging Newton correction is used. This seems to be useful when
+  using the iterative inner solver.
