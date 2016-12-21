@@ -275,7 +275,7 @@ class Builder():
         self.extra_charge_locations.append(location)
         self.defects_types.append(defect_type)
 
-        s = get_plane_defects_sites(self, location)
+        s, _, _, _ = utils.plane_defects_sites(system, location) 
 
         self.extra_charge_sites += [s]
 
@@ -440,21 +440,3 @@ def get_line_defects_sites(system, location):
     perp_dl = np.asarray(perp_dl)
 
     return sites, perp_dl
-
-
-
-def get_plane_defects_sites(system, location):
-    # This will only work for planes parallel to at least one direction. These
-    # planes should be defined by two parallel lines orthogonal to the z-axis,
-    # and be rectangles.
-
-    # first line
-    P1 = np.asarray(location[0])
-    P2 = np.asarray(location[1])
-    # second line
-    P3 = np.asarray(location[2])
-    P4 = np.asarray(location[3])
-
-    sites, _, _, _ = utils.plane_defects_sites(system, P1, P2, P3, P4) 
-
-    return sites        

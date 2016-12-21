@@ -66,14 +66,8 @@ def plot_plane_defects(sys, scale=1e-6):
                            "for plotting")
 
     for c in sys.extra_charge_locations:
-        # first line
-        P1 = np.asarray(c[0])
-        P2 = np.asarray(c[1])
-        # second line
-        P3 = np.asarray(c[2])
-        P4 = np.asarray(c[3])
 
-        _, X, Y, Z = utils.plane_defects_sites(sys, P1, P2, P3, P4) 
+        _, X, Y, Z = utils.plane_defects_sites(sys, c) 
 
         X = X / scale
         Y = Y / scale

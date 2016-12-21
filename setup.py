@@ -52,9 +52,13 @@ def status_msgs(*msgs):
 
 
 def run_setup(packages, ext_modules):
+    # populate the version_info dictionary with values stored in the version file
+    version_info = {}
+    with open('sesame/_version.py', 'r') as f:
+        exec(f.read(), {}, version_info)
     setup(
         name = 'sesame',
-        version = '0.1',
+        version = version_info['__version__'],
         author = 'Benoit H. Gaury',
         author_email = 'benoit.gaury@nist.gov',
         packages = packages,

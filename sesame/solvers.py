@@ -49,7 +49,7 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
             exit(1)
 
 def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300, 
-                   eps=None, info=1, use_mumps=False, iterative=False):
+                   eps=None, verbose=True, use_mumps=False, iterative=False):
     """
     Poisson solver of the system at thermal equilibrium.
 
@@ -70,9 +70,9 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
     eps: float
         Newton error above which a slow Newton convergence is chosen. The
         default is to use the fastest correction.
-    info: integer
-        The solver returns the step number and the associated error every info
-        steps.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step if set to True (default).
     use_mumps: boolean
         Defines if the MUMPS library should be used to solve for the Newton
         correction. Default is False.
@@ -103,6 +103,10 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
     while converged != True:
         cc = cc + 1
+        # break if no solution found after maxiterations
+        if cc > maxiter:
+            print('Poisson solver: too many iterations\n')
+            break
 
         # solve linear system
         f, J = mod.getFandJ_eq(sys, v, use_mumps)
@@ -127,13 +131,8 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
         v = v + dv
 
         # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0:
+        if verbose:
             print('step {0}, error = {1}'.format(cc, error))
-
-        # break if no solution found after maxiterations
-        if cc > maxiter:
-            print('Poisson solver: too many iterations\n')
-            break
 
     if converged:
         return v_final
@@ -143,7 +142,7 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
 
 def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
-               eps=None, info=1, use_mumps=False, iterative=False):
+               eps=None, verbose=True, use_mumps=False, iterative=False):
     """
     Drift Diffusion Poisson solver of the system at out of equilibrium.
 
@@ -165,9 +164,9 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
     eps: float
         Newton error above which a slow Newton convergence is chosen. The
         default is to use the fastest correction.
-    info: integer
-        The solver returns the step number and the associated error every info
-        steps.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step if set to True (default).
     use_mumps: boolean
         Defines if the MUMPS library should be used to solve for the Newton
         correction. Default is False.
@@ -200,6 +199,10 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
 
     while converged != True:
         cc = cc + 1
+        # break if no solution found after max iterations
+        if cc > maxiter:
+            print('Too many iterations\n')
+            break
 
         # solve linear system
         f = modF.getF(sys, v, efn, efp)
@@ -236,16 +239,11 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
         # new values of efn, efp, v
         efn += defn
         efp += defp
-        v   += dv
+        v += dv
 
         # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0:
+        if verbose:
             print('step {0}, error = {1}'.format(cc, error))
-
-        # break if no solution found after max iterations
-        if cc >= maxiter:
-            print('Too many iterations\n')
-            break
 
     if converged:
         return solution

@@ -1,4 +1,5 @@
-#!/usr/bin/env python
+
+from ._version import __version__
 
 __all__ = ['builder']
 for module in __all__:

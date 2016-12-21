@@ -50,7 +50,7 @@ def get_dl(sys, sites):
 
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 
-def line_defects_sites(sys, start, end):
+def line_defects_sites(sys, location):
     """
     Get sites and coordinates of the locations containing additional charges
     distributed on a line.
@@ -60,12 +60,9 @@ def line_defects_sites(sys, start, end):
 
     sys: Builder
         The discretized system.
-    start: Tuple (x, y)
-        Coordinates of the first point of the line containing additional
+    location: list of two array_like coordinates [(x1, y1), (x2, y2)]
+        Coordinates of the two points of the line containing additional
         charges in [m].
-    end: Tuple (x, y)
-        Coordinates of the last point of the line containing additional
-        charges [m].
 
     Returns
     -------
@@ -84,8 +81,8 @@ def line_defects_sites(sys, start, end):
     This only works in 2D.
     """
 
-    x1, y1 = start
-    x2, y2 = end
+    x1, y1 = location[0]
+    x2, y2 = location[1]
 
     sites, X, icoord, jcoord, _ = Bresenham2d(sys, (x1, y1, 0), (x2, y2, 0))
     sites = np.asarray(sites)
@@ -279,7 +276,7 @@ def check_plane(P1, P2, P3, P4):
         print(msg)
         exit(1)
 
-def plane_defects_sites(sys, P1, P2, P3, P4):
+def plane_defects_sites(sys, location):
     """
     Get sites and coordinates of the locations containing additional charges
     distributed on a plane.
@@ -289,10 +286,10 @@ def plane_defects_sites(sys, P1, P2, P3, P4):
 
     sys: Builder
         The discretized system.
-    P1, P2: array_like (x, y, z)
-        Coordinates of the two points defining one line of the plane defects [m].
-    P3, P4: array_like (x, y, z)
-        Coordinates of the two points defining another line of the plane defects [m].
+    location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)]
+        The coordinates in [m] define a plane of defects in 3D. The first two
+        coordinates define a line that must be parallel to the line defined by
+        the last two points.
 
     Returns
     -------
@@ -310,9 +307,8 @@ def plane_defects_sites(sys, P1, P2, P3, P4):
     """
 
     # transform points into numpy arrays if not the case
-    for P in [P1, P2, P3, P4]:
-        if type(P).__module__ != np.__name__:
-            P = np.asarray(P)
+        
+    P1, P2, P3, P4 = [np.asarray(P) for P in location]
 
     # check plane first
     check_plane(P1, P2, P3, P4)

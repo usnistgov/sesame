@@ -68,7 +68,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)\
 
     # charge defects
-    if len(sys.lines_defects) != 0:
+    if len(sys.extra_charge_sites) != 0:
         defectsJ(sys, n, p, drho_dv_s, drho_defn_s, drho_defp_s, dr_defn_s,\
                  dr_defp_s, dr_dv_s)
 

@@ -4,6 +4,8 @@
 We provide short names for a few objects from the sub-packages.
 Otherwise, this package has no functionality of its own.
 
+The version of Sesame is available under the name ``__version__``.
+
 
 .. currentmodule:: sesame.builder
 
