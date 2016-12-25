@@ -240,11 +240,11 @@ in the :math:`y`- and :math:`z`-directions.
 +------------------------+-------------------------------------------------------+
 
 By default the Newton correction is computed by a direct resolution of the
-system in :eq:`corr`. This is done using the default Scipy solver which gives
+system in Eq. :eq:`corr`. This is done using the default Scipy solver which gives
 quite poor performances. We recommend using the MUMPS library instead. Note that
 for large systems, and especially for 3D problems, the memory and the computing
 time required by the direct methods aforementioned become so large that they are
-impractical. It is possible to use an iterative method to solve :eq:`corr` in
+impractical. It is possible to use an iterative method to solve Eq. :eq:`corr` in
 these cases.
 
 
