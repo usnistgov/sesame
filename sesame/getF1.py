@@ -26,17 +26,17 @@ def getF(sys, v, efn, efp):
     sites = range(Nx)
 
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     rho = sys.rho - n + p
 
     # recombination rates
-    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)
+    r = get_bulk_rr(sys, n, p)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon[sites]
+    rho = rho / sys.epsilon
 
     ###########################################################################
     #                   inside the system: 0 < i < Nx-1                       #

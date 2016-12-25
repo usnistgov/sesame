@@ -55,8 +55,8 @@ def getJ(sys, v, efn, efp, use_mumps):
     _sites = np.arange(Nx*Ny*Nz, dtype=int)
 
     # carrier densities
-    n = get_n(sys, efn, v, _sites)
-    p = get_p(sys, efp, v, _sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     drho_defn_s = - n
@@ -64,8 +64,7 @@ def getJ(sys, v, efn, efp, use_mumps):
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates
-    dr_defn_s, dr_defp_s, dr_dv_s = \
-    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)\
+    dr_defn_s, dr_defp_s, dr_dv_s = get_bulk_rr_derivs(sys, n, p)
 
     # charge defects
     if len(sys.extra_charge_sites) != 0:
@@ -77,7 +76,8 @@ def getJ(sys, v, efn, efp, use_mumps):
     drho_defp_s = drho_defp_s / sys.epsilon[_sites]
     drho_dv_s = drho_dv_s / sys.epsilon[_sites]
 
-    _sites = _sites.reshape(Nz, Ny, Nx)
+    # reshape the array as array[y-indices, x-indices]
+    _sites = np.arange(Nx*Ny*Nz, dtype=int).reshape(Nz, Ny, Nx)
 
     def update(r, c, d):
         global rows, columns, data

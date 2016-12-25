@@ -1,10 +1,11 @@
+from scipy.interpolate import InterpolatedUnivariateSpline as spline
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
 from itertools import product
+
 from . import utils
 
-import numpy as np
 
 
 
@@ -20,6 +21,8 @@ class Builder():
     ----------
     xpts, ypts, zpts: numpy arrays of floats
         Mesh with original dimensions.
+    T: float
+        Temperature for the simulation.
 
 
     Attributes
@@ -42,11 +45,13 @@ class Builder():
     n1, p1:  numpy arrays of floats
         Dimensionless equilibrium densities of electrons and holes at the bulk trap state.
     bl: numpy array of floats
-        Dimensionless Band offset.
+        Dimensionless band offset.
     g: numpy array of floats
         Dimensionless generation for each site of the
         system. This is defined only if a generation profile was provided when
         building the system.
+    gtot: float
+        Dimensionless integral of the generation rate.
     nextra: list of 1D numpy arrays of floats
         Dimensionless equilibrium electron density from the defect states.
     pextra: list of 1D numpy arrays of floats
@@ -79,7 +84,7 @@ class Builder():
         t0 = cts.epsilon_0 / (mu * cts.e* N)
         # lengths [m]
         xscale = np.sqrt(cts.epsilon_0 * vt / (cts.e * N))
-        # generation rate [m^-3]
+        # generation rate [m^-3 s^-1]
         U = (N * mu * vt) / xscale**2 
         # recombination velocities
         Sc = xscale / t0
@@ -126,7 +131,9 @@ class Builder():
         self.bl      = np.zeros((nx*ny*nz,), dtype=float)
         self.rho     = np.zeros((nx*ny*nz,), dtype=float)
         self.g       = np.zeros((nx*ny*nz,), dtype=float)
-        self.ni      = np.zeros((nx*ny*nz,), dtype=float)
+        self.B       = np.zeros((nx*ny*nz,), dtype=float)
+        self.Cn      = np.zeros((nx*ny*nz,), dtype=float)
+        self.Cp      = np.zeros((nx*ny*nz,), dtype=float)
 
         self.Nextra  = []
         self.Seextra = []
@@ -150,7 +157,7 @@ class Builder():
             states [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
             permitivitty, mu_e (mu_h): electron (hole) mobility
             [m\ :sup:`2`/V/s],
-            tau_e (tau_h): electron (hole) bulk lifetime [s], RCenergy: energy
+            tau_e (tau_h): electron (hole) bulk lifetime [s], Et: energy
             level of the bulk recombination centers [eV], band_offset: band
             offset setting the zero of potential [eV].
         location: Boolean function
@@ -162,18 +169,26 @@ class Builder():
         # sites belonging to the region
         s = get_sites(self, location)
 
-        # fill in arrays
-        self.Nc[s]      = mat['Nc'] / self.scaling.density
-        self.Nv[s]      = mat['Nv'] / self.scaling.density
-        self.Eg[s]      = mat['Eg'] / self.scaling.energy
-        self.epsilon[s] = mat['epsilon']
-        self.mu_e[s]    = mat['mu_e'] / self.scaling.mobility
-        self.mu_h[s]    = mat['mu_h'] / self.scaling.mobility
-        self.tau_e[s]   = mat['tau_e'] / self.scaling.time
-        self.tau_h[s]   = mat['tau_h'] / self.scaling.time
-        self.bl[s]      = mat['band_offset'] / self.scaling.energy
+        N = self.scaling.density
+        t = self.scaling.time
+        vt = self.scaling.energy
+        mu = self.scaling.mobility
 
-        Etrap = mat['RCenergy'] / self.scaling.energy
+        # fill in arrays
+        self.Nc[s]      = mat['Nc'] / N
+        self.Nv[s]      = mat['Nv'] / N
+        self.Eg[s]      = mat['Eg'] / vt
+        self.epsilon[s] = mat['epsilon']
+        self.mu_e[s]    = mat['mu_e'] / mu
+        self.mu_h[s]    = mat['mu_h'] / mu
+        self.tau_e[s]   = mat['tau_e'] / t
+        self.tau_h[s]   = mat['tau_h'] / t
+        self.bl[s]      = mat['band_offset'] / vt
+        self.B[s]       = mat['B'] / ((1./N)/t)
+        self.Cn[s]      = mat['Cn'] / ((1./N**2)/t)
+        self.Cp[s]      = mat['Cp'] / ((1./N**2)/t)
+
+        Etrap = mat['Et'] / self.scaling.energy
         self.n1[s]      = self.Nc[s] * np.exp(-self.Eg[s]/2 + Etrap)
         self.p1[s]      = self.Nv[s] * np.exp(-self.Eg[s]/2 - Etrap)
 
@@ -275,7 +290,7 @@ class Builder():
         self.extra_charge_locations.append(location)
         self.defects_types.append(defect_type)
 
-        s, _, _, _ = utils.plane_defects_sites(system, location) 
+        s, _, _, _ = utils.plane_defects_sites(self, location) 
 
         self.extra_charge_sites += [s]
 
@@ -339,7 +354,32 @@ class Builder():
         elif self.dimension == 3:
             g = [f(x, y, z) for z in self.zpts for y in self.ypts for x in self.xpts]
         self.g = np.asarray(g) / self.scaling.generation
+        
+        # compute the integral of the generation
+        x = self.xpts / self.scaling.length
+        if self.ny > 1:
+            y = self.ypts / self.scaling.length
+        if self.nz > 1: 
+            z = self.zpts / self.scaling.length
 
+        w = []
+        for k in range(self.nz):
+            u = []
+            for j in range(self.ny):
+                s = [i + j*self.nx + k*self.nx*self.ny  for i in range(self.nx)]
+                sp = spline(x, self.g[s])
+                u.append(sp.integral(x[0], x[-1]))
+            if self.dimension > 1:
+                sp = spline(y, u)
+                w.append(sp.integral(y[0], y[-1]))
+        if self.dimension == 1:
+            self.gtot = u[-1]
+        if self.dimension == 2:
+            self.gtot = w[-1]
+        if self.dimension == 3:
+            sp = spline(z, u)
+            self.gtot = sp.integral(z[0], z[-1])
+ 
 
     def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """

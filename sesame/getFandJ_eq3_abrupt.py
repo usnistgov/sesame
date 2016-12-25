@@ -119,27 +119,25 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    _sites = np.array(range(Nx*Ny*Nz))
-
     # carrier densities
-    n = get_n(sys, 0*v, v, _sites)
-    p = get_p(sys, 0*v, v, _sites)
+    n = sys.Nc * np.exp(-sys.bl + v)
+    p = sys.Nv * np.exp(-Eg + bl - v)
 
     # bulk charges
-    rho = sys.rho[_sites] - n + p
+    rho = sys.rho - n + p
     drho_dv = -n - p
-    
+
     # charge defects
     if len(sys.extra_charge_sites) != 0:
         defectsF(sys, n, p, rho)
         defectsJ(sys, n, p, drho_dv)
 
-    # charge is divided by epsilon (Poisson equation)
-    rho = rho / sys.epsilon[_sites]
-    drho_dv = drho_dv / sys.epsilon[_sites]
+    # charge devided by epsilon
+    rho = rho / sys.epsilon
+    drho_dv = drho_dv / sys.epsilon
 
-    # reshape the array as array[z-indices, y-indices, x-indices]
-    _sites = _sites.reshape(Nz, Ny, Nx)
+    # reshape the array as array[y-indices, x-indices]
+    _sites = np.arange(Nx*Ny*Nz, dtype=int).reshape(Nz, Ny, Nx)
      
     ###########################################################################
     #     inside the system: 0 < i < Nx-1,  0 < j < Ny-1, 0 < k < Nz-1        #

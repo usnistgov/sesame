@@ -44,8 +44,8 @@ def getJ(sys, v, efn, efp, use_mumps):
     sites = range(Nx)
 
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     drho_defn_s = - n
@@ -53,13 +53,12 @@ def getJ(sys, v, efn, efp, use_mumps):
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates
-    dr_defn_s, dr_defp_s, dr_dv_s = \
-    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)\
+    dr_defn_s, dr_defp_s, dr_dv_s = get_bulk_rr_derivs(sys, n, p)
 
     # charge is divided by epsilon
-    drho_defn_s = drho_defn_s / sys.epsilon[sites]
-    drho_defp_s = drho_defp_s / sys.epsilon[sites]
-    drho_dv_s = drho_dv_s / sys.epsilon[sites]
+    drho_defn_s = drho_defn_s / sys.epsilon
+    drho_defp_s = drho_defp_s / sys.epsilon
+    drho_dv_s = drho_dv_s / sys.epsilon
 
     ###########################################################################
     #                  inside the system: 0 < i < Nx-1                        #

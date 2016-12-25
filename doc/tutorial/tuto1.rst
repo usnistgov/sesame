@@ -1,8 +1,8 @@
-Tutorial 1: Setting up the system of a one-dimensional pn junction
---------------------------------------------------------------------
+Tutorial 1: IV curve of a one-dimensional pn junction
+------------------------------------------------------
 
-In this tutorial we show how to build a simple system: a one-dimensional pn
-junction.
+In this tutorial we show how to build a one-dimensional pn
+junction and compute a IV curve.
 
 .. seealso:: The example treated here is in the file ``1dpn.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -30,8 +30,8 @@ sense of what makes an appropriate grid. In this example, we create a mesh which
 contains more nodes in the pn junction depletion region::
 
     L = 3e-6 # length of the system in the x-direction [m]
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, L, 100)))
+    x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
+                        np.linspace(1.2e-6, L, 50)))
 
 To make a system we need to create an instance of the
 :func:`~sesame.builder.Builder`::
@@ -49,7 +49,7 @@ dictionary and add it to the system::
 
     CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
             'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 
     sys.add_material(CdTe)
 
@@ -58,9 +58,11 @@ where ``Nc`` (``Nv``) is the effective density of states of the conduction
 (:math:`\mathrm{eV}`), ``epsilon`` is the material's dielectric constant,
 ``mu_e`` (``mu_h``) is the electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot
 s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime
-(:math:`\mathrm{s}`), ``RCenergy`` is the bulk recombination centers energy
-level (:math:`\mathrm{eV}`), and ``band_offset`` is a band offset that sets the
-zero of potential (:math:`\mathrm{eV}`). 
+(:math:`\mathrm{s}`), ``Et`` is the bulk recombination centers energy
+level (:math:`\mathrm{eV}`), ``band_offset`` is a band offset that sets the
+zero of potential (:math:`\mathrm{eV}`), ``B`` is the radiative radiation
+coefficient (:math:`\mathrm{m^3/s}`), ``Cn`` (``Cp``) is the Auger recombination
+coefficient for electrons (holes).
 
 .. note::
    We assumed that a single material/region makes the entire system.
@@ -71,13 +73,13 @@ zero of potential (:math:`\mathrm{eV}`).
    The code does not handle regions with different band
    structures because we did not implement the equations necessary to treat the
    interfaces between them. However, different regions can have different
-   mobilities or bulk lifetimes for example. More on this in  :doc:`tutorial 2
-   <tuto2>`.
+   mobilities or bulk lifetimes for example. More on this below and  in
+   :doc:`tutorial 2 <tuto2>`.
 
 Let's add the dopants to define a pn junction. To do this, we need to define the
 regions containing each type of dopants. A region is defined by a function::
 
-    junction = 100e-9 # extent of the junction from the left contact [m]
+    junction = 50e-9 # extent of the junction from the left contact [m]
 
     def region(pos):
         x = pos
@@ -107,7 +109,7 @@ which is parametrized by surface recombination velocities at the contacts::
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
-If we want to make a J(V) curve, we need a generation profile. This is defined
+If we want to make a IV curve, we need a generation profile. This is defined
 as follows::
 
     phi = 1e21 # photon flux [1/(m^2 s)]
@@ -118,5 +120,12 @@ as follows::
     sys.generation(f)
 
 We can now use this system to solve the Poisson equation at thermal equilibrium
-and also compute a J(V) curve. More on these topics in  :doc:`tutorial 3
-<tuto3>`.
+and also compute the IV curve. The function `~sesame.solvers.IVcurve` is
+available to do all that::
+
+    voltages = np.linspace(0, 0.95, 40)
+    sesame.IVcurve(sys, voltages, '1dpnIV', eps=1)
+
+The data files will have names like ``1dpnIV.vapp_0.npz`` where the number is 0
+is the index of of the array ``voltages``. We will see how to extract the data from
+these files and compute observables in :doc:`tutorial 5 <analysis>`.

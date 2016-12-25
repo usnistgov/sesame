@@ -6,7 +6,6 @@
 .. autosummary::
    :toctree: generated/
 
-   map2D
-   map3D
+   plot
    plot_line_defects
    plot_plane_defects

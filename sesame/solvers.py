@@ -1,6 +1,7 @@
 import numpy as np
 import importlib
 import warnings
+from scipy.io import savemat
 
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
@@ -150,10 +151,10 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
     ----------
     sys: Builder
         The discretized system.
-    guess: list [efn, efp, v] of numpy arrays of floats
-        List of one-dimensional arrays of the initial guesses for the electron
-        quasi-Fermi level (efn), the hole quasi-Fermi level (efp) and the
-        electrostatic potential (v).
+    guess: dictionary of numpy arrays of floats
+        Contains the one-dimensional arrays of the initial guesses for the electron
+        quasi-Fermi level, the hole quasi-Fermi level and the
+        electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
     tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
@@ -190,8 +191,7 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
         modF = importlib.import_module('.getF{0}'.format(sys.dimension), 'sesame')
         modJ = importlib.import_module('.jacobian{0}'.format(sys.dimension), 'sesame')
 
-    efn, efp, v = guess
-    solution = {'v': v, 'efn': efn, 'efp': efp}
+    efn, efp, v = guess['efn'], guess['efp'], guess['v']
 
     cc = 0
     clamp = 5.
@@ -215,9 +215,7 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
 
         if error < tol:
             converged = True
-            solution['efn'] = efn
-            solution['efp'] = efp
-            solution['v']   = v
+            solution = {'v': v, 'efn': efn, 'efp': efp}
             break 
 
         if eps is None or error < eps:
@@ -250,3 +248,121 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
     else:
         print("No solution found!\n")
         return None
+
+def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
+            eps=None, verbose=True, use_mumps=False, iterative=False,\
+            Matlab_format=False):
+    """
+    Solve the drift diffusion poisson equation for the voltages provided. The
+    results are stored in a file with ``.npz`` format.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    voltages: array-like
+        List of voltages for which the current should be computed.
+    file_name: string
+        Name of the file to write the data to. The file name will be appended
+        the index of the voltage list, e.g. ``file_name.vapp_0.npz``.
+    tol: float
+        Accepted error made by the Newton-Raphson scheme.
+    periodic_bcs: boolean
+        Defines the choice of boundary conditions in the y-direction. True
+        (False) corresponds to periodic (abrupt) boundary conditions.
+    maxiter: integer
+        Maximum number of steps taken by the Newton-Raphson scheme.
+    eps: float
+        Newton error above which a slow Newton convergence is chosen. The
+        default is to use the fastest correction.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step, and this function prints the current applied voltage if set to True (default).
+    use_mumps: boolean
+        Defines if the MUMPS library should be used to solve for the Newton
+        correction. Default is False.
+    iterative: boolean
+        Defines if an iterative method should be used to solve for the Newton
+        correction instead of a direct method. Default is False.
+    matlab_format: boolean
+        Set the flag to true to save the data in a Matlab format (version 5 and
+        above).
+
+
+    Notes
+    -----
+    The data files can be loaded and used as follows:
+
+    >>> results = np.load('file.npz')
+    >>> efn = results['efn']
+    >>> efp = results['efp']
+    >>> v = results['v']
+    """
+    nx = sys.nx
+
+    # determine what the potential on the left and right should be
+    if sys.rho[0] < 0: # p-doped
+        phi_left = -sys.Eg[0] - np.log(abs(sys.rho[0])/sys.Nv[0])
+    else: # n-doped
+        phi_left = np.log(sys.rho[0]/sys.Nc[0])
+
+    if sys.rho[nx-1] < 0:
+        phi_right = -sys.Eg[nx-1] - np.log(abs(sys.rho[nx-1])/sys.Nv[nx-1])
+    else:
+        phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
+
+    # start with the electrostatic potential
+    v = np.linspace(phi_left, phi_right, nx)
+    v = np.tile(v, sys.ny*sys.nz)
+
+    # Call Poisson solver
+    if verbose:
+        print("\nStarting Poisson solver\n")
+
+    v = poisson_solver(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
+                       maxiter=maxiter, eps=eps, verbose=verbose,\
+                       use_mumps=use_mumps, iterative=iterative)
+
+    if v is None:
+        print("The Poisson solver failed to converge. Abort.")
+        exit(1)
+    else:
+        if verbose:
+            print("\nStarting ddp solver")
+
+        # Initial arrays for the quasi-Fermi levels
+        efn = np.zeros((sys.nx*sys.ny*sys.nz,))
+        efp = np.zeros((sys.nx*sys.ny*sys.nz,))
+
+        result = {'efn':efn, 'efp':efp, 'v':v}
+
+        # sites of the right contact
+        s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz) for j in range(sys.ny)]
+
+        # Loop over the applied potentials made dimensionless
+        Vapp = voltages / sys.scaling.energy
+        for idx, vapp in enumerate(Vapp):
+            if verbose:
+                print("\napplied voltage: ", vapp * sys.scaling.energy)
+            # Apply the voltage on the right contact
+            result['v'][s] = phi_right + vapp
+
+            # Call the Drift Diffusion Poisson solver
+            result = ddp_solver(sys, result, tol=tol,\
+                                periodic_bcs=periodic_bcs,\
+                                maxiter=maxiter, eps=eps, verbose=verbose,\
+                                use_mumps=use_mumps, iterative=iterative)
+
+            if result is not None:
+                name = file_name + ".vapp_{0}".format(idx)
+                if not Matlab_format:
+                    np.savez(name, efn=result['efn'], efp=result['efp'],\
+                             v=result['v'])
+                else:
+                    savemat(name, result)
+                    
+            else:
+                print("The ddp solver failed to converge for the applied voltage\
+                {0} (index {1})".format(voltages[idx], idx))
+                print("I will now abort.")
+                exit(1)

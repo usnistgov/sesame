@@ -21,7 +21,7 @@ From `sesame.plotter`
 ---------------------
 .. autosummary::
 
-   map2D
+   plot
    plot_line_defects
    plot_plane_defects
 
@@ -33,3 +33,13 @@ From `sesame.solvers`
 
    poisson_solver
    ddp_solver
+
+.. currentmodule:: sesame.analyzer
+
+From `sesame.analyzer`
+----------------------
+.. autosummary::
+
+   Analyzer
+
+

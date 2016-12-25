@@ -9,4 +9,5 @@ Tutorial: learning Sesame through examples
    tuto1
    tuto2
    tuto3
+   tuto4
    analysis

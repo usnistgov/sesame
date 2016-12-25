@@ -1,8 +1,8 @@
-Tutorial 3: Computing a J(V) characteristics
------------------------------------------------
-In this tutorial we show how to solve the Poisson equation at thermal
-equilibrium and the drift diffusion Poisson equations under nonequilibrium
-conditions.
+Tutorial 3: How to find a good guess for computing an IV curve
+----------------------------------------------------------------
+In this tutorial we have a look at what happens behind the function
+:func:`~sesame.solvers.IVcurve` so that you can custom the procedure for
+specific needs. 
 
 .. seealso:: The example treated here is in the file ``jv_curve.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -14,7 +14,7 @@ we rewrite inside its own function::
     import sesame
     import numpy as np
 
-    def system():
+    def system(amp=1):
         
         # Dimensions of the system
         Lx = 3e-6 # [m]
@@ -23,11 +23,11 @@ we rewrite inside its own function::
         junction = 10e-9 
 
         # Mesh
-        x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                            np.linspace(1.2e-6, Lx, 100)))
-        y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                            np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                            np.linspace(2.75e-6, Ly, 100)))
+        x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
+                            np.linspace(1.2e-6, Lx, 50)))
+        y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
+                            np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
+                            np.linspace(2.75e-6, Ly, 50)))
 
         sys = sesame.Builder(x, y)
 
@@ -46,13 +46,13 @@ we rewrite inside its own function::
         # Region 1
         reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
                 'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-                'RCenergy':0, 'band_offset':0}
+                'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
         sys.add_material(reg1, lambda pos: (pos[1] <= 2.4e-6) | (pos[1] >= 2.6e-6))
 
         # Region 2
         reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
                 'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-                'RCenergy':0, 'band_offset':0}
+                'Et':0, 'band_offset':0, 'B':0, 'Cp':0}
         sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
 
         # gap state characteristics
@@ -65,12 +65,25 @@ we rewrite inside its own function::
 
         sys.add_line_defects([p1, p2], E, N, S)
 
+        # Define a function for the generation rate
+        phi = amp * 1e21 # photon flux [1/(m^2 s)]
+        alpha = 2.3e6 # absorption coefficient [1/m]
+        f = lambda x, y: phi * alpha * np.exp(-alpha * x)
+        sys.generation(f)
+
         return sys
 
+In this example the drift diffusion Poisson solver does not converge because of
+the amplitude of the generation rate. Our procedure is therefore the following:
 
-A good way to start is by computing the thermal equilibrium electrostatic
-potential. This will provide a guess for the drift diffusion Poisson solver
-later on. Because of our geometry the potential on the left and right read
+1. Solve the Poisson equation to get the electrostatic potential.
+2. Solve the drift diffusion Poisson equation at zero bias for increasing values
+   of the amplitude of the generation rate.
+3. Use the last result of the step 2. as the initial guess to compute the
+   complete IV curve.
+
+First, we set the boundary conditions for the electrostatic potential. Because
+of our geometry the potential on the left and right read
 
 .. math::
    \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
@@ -88,8 +101,7 @@ In order to solve the Poisson equation we need an initial guess (linear here)
 and call the solver::
 
     # Initial guess
-    v = np.empty((sys.nx,), dtype=float) 
-    v[:sys.nx] = np.linspace(v_left, v_right, sys.nx)
+    v = np.linspace(v_left, v_right, sys.nx)
     v = np.tile(v, sys.ny) # replicate the guess in the y-direction
 
     # Call Poisson solver
@@ -97,54 +109,57 @@ and call the solver::
 
 By default the solver assumes periodic boundary conditions in all directions
 parallel to the contacts. One can change this setting to abrupt boundary
-conditions by setting the flag ``periodic_bcs`` to ``False``.
+conditions by setting the flag ``periodic_bcs`` to ``False``. All options are in
+the :doc:`reference documentation <../reference/index>`.
 
-We can now solve the drift diffusion Poisson equations to compute a
-J(V) characteristics. The call to the drift diffusion Poisson solver returns a
-dictionary with all values of electrostatic potential and quasi-Fermi levels. In
-the following we solve the problem for multiple applied voltages and save the
-output after each step::
+We can now solve the drift diffusion Poisson equations to compute an
+IV characteristics. In order to have convergence of the Newton algorithm, we
+start by solving the system for reduced generation rates at zero bias::
 
     # Initial arrays for the quasi-Fermi levels
     efn = np.zeros((sys.nx*sys.ny,))
     efp = np.zeros((sys.nx*sys.ny,))
 
+    # dictionary for the initial guess
+    result = {'efn':efn, 'efp':efp, 'v':v}
+
+    # loop at zero bias with increasing generation amplitude
+    for amp in [0.01, 0.1]:
+        sys = system(amp)
+        result = sesame.ddp_solver(sys, result, eps=1)
+
+Now we have a descent guess for the rest of the IV curve. We create the original
+system with the desired generation amplitude and loop over the applied voltages::
+
+    sys = system()
+
+    # sites of the right contact 
+    s = [sys.nx-1 + j*sys.nx for j in range(sys.ny)]
+
     # Loop over the applied potentials made dimensionless
     applied_voltages = np.linspace(0, 1, 41) / sys.scaling.energy
+
     for idx, vapp in enumerate(applied_voltages):
         # Apply the contacts boundary conditions
-        for i in range(0, sys.nx*(sys.ny-1)+1, sys.nx):
-            v[i] = v_left
-            v[i+sys.nx-1] = v_right + vapp
+        result['v'][s] = v_right + vapp
 
         # Call the Drift Diffusion Poisson solver
-        result = sesame.ddp_solver(sys, [efn, efp, v])
+        result = sesame.ddp_solver(sys, result, eps=1)
+
+        # Save the data
         if result is not None:
-            # Extract the results from the dictionary 'result'
-            v = result['v']
-            efn = result['efn']
-            efp = result['efp']
+            name = "2dIV.vapp_{0}".format(idx)
+            np.savez(name, efn=result['efn'], efp=result['efp'], v=result['v'])
 
-            # Save the data
-            np.save("data.vapp_idx_{0}".format(idx), [efn, efp, v])
+While it is tempting to run the solver in parallel for each values of applied
+voltage, the solver will likely fail with this approach for high voltages. Note
+that the output of ``ddp_solver`` is used as a new guess for the next value of
+applied voltage. This method provides better chances to reach convergence at
+each step. More about the solver can be found in the section about the
+:ref:`algo`.
 
-The saving command is on the last line. This way of saving the data creates
-multiple files like ``data.vapp_idx_1.npy`` containing a list of the 1D arrays of
-the solution for the electron and hole quasi-Fermi levels, as well as the
-electrostatic potential. 
-
-While it is tempting to run the solver in parallel for each values of
-applied voltage, the solver will likely fail with this approach. Note that the
-results extracted after each step of the for loop are used as a new guess for
-the next value of applied voltage. This method provides better chances to reach
-convergence at each step. More about the solver can be found in the section
-about the :ref:`algo`.
-
-.. hint::
-   In the case of an applied generation, it might be useful to perform
-   calculations at zero bias under smaller generation amplitudes so that a good
-   guess can be found. A similar approch can be used with the density of
-   defects.
+We discuss the analysis of the data (i.e. computing densities, currents and so
+on) in :doc:`tutorial 5 <analysis>`.
 
 **Solvers options:** 
 
@@ -158,8 +173,8 @@ about the :ref:`algo`.
   ``iterative=True`` to activate it. Note that we have not tested this feature
   extensively and a solution is not guaranteed.
 
-* We implemented two ways of computing the Newton correction, one seems to
-  give a slower convergence. It can be useful to use it when the default route
-  fails to convergence. The parameter ``eps`` sets the Newton error above which
-  the slow converging Newton correction is used. This seems to be useful when
-  using the iterative inner solver.
+* We implemented two ways of computing the Newton correction, one seems to give
+  a slower convergence. It can be useful to use it when the default route fails to
+  convergence. The parameter ``eps`` sets the Newton error above which the slow
+  converging Newton correction is used. This seems to be useful when convergence
+  of the Newton algorithm is difficult, and when using the iterative inner solver.

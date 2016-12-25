@@ -8,5 +8,6 @@
 .. autosummary::
    :toctree: generated/
 
-   ddp_solver
    poisson_solver
+   ddp_solver
+   IVcurve

@@ -13,7 +13,7 @@ junction = 10e-6
 x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
                     np.linspace(1.2e-6, Lx, 50)))
 y = np.linspace(0, Ly, 100)
-z = np.linspace(0, Lz, 100)
+z = np.linspace(0, Lz, 50)
 
 sys = sesame.Builder(x, y, z)
 
@@ -35,18 +35,18 @@ Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
 sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
 # dictionary with the material parameters
-reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-        'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-        'RCenergy':0, 'band_offset':0}
+CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
+        'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
+        'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 # add the material to the system
-sys.add_material(reg1)
+sys.add_material(CdTe)
 
 # gap state characteristics
-s = 1e5 * 1e-2           # trap recombination velocity [m/s]
-e = -0.25                # energy of gap state (ev) from midgap
-n = 2e14 * 1e4           # defect density [1/m^2]
+S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+E = -0.25                # energy of gap state (ev) from midgap
+N = 2e14 * 1e4           # defect density [1/m^2]
 
-# specify the two points that make the line containing additional charges
+# specify the four points that define the plane containing additional charges
 p1 = (1e-6, .5e-6, 1e-6)    #[m]
 p2 = (2.9e-6, .5e-6, 1e-6)  #[m]
 
@@ -54,17 +54,7 @@ q1 = (1.0e-6, 4.5e-6, 1e-9) #[m]
 q2 = (2.9e-6, 4.5e-6, 1e-9) #[m]
 
 # pass the information to the system
-sys.add_plane_defects([p1, p2, q1, q2], e, n, s)
+sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
 
+# visualize the system
 sesame.plot_plane_defects(sys)
-
-# Solve the Poisson equation
-v_left  = np.log(sys.rho[0]/sys.Nc[0])
-v_right = -sys.Eg[0] - np.log(abs(sys.rho[sys.nx-1])/sys.Nv[sys.nx-1])
-
-v = np.empty((sys.nx,), dtype=float) 
-v[:sys.nx] = np.linspace(v_left, v_right, sys.nx)
-v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y and z-direction
-
-v = sesame.poisson_solver(sys, v, iterative=True)
-np.save('electrostatic_potential', [x, y, z, v])

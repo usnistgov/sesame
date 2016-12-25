@@ -1,6 +1,4 @@
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
 import numpy as np
-from . import observables
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -50,137 +48,8 @@ def get_dl(sys, sites):
 
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 
-def line_defects_sites(sys, location):
-    """
-    Get sites and coordinates of the locations containing additional charges
-    distributed on a line.
 
-    Parameters
-    ----------
-
-    sys: Builder
-        The discretized system.
-    location: list of two array_like coordinates [(x1, y1), (x2, y2)]
-        Coordinates of the two points of the line containing additional
-        charges in [m].
-
-    Returns
-    -------
-
-    s: numpy array of integers
-        Sites numbers.
-    X: numpy array of floats
-        Incremental sum of the lattice size between sites.
-    iccord: list of integers
-        Indices of the x-coordinates of the sites on the discretized lattice.
-    jccord: list of integers
-        Indices of the y-coordinates of the sites on the discretized lattice.
-
-    Notes
-    -----
-    This only works in 2D.
-    """
-
-    x1, y1 = location[0]
-    x2, y2 = location[1]
-
-    sites, X, icoord, jcoord, _ = Bresenham2d(sys, (x1, y1, 0), (x2, y2, 0))
-    sites = np.asarray(sites)
-    X = np.asarray(X)
-    return sites, X, icoord, jcoord
-
-def bulk_recombination_current(sys, efn, efp, v):
-    """
-    Compute the bulk recombination current.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    efn: numpy array of floats
-        One-dimensional array containing the electron quasi-Fermi level.
-    efp: numpy array of floats
-        One-dimensional array containing the hole quasi-Fermi level.
-    v: numpy array of floats
-        One-dimensional array containing the electrostatic potential.
-
-    Returns
-    -------
-    JR: float
-        The integrated bulk recombination.
-
-    Warnings
-    --------
-    Not implemented in 3D.
-    """
-
-    x = sys.xpts / sys.scaling.length
-    y = sys.ypts / sys.scaling.length
-    u = []
-    for j in range(sys.ny):
-        # List of sites
-        s = [i + j*sys.nx for i in range(sys.nx)]
-
-        # Carrier densities
-        n = observables.get_n(sys, efn, v, s)
-        p = observables.get_p(sys, efp, v, s)
-
-        # Recombination
-        r = observables.get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
-        sp = spline(x, r)
-        u.append(sp.integral(x[0], x[-1]))
-    if sys.ny == 1:
-        JR = u[-1]
-    if sys.ny > 1:
-        sp = spline(y, u)
-        JR = sp.integral(y[0], y[-1])
-    return JR
- 
-def full_current(sys, efn, efp, v):
-    """
-    Compute the steady state current.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    efn: numpy array of floats
-        One-dimensional array containing the electron quasi-Fermi level.
-    efp: numpy array of floats
-        One-dimensional array containing the hole quasi-Fermi level.
-    v: numpy array of floats
-        One-dimensional array containing the electrostatic potential.
-
-    Returns
-    -------
-    JR: float
-        The integrated bulk recombination.
-
-    Warnings
-    --------
-    Not implemented in 3D.
-    """
-    # Define the sites between which computing the currents
-    sites_i = [sys.nx//2 + j*sys.nx for j in range(sys.ny)]
-    sites_ip1 = [sys.nx//2+1 + j*sys.nx for j in range(sys.ny)]
-    # And the corresponding lattice dimensions
-    dl = sys.dx[sys.nx//2]
-
-    # Compute the electron and hole currents
-    jn = observables.get_jn(sys, efn, v, sites_i, sites_ip1, dl)
-    jp = observables.get_jp(sys, efp, v, sites_i, sites_ip1, dl)
-
-    if sys.ny == 1:
-        j = jn + jp
-    if sys.ny > 1:
-        # Interpolate the results and integrate over the y-direction
-        y = sys.ypts / sys.scaling.length
-        j = spline(y, jn+jp).integral(y[0], y[-1])
-
-    return j
-
-
-def Bresenham2d(system, p1, p2):
+def Bresenham(system, p1, p2):
     # Compute a digital line contained in the plane (x,y) and passing by the
     # points p1 and p2.
     i1, j1, k1 = get_indices(system, p1)
@@ -227,6 +96,8 @@ def Bresenham2d(system, p1, p2):
         icoord.append(i)
         jcoord.append(j)
         kcoord.append(k1)
+    sites = np.asarray(sites)
+    X = np.asarray(X)
     return sites, X, icoord, jcoord, kcoord
 
 def check_plane(P1, P2, P3, P4):
@@ -354,7 +225,7 @@ def plane_defects_sites(sys, location):
        
     sites, xcoord, ycoord, zcoord = [], [], [], []
 
-    s, _, ic, jc, kc = Bresenham2d(sys, P1, P2)
+    s, _, ic, jc, kc = Bresenham(sys, P1, P2)
 
     sites.extend(s)
     xcoord.append(sys.xpts[ic])
@@ -399,7 +270,7 @@ def plane_defects_sites(sys, location):
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
         z1, z2 = sys.zpts[k1], sys.zpts[k2]
 
-        s, _, ic, jc, kc = Bresenham2d(sys, (x1, y1, z1), (x2, y2, z2))
+        s, _, ic, jc, kc = Bresenham(sys, (x1, y1, z1), (x2, y2, z2))
 
         sites.extend(s)
         xcoord.append(sys.xpts[ic])

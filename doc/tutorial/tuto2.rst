@@ -3,7 +3,8 @@ Tutorial 2: Two-dimensional pn junction with a line defects
 In this tutorial we show how to build a two-dimensional pn junction containing a
 line defects. We focus on the creation of different regions and the addition of
 extra charges to the system. See :doc:`tutorial 1 <tuto1>` for the basics on the
-creation of systems.
+creation of systems. We present the tools available to vizualize the system
+created.
 
 .. seealso:: The example treated here is in the file ``2dpn.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -31,11 +32,11 @@ grid with a finer lattice around it::
     # extent of the junction from the left contact [m]
     junction = 10e-9 
 
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, Lx, 100)))
-    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                        np.linspace(2.75e-6, Ly, 100)))
+    x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
+                        np.linspace(1.2e-6, Lx, 50)))
+    y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
+                        np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
+                        np.linspace(2.75e-6, Ly, 50)))
 
     sys = sesame.Builder(x, y)
 
@@ -71,7 +72,7 @@ function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
     # Dictionary with the material parameters
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
             'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 
     # Add the material to the system
     sys.add_material(reg1, region1)
@@ -85,7 +86,7 @@ all sites not in region 1 will be in region 2::
     # Dictionary with the material parameters
     reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
             'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 
     # Add the material to the system
     sys.add_material(reg2, lambda pos: 1 - region1(pos))
@@ -129,7 +130,7 @@ system, two functions are available for this purpose in two-dimensions. These
 plotting routines require the Matplotlib library. First we visualize the
 mobility across the system::
 
-    sesame.map2D(sys, sys.mu_e, 1e-6)
+    sesame.plot(sys, sys.mu_e)
 
 .. image:: 2dpnGB.png
    :align: center
@@ -142,7 +143,7 @@ itself.
 
 We can also visualize the line defects, as shown below::
 
-    sesame.plot_line_defects(sys, 1e-6)
+    sesame.plot_line_defects(sys)
 
 .. image:: system_plot.png
    :align: center

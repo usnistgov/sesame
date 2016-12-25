@@ -33,27 +33,26 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    _sites = np.arange(Nx*Ny*Nz, dtype=int)
-
     # carrier densities
-    n = get_n(sys, efn, v, _sites)
-    p = get_p(sys, efp, v, _sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     rho = sys.rho - n + p
 
     # recombination rates
-    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, _sites)
+    r = get_bulk_rr(sys, n, p)
 
     # charge defects
     if len(sys.extra_charge_sites) != 0:
         defectsF(sys, n, p, rho, r)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon[_sites]
+    rho = rho / sys.epsilon
 
-    # reshape the array as array[z-indices, y-indices, x-indices]
-    _sites = _sites.reshape(Nz, Ny, Nx)
+    # reshape the array as array[y-indices, x-indices]
+    _sites = np.arange(Nx*Ny*Nz, dtype=int).reshape(Nz, Ny, Nx)
+
 
     def currents(sys, efn, efp, v, smNN_s, smN_s, s_spN, s_spNN,\
                  dx, dxm1, dy, dym1, dz, dzm1, sites):

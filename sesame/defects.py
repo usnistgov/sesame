@@ -1,5 +1,6 @@
 # These functions define the model for the charge a the defects.
-from .observables import get_rr, get_rr_derivs
+
+from .observables import get_srh_rr_derivs
 
 def defectsF(sys, n, p, rho, r=None):
 
@@ -17,7 +18,7 @@ def defectsF(sys, n, p, rho, r=None):
 
         # extra recombination
         if r is not None:
-            r[sites] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, sites) 
+            r[sites] += (_n*_p - sys.ni[sites]**2)/((_n+nextra)/Sh + (_p+pextra)/Se)
 
         # extra charge
         if c == 'donor':
@@ -54,8 +55,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 (Se*_n + Sh*pextra) * Sh*_p / d
 
         if dr_defn is not None:
-            defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra,\
-                                            1/Se, 1/Sh, sites)
+            defn, defp, dv =  get_srh_rr_derivs(sys, _n, _p, nextra, pextra,\
+                                                1/Se, 1/Sh)
             dr_defn[sites] += defn
             dr_defp[sites] += defp
             dr_dv[sites]   += dv

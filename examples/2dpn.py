@@ -9,11 +9,11 @@ Ly = 5e-6 #[m]
 junction = 10e-9 
 
 # Mesh
-x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                    np.linspace(1.2e-6, Lx, 100)))
-y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                    np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                    np.linspace(2.75e-6, Ly, 100)))
+x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
+                    np.linspace(1.2e-6, Lx, 50)))
+y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
+                    np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
+                    np.linspace(2.75e-6, Ly, 50)))
 
 sys = sesame.Builder(x, y)
 
@@ -41,7 +41,7 @@ def region1(pos):
 # Dictionary with the material parameters
 reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
         'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-        'RCenergy':0, 'band_offset':0}
+        'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 
 # Add the material to the system
 sys.add_material(reg1, region1)
@@ -49,10 +49,10 @@ sys.add_material(reg1, region1)
 # Dictionary with the material parameters
 reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
         'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-        'RCenergy':0, 'band_offset':0}
+        'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
 
 # Add the material to the system
-# sys.add_material(reg2, lambda pos: 1 - region1(pos))
+sys.add_material(reg2, lambda pos: 1 - region1(pos))
 
 # gap state characteristics
 S = 1e5 * 1e-2           # trap recombination velocity [m/s]
@@ -67,6 +67,6 @@ p2 = (2.9e-6, 2.5e-6)  #[m]
 sys.add_line_defects([p1, p2], E, N, S)
 
 
-sesame.map2D(sys, sys.mu_e, 1e-6)
+sesame.plot(sys, sys.mu_e)
 
-sesame.plot_line_defects(sys, 1e-6)
+sesame.plot_line_defects(sys)
