@@ -308,8 +308,10 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
 
     if sys.rho[nx-1] < 0:
         phi_right = -sys.Eg[nx-1] - np.log(abs(sys.rho[nx-1])/sys.Nv[nx-1])
+        q = 1
     else:
         phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
+        q = -1
 
     # start with the electrostatic potential
     v = np.linspace(phi_left, phi_right, nx)
@@ -345,7 +347,7 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
             if verbose:
                 print("\napplied voltage: ", vapp * sys.scaling.energy)
             # Apply the voltage on the right contact
-            result['v'][s] = phi_right + vapp
+            result['v'][s] = phi_right + q*vapp
 
             # Call the Drift Diffusion Poisson solver
             result = ddp_solver(sys, result, tol=tol,\
@@ -364,5 +366,5 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
             else:
                 print("The ddp solver failed to converge for the applied voltage\
                 {0} (index {1})".format(voltages[idx], idx))
-                print("I will now abort.")
+                print("I will abort now.")
                 exit(1)
