@@ -1,5 +1,5 @@
-:mod:`sesame.plotter` -- Plotting routines
-===========================================
+:mod:`sesame.plotter` -- Plotting of systems
+============================================
 
 .. module:: sesame.plotter
 

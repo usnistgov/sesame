@@ -289,7 +289,7 @@ class Analyzer():
 
     def hole_current_map(self, cmap='gnuplot', scale=1e6):
         """
-        Compute a 2D map of the hole current.
+        Compute a 2D map of the hole current of a 2D system.
 
         Parameters
         ----------

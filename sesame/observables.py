@@ -3,45 +3,47 @@ import numpy as np
 
 
 def get_n(sys, efn, v, sites):
-    # Compute the electron density on the given sites.
-    #
-    # Parameters
-    # ----------
-    # sys: Builder
-    #     The discretized system.
-    # efn: numpy array of floats
-    #     Values of the electron quasi-Fermi level.
-    # v: numpy array of floats
-    #     Values of the electrostatic potential.
-    # sites: list of integers
-    #     The sites where the electron density should be computed.
-    #
-    # Returns
-    # -------
-    # n: numpy array
-    #     An array with the values of electron density.
+    """
+    Compute the electron density on the given sites.
+    
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        Values of the electron quasi-Fermi level.
+    v: numpy array of floats
+        Values of the electrostatic potential.
+    sites: list of integers
+        The sites where the electron density should be computed.
+    
+    Returns
+    -------
+    n: numpy array
+    """
 
     n = sys.Nc[sites] * exp(-sys.bl[sites]+efn[sites]+v[sites])
     return n
 
 def get_p(sys, efp, v, sites):
-    # Compute the hole density on the given sites.
-    #
-    # Parameters
-    # ----------
-    # sys: Builder
-    #     The discretized system.
-    # efp: numpy array of floats
-    #     Values of the hole quasi-Fermi level.
-    # v: numpy array of floats
-    #     Values of the electrostatic potential.
-    # sites: list of integers
-    #     The sites where the hole density should be computed.
-    #
-    # Returns
-    # -------
-    # p: numpy array
-    #     An array with the values of electron density.
+    """
+    Compute the hole density on the given sites.
+    
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efp: numpy array of floats
+        Values of the hole quasi-Fermi level.
+    v: numpy array of floats
+        Values of the electrostatic potential.
+    sites: list of integers
+        The sites where the hole density should be computed.
+    
+    Returns
+    -------
+    p: numpy array
+    """
     bl = sys.bl[sites]
     Eg = sys.Eg[sites]
     Nv = sys.Nv[sites]
@@ -80,28 +82,30 @@ def get_bulk_rr_derivs(sys, n, p):
     return defn, defp, dv
 
 def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
-    # Compute the electron current between sites ``site_i`` and ``sites_ip1``.
-    #
-    # Parameters
-    # ----------
-    # sys: Builder
-    #     The discretized system.
-    # efn: numpy array of floats
-    #     Values of the electron quasi-Fermi level for the entire system (as given
-    #     by the drift diffusion Poisson solver).
-    # v: numpy array of floats
-    #     Values of the electrostatic potential for the entire system (as given
-    #     by the drift diffusion Poisson solver).
-    # sites_i: list of integers
-    #     Indices of the sites the current is coming from.
-    # sites_ip1: list of integers
-    #     Indices of the sites the current is going to.
-    # dl: numpy arrays of floats
-    #     Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
-    #
-    # Returns
-    # -------
-    # jn: numpy array of floats
+    """
+    Compute the electron current between sites ``site_i`` and ``sites_ip1``.
+    
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efn: numpy array of floats
+        Values of the electron quasi-Fermi level for the entire system (as given
+        by the drift diffusion Poisson solver).
+    v: numpy array of floats
+        Values of the electrostatic potential for the entire system (as given
+        by the drift diffusion Poisson solver).
+    sites_i: list of integers
+        Indices of the sites the current is coming from.
+    sites_ip1: list of integers
+        Indices of the sites the current is going to.
+    dl: numpy arrays of floats
+        Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
+    
+    Returns
+    -------
+    jn: numpy array of floats
+    """
 
     bl = sys.bl[sites_i]
 
@@ -120,28 +124,31 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     return jn
 
 def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
-    # Compute the hole current between sites ``site_i`` and ``sites_ip1``.
-    #
-    # Parameters
-    # ----------
-    # sys: Builder
-    #     The discretized system.
-    # efp: numpy array of floats
-    #     Values of the hole quasi-Fermi level for the entire system (as given
-    #     by the drift diffusion Poisson solver).
-    # v: numpy array of floats
-    #     Values of the electrostatic potential for the entire system (as given
-    #     by the drift diffusion Poisson solver).
-    # sites_i: list of integers
-    #     Indices of the sites the current is coming from.
-    # sites_ip1: list of integers
-    #     Indices of the sites the current is going to.
-    # dl: numpy arrays of floats
-    #     Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
-    #
-    # Returns
-    # -------
-    # jp: numpy array of floats
+    """
+    Compute the hole current between sites ``site_i`` and ``sites_ip1``.
+    
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    efp: numpy array of floats
+        Values of the hole quasi-Fermi level for the entire system (as given
+        by the drift diffusion Poisson solver).
+    v: numpy array of floats
+        Values of the electrostatic potential for the entire system (as given
+        by the drift diffusion Poisson solver).
+    sites_i: list of integers
+        Indices of the sites the current is coming from.
+    sites_ip1: list of integers
+        Indices of the sites the current is going to.
+    dl: numpy arrays of floats
+        Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
+    
+    Returns
+    -------
+    jp: numpy array of floats
+    """
+
     bl = sys.bl[sites_i]
 
     vp0 = v[sites_i]

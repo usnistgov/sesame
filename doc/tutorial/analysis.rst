@@ -3,10 +3,6 @@ Tutorial 5: Analysis of simulation data
 In this tutorial we show how to extract the data computed by the solvers. We
 will use the system created in :doc:`tutorial 3 <tuto3>`.
 
-.. seealso:: The example treated here relies
-   on the system defined in ``jv_curve.py``, which is in the
-   ``examples`` directory in the root directory of the distribution. 
-
 The data analysis requires to compute carrier densities, currents and plot data.
 In order to avoid having to deal with the folded discretized system, we provide
 a set of methods callable with real space coordinates. These methods are
@@ -119,3 +115,10 @@ Observe how we accessed the dimension of the surface recombination velocity with
 ``sys.scaling.velocity``. Other dimensions can be obtained similarly with the
 self-explanatory field names density, energy, mobility, time, length,
 generation.
+
+.. seealso:: In case the methods available in the
+   :func:`~sesame.analyzer.Analyzer` are not enough (especially in 3D), the
+   module :func:`sesame.observables` gives
+   access to low-level routines that compute the carrier densities and the currents
+   for any given sites on the discretized system.
+

@@ -8,12 +8,6 @@ Sesame |version| documentation
 ==================================
 
 
-.. sidebar:: Summary
-
-   :Version: |version|
-   :Date: |today|
-   :Authors: Benoit H. Gaury, Paul M. Haney
-
 .. topic:: About Sesame
 
    Sesame is a Python package for solving the drift diffusion Poisson equations
@@ -22,6 +16,12 @@ Sesame |version| documentation
 
    Support for this project comes from the U.S. National Institute of
    Standards and Technology and the University of Maryland.
+
+.. sidebar:: Summary
+
+   :Version: |version|
+   :Date: |today|
+   :Authors: Benoit H. Gaury, Paul M. Haney
 
 
 

@@ -43,11 +43,18 @@ recombination. The natural length scale is the Debye length, given by
 :math:`\lambda = \epsilon k_B T /(q^2 N )`, where :math:`N` is the concentration
 relevant to the problem. 
 
-We suppose that the recombination is through a Shockley-Read-Hall mechanism. The
-form for recombination is given as
+We suppose that the recombination is through three mechanims:
+Shockley-Read-Hall, radiative and Auger.  Unlike the defect-mediated
+recombination, radiative and Auger processes are respectively second and third
+order in charge density. For this reason they become more important at higher
+densities (such as for heavily doped systems, or systems with high generation
+rate density of electron-hole pairs).  On the other hand, Shockley-Read-Hall
+recombination is first order in charge density.
+
+The Shockley-Read-Hall takes the form
 
 .. math::
-   R = \frac{np - n_i^2}{\tau_p(n+n_1) + \tau_n(p+p_1)}
+   R_{\rm SRH} = \frac{np - n_i^2}{\tau_p(n+n_1) + \tau_n(p+p_1)}
    
 where :math:`n^2_i = N_C N_V e^{-E_g/k_BT}, n_1 = N_C e^{-(E_C - E_T) /k_BT} ,
 p_1 = N_V e^{- (E_T - E_V) /k_BT}`, where :math:`E_T` is the
@@ -62,13 +69,20 @@ electrons (holes). It is given by
 where :math:`N_T` is the three-dimensional trap density, :math:`v^{\rm
 th}_{n,p}` is the thermal velocity of carriers: :math:`v^{\rm th}_{n,p} = 3k_BT
 /m_{n,p}`, and :math:`\sigma_{n,p}` is the capture cross-section for (electrons,
-holes).  Other recombination processes include radiative recombination, and
-Auger recombination. Unlike the defect-mediated recombination described above,
-these processes are respectively second and third order in
-charge density. For this reason they become more important at higher densities
-(such as for heavily doped systems, or systems with high generation rate density
-of electron-hole pairs).  On the other hand, Shockley-Read-Hall recombination is
-first order in charge density.
+holes).   
+
+The radiative recombination has the form
+
+.. math::
+   R_{\rm rad} = B (np - n_i^2)
+
+where :math:`B` is the radiative recombination coefficient of the material. The
+Auger mechanism has the form
+
+.. math::
+   R_{\rm A} = (C_n n + C_p p) (np - n_i^2)
+
+where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 
 Boundary conditions at the contacts
 ...................................

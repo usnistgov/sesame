@@ -254,7 +254,8 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
             Matlab_format=False):
     """
     Solve the drift diffusion poisson equation for the voltages provided. The
-    results are stored in a file with ``.npz`` format.
+    results are stored in a file with ``.npz`` format. Note that the potential
+    is always applied on the right contact.
 
     Parameters
     ----------
@@ -322,8 +323,8 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
         print("\nStarting Poisson solver\n")
 
     v = poisson_solver(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
-                       maxiter=maxiter, eps=eps, verbose=verbose,\
-                       use_mumps=use_mumps, iterative=iterative)
+                       use_mumps=use_mumps, iterative=iterative,\
+                       verbose=verbose)
 
     if v is None:
         print("The Poisson solver failed to converge. Abort.")

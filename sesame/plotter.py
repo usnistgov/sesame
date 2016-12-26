@@ -86,7 +86,7 @@ def plot_plane_defects(sys, scale=1e-6):
 
 def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):
     """
-    Plot a 2D map of a parameter (e.g. mobility) across the system.
+    Plot a 2D map of a parameter (like mobility) across the system.
 
     Parameters
     ----------

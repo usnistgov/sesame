@@ -13,4 +13,5 @@ The following modules are used for internal and external use.
    sesame.plotter
    sesame.solvers
    sesame.analyzer
+   sesame.observables
    sesame.utils
