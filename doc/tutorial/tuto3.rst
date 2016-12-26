@@ -1,8 +1,8 @@
 Tutorial 3: How to find a good guess for computing an IV curve
 ----------------------------------------------------------------
-In this tutorial we have a look at what happens behind the function
-:func:`~sesame.solvers.IVcurve` so that you can custom the procedure for
-specific needs. 
+Finding a good initial guess for our calculation is not always an easy task. In
+this tutorial we show how to find a good starting point to compute the IV curve
+on the system created in :doc:`tutorial 2 <tuto2>`.
 
 .. seealso:: The example treated here is in the file ``jv_curve.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -58,7 +58,7 @@ we rewrite inside its own function::
         # gap state characteristics
         S = 1e5 * 1e-2           # trap recombination velocity [m/s]
         E = -0.25                # energy of gap state (eV) from midgap
-        N = 2e14 * 1e4           # defect density [1/m^2]
+        N = amp * 2e14 * 1e4           # defect density [1/m^2]
 
         p1 = (20e-9, 2.5e-6)   #[m]
         p2 = (2.9e-6, 2.5e-6)  #[m]
@@ -66,20 +66,24 @@ we rewrite inside its own function::
         sys.add_line_defects([p1, p2], E, N, S)
 
         # Define a function for the generation rate
-        phi = amp * 1e21 # photon flux [1/(m^2 s)]
+        phi = 1e21 # photon flux [1/(m^2 s)]
         alpha = 2.3e6 # absorption coefficient [1/m]
         f = lambda x, y: phi * alpha * np.exp(-alpha * x)
         sys.generation(f)
 
         return sys
 
-In this example the drift diffusion Poisson solver does not converge because of
-the amplitude of the generation rate. Our procedure is therefore the following:
+Note that we added the parameter ``amp`` that will allow us to turn on slowly
+the line defects density of states.
 
-1. Solve the Poisson equation to get the electrostatic potential.
+In this example the drift diffusion Poisson solver does not converge even at
+zero bias. Our procedure to find a good guess is therefore the following:
+
+1. Solve the Poisson equation to get the electrostatic potential of the system
+   with reduced line defects density of states.
 2. Solve the drift diffusion Poisson equation at zero bias for increasing values
-   of the amplitude of the generation rate.
-3. Use the last result of the step 2. as the initial guess to compute the
+   of the line defects density of states.
+3. Use the last result of step 2. as the initial guess to compute the
    complete IV curve.
 
 First, we set the boundary conditions for the electrostatic potential. Because
@@ -91,14 +95,13 @@ of our geometry the potential on the left and right read
 
 which is computed as follows::
     
-    sys = system()
+    sys = system(0.0001)
     v_left  = np.log(sys.rho[0]/sys.Nc[0])
-    v_right = -sys.Eg[0] - np.log(abs(sys.rho[sys.nx-1])/sys.Nv[sys.nx-1])
+    v_right = -sys.Eg[sys.nx-1] - np.log(-sys.rho[sys.nx-1]/sys.Nv[sys.nx-1])
 
-Observe the absolute value of the charge taken on the second line. This is
-because the static charge there is negative (from the acceptors).
-In order to solve the Poisson equation we need an initial guess (linear here)
-and call the solver::
+In the code above you can see how we access the parameters of the discretized
+system (effective densities of states, band gap, charge).  In order to solve the
+Poisson equation we need an initial guess (linear here) and call the solver::
 
     # Initial guess
     v = np.linspace(v_left, v_right, sys.nx)
@@ -112,44 +115,30 @@ parallel to the contacts. One can change this setting to abrupt boundary
 conditions by setting the flag ``periodic_bcs`` to ``False``. All options are in
 the :doc:`reference documentation <../reference/index>`.
 
-We can now solve the drift diffusion Poisson equations to compute an
-IV characteristics. In order to have convergence of the Newton algorithm, we
-start by solving the system for reduced generation rates at zero bias::
+We now proceed to step 2. where we loop over increasing amplitudes of the line
+defects density of states at zero bias::
 
     # Initial arrays for the quasi-Fermi levels
     efn = np.zeros((sys.nx*sys.ny,))
     efp = np.zeros((sys.nx*sys.ny,))
 
-    # dictionary for the initial guess
+    # Dictionary for the initial guess
     result = {'efn':efn, 'efp':efp, 'v':v}
 
-    # loop at zero bias with increasing generation amplitude
-    for amp in [0.01, 0.1]:
+    # Loop at zero bias with increasing defect density of states
+    for amp in [0.0001, 0.01]:
         sys = system(amp)
         result = sesame.ddp_solver(sys, result, eps=1)
 
 Now we have a descent guess for the rest of the IV curve. We create the original
 system with the desired generation amplitude and loop over the applied voltages::
 
+    # Create the system with the defect density of states we want
     sys = system()
 
-    # sites of the right contact 
-    s = [sys.nx-1 + j*sys.nx for j in range(sys.ny)]
-
-    # Loop over the applied potentials made dimensionless
-    applied_voltages = np.linspace(0, 1, 41) / sys.scaling.energy
-
-    for idx, vapp in enumerate(applied_voltages):
-        # Apply the contacts boundary conditions
-        result['v'][s] = v_right + vapp
-
-        # Call the Drift Diffusion Poisson solver
-        result = sesame.ddp_solver(sys, result, eps=1)
-
-        # Save the data
-        if result is not None:
-            name = "2dIV.vapp_{0}".format(idx)
-            np.savez(name, efn=result['efn'], efp=result['efp'], v=result['v'])
+    # Loop over the applied potentials
+    voltages = np.linspace(0, 1, 40)
+    sesame.IVcurve(sys, voltages, result, '2dpnIV.vapp', eps=1)
 
 While it is tempting to run the solver in parallel for each values of applied
 voltage, the solver will likely fail with this approach for high voltages. Note

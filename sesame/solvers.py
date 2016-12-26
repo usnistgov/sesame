@@ -122,6 +122,10 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
             v_final = v
             break 
 
+        if error == np.nan:
+            print("The dirft diffusion Poisson solver diverged.")
+            break
+
         if eps is None or error < eps:
             # try to compute the next step with clamping method
             dv   = dv / (1 + np.abs(dv/clamp))
@@ -218,6 +222,10 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
             solution = {'v': v, 'efn': efn, 'efp': efp}
             break 
 
+        if error == np.nan:
+            print("The drift diffusion Poisson solver diverged.")
+            break
+
         if eps is None or error < eps:
             # try to compute the next step with clamping method
             defn = dx[0::3]
@@ -249,12 +257,12 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
         print("No solution found!\n")
         return None
 
-def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
+def IVcurve(sys, voltages, guess, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
             eps=None, verbose=True, use_mumps=False, iterative=False,\
             Matlab_format=False):
     """
     Solve the drift diffusion poisson equation for the voltages provided. The
-    results are stored in a file with ``.npz`` format. Note that the potential
+    results are stored in files with ``.npz`` format. Note that the potential
     is always applied on the right contact.
 
     Parameters
@@ -263,9 +271,13 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
         The discretized system.
     voltages: array-like
         List of voltages for which the current should be computed.
+    guess: dictionary of numpy arrays
+        Starting point of the solver. Keys of the dictionary must be 'efn',
+        'efp', 'v' for the electron and quasi-Fermi levels, and the
+        electrostatic potential respectively.
     file_name: string
         Name of the file to write the data to. The file name will be appended
-        the index of the voltage list, e.g. ``file_name.vapp_0.npz``.
+        the index of the voltage list, e.g. ``file_name_0.npz``.
     tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
@@ -314,58 +326,37 @@ def IVcurve(sys, voltages, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
         phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
         q = -1
 
-    # start with the electrostatic potential
-    v = np.linspace(phi_left, phi_right, nx)
-    v = np.tile(v, sys.ny*sys.nz)
+    result = guess
 
-    # Call Poisson solver
-    if verbose:
-        print("\nStarting Poisson solver\n")
+    # sites of the right contact
+    s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz)\
+                                   for j in range(sys.ny)]
 
-    v = poisson_solver(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
-                       use_mumps=use_mumps, iterative=iterative,\
-                       verbose=verbose)
+    # Loop over the applied potentials made dimensionless
+    Vapp = voltages / sys.scaling.energy
+    for idx, vapp in enumerate(Vapp):
 
-    if v is None:
-        print("The Poisson solver failed to converge. Abort.")
-        exit(1)
-    else:
         if verbose:
-            print("\nStarting ddp solver")
+            print("\napplied voltage: {0} V".format(voltages[idx]))
 
-        # Initial arrays for the quasi-Fermi levels
-        efn = np.zeros((sys.nx*sys.ny*sys.nz,))
-        efp = np.zeros((sys.nx*sys.ny*sys.nz,))
+        # Apply the voltage on the right contact
+        result['v'][s] = phi_right + q*vapp
 
-        result = {'efn':efn, 'efp':efp, 'v':v}
+        # Call the Drift Diffusion Poisson solver
+        result = ddp_solver(sys, result, tol=tol,\
+                            periodic_bcs=periodic_bcs,\
+                            maxiter=maxiter, eps=eps, verbose=verbose,\
+                            use_mumps=use_mumps, iterative=iterative)
 
-        # sites of the right contact
-        s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz) for j in range(sys.ny)]
-
-        # Loop over the applied potentials made dimensionless
-        Vapp = voltages / sys.scaling.energy
-        for idx, vapp in enumerate(Vapp):
-            if verbose:
-                print("\napplied voltage: ", vapp * sys.scaling.energy)
-            # Apply the voltage on the right contact
-            result['v'][s] = phi_right + q*vapp
-
-            # Call the Drift Diffusion Poisson solver
-            result = ddp_solver(sys, result, tol=tol,\
-                                periodic_bcs=periodic_bcs,\
-                                maxiter=maxiter, eps=eps, verbose=verbose,\
-                                use_mumps=use_mumps, iterative=iterative)
-
-            if result is not None:
-                name = file_name + ".vapp_{0}".format(idx)
-                if not Matlab_format:
-                    np.savez(name, efn=result['efn'], efp=result['efp'],\
-                             v=result['v'])
-                else:
-                    savemat(name, result)
-                    
+        if result is not None:
+            name = file_name + "_{0}".format(idx)
+            if not Matlab_format:
+                np.savez(name, efn=result['efn'], efp=result['efp'],\
+                         v=result['v'])
             else:
-                print("The ddp solver failed to converge for the applied voltage\
-                {0} (index {1})".format(voltages[idx], idx))
-                print("I will abort now.")
-                exit(1)
+                savemat(name, result)
+        else:
+            print("The ddp solver failed to converge for the applied voltage\
+            {0} V (index {1})".format(voltages[idx], idx))
+            print("I will abort now.")
+            exit(1)

@@ -120,12 +120,32 @@ as follows::
     sys.generation(f)
 
 We can now use this system to solve the Poisson equation at thermal equilibrium
-and also compute the IV curve. The function `~sesame.solvers.IVcurve` is
-available to do all that::
+and also compute the IV curve.  First, we set the boundary conditions for the
+electrostatic potential. Because of our geometry the potential on the left and
+right read
+
+.. math::
+   \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
+   \phi(L, y) &= -E_g - \frac{k_BT}{q}\ln\left(N_A/N_V \right)
+
+which is computed as follows::
+
+    sys = system()
+    v_left  = np.log(1e17/8e17)
+    v_right = -sys.Eg[sys.nx-1] - np.log(1e15/1.8e19)
+
+The Poisson equation is solved with an initial guess::
+
+    v = np.linspace(v_left, v_right, sys.nx)
+    v = sesame.poisson_solver(sys, v)
+
+Finally, the function `~sesame.solvers.IVcurve` loops over the applied voltages
+and saves the results::
 
     voltages = np.linspace(0, 0.95, 40)
-    sesame.IVcurve(sys, voltages, '1dpnIV', eps=1)
+    guess = {'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,)), 'v':v}
+    sesame.IVcurve(sys, voltages, guess, '1dpnIV.vapp', eps=1)
 
-The data files will have names like ``1dpnIV.vapp_0.npz`` where the number is 0
-is the index of of the array ``voltages``. We will see how to extract the data from
-these files and compute observables in :doc:`tutorial 5 <analysis>`.
+The data files will have names like ``1dpnIV.vapp_0.npz`` where the number 0
+is the index of of the array ``voltages``. We will see how to extract the data
+from these files and compute observables in :doc:`tutorial 5 <analysis>`.
