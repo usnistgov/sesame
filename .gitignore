@@ -1,5 +1,5 @@
 *.pyc
-doc/_build
+doc/build
 doc/reference/generated
 build
 sesame.egg-info
