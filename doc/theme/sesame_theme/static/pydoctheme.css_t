@@ -50,7 +50,7 @@ div.sphinxsidebar a:hover {
 }
 
 div.sphinxsidebar input {
-    font-family: 'Lucida Grande',Arial,sans-serif;
+    font-family: "Bitstream Vera Sans", Verdana, sans-serif;
     border: 1px solid #999999;
     font-size: smaller;
     border-radius: 3px;
@@ -455,6 +455,32 @@ div.badge img {
     right: 0;
     width: 149px;
     height: 149px;
+}
+
+/* have arguments of functions or classes also a monospace font */
+table.longtable.docutils > tbody > tr > td:first-child,
+dl.function > dt,
+dl.class > dt,
+dl.method > dt
+{
+    font-family: "Bitstream Vera Sans Mono", monospace, serif;
+    font-size: 96.5%;
+}
+
+/* rescale font for <tt> so that it is again 96.5% with respect to body */
+table.longtable.docutils > tbody > tr > td:first-child tt,
+dl.function > dt tt,
+dl.class > dt tt,
+dl.method > dt tt
+{
+    font-family: "Bitstream Vera Sans Mono", monospace, serif;
+    font-size: 100%;
+}
+
+td.field-body strong
+{
+    font-family: "Bitstream Vera Sans Mono", monospace, serif;
+    font-size: 96.5%;
 }
 
 {% if theme_appendcss %}

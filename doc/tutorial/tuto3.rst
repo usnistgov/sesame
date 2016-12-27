@@ -108,7 +108,8 @@ Poisson equation we need an initial guess (linear here) and call the solver::
     v = np.tile(v, sys.ny) # replicate the guess in the y-direction
 
     # Call Poisson solver
-    v = sesame.poisson_solver(sys, v)
+    solution = {'v':v}
+    solution = sesame.solve(sys, solution)
 
 By default the solver assumes periodic boundary conditions in all directions
 parallel to the contacts. One can change this setting to abrupt boundary
@@ -123,38 +124,39 @@ defects density of states at zero bias::
     efp = np.zeros((sys.nx*sys.ny,))
 
     # Dictionary for the initial guess
-    result = {'efn':efn, 'efp':efp, 'v':v}
+    solution.update({'efn': efn, 'efp': efp})
 
     # Loop at zero bias with increasing defect density of states
     for amp in [0.0001, 0.01]:
         sys = system(amp)
-        result = sesame.ddp_solver(sys, result, eps=1)
+        solution = sesame.solve(sys, solution, eps=1)
 
 Now we have a descent guess for the rest of the IV curve. We create the original
-system with the desired generation amplitude and loop over the applied voltages::
+system with the desired line defects density of states and loop over the applied
+voltages::
 
     # Create the system with the defect density of states we want
     sys = system()
 
     # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, result, '2dpnIV.vapp', eps=1)
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp', eps=1)
 
-While it is tempting to run the solver in parallel for each values of applied
-voltage, the solver will likely fail with this approach for high voltages. Note
-that the output of ``ddp_solver`` is used as a new guess for the next value of
-applied voltage. This method provides better chances to reach convergence at
-each step. More about the solver can be found in the section about the
-:ref:`algo`.
+While it is tempting to run :func:`~sesame.solvers.solve` in parallel for each
+values of applied voltage, the solver will likely fail with this approach for
+high voltages. The code for :func:`~sesame.solvers.IVcurve` is simply a for loop
+where the output of :func:`~sesame.solvers.solve` is used as a new guess for the
+next value of applied voltage. This method provides better chances to reach
+convergence at each step. More about the theoretical aspects of the solver can
+be found in the section about the :ref:`algo`.
 
 We discuss the analysis of the data (i.e. computing densities, currents and so
 on) in :doc:`tutorial 5 <analysis>`.
 
 **Solvers options:** 
 
-* Both :func:`~sesame.solvers.poisson_solver` and
-  :func:`~sesame.solvers.ddp_solver` can make use of the MUMPS library if Sesame
-  was built against it. For that, pass the argument ``use_mumps=True`` to these
+* Both :func:`~sesame.solvers.solve` can make use of the MUMPS library if Sesame
+  was built against it. For that, pass the argument ``use_mumps=True`` to the
   functions. 
 
 * For large systems where a direct computation of the Newton correction
@@ -162,8 +164,8 @@ on) in :doc:`tutorial 5 <analysis>`.
   ``iterative=True`` to activate it. Note that we have not tested this feature
   extensively and a solution is not guaranteed.
 
-* We implemented two ways of computing the Newton correction, one seems to give
-  a slower convergence. It can be useful to use it when the default route fails to
-  convergence. The parameter ``eps`` sets the Newton error above which the slow
-  converging Newton correction is used. This seems to be useful when convergence
-  of the Newton algorithm is difficult, and when using the iterative inner solver.
+* We implemented two ways to modify the Newton correction to reach convergence,
+  one seems to give a slower convergence but is useful in that way.  The parameter
+  ``eps`` sets the Newton error above which the slow converging Newton correction
+  is used. This seems to be useful when convergence of the Newton algorithm is
+  difficult, and when using the iterative inner solver.

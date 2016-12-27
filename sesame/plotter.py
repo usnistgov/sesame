@@ -78,10 +78,15 @@ def plot_plane_defects(sys, scale=1e-6):
         ax.plot_surface(X, Y, Z)
 
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
-    plt.xlabel('x')
-    plt.ylabel('y')
-    plt.xlim(xmin=0, xmax=sys.xpts[-1]/scale)
-    plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
+
+    xLabel = ax.set_xlabel('x')
+    yLabel = ax.set_ylabel('y')
+    zLabel = ax.set_zlabel('z')
+
+    ax.set_xlim3d(0, sys.xpts[-1]/scale)
+    ax.set_ylim3d(0, sys.ypts[-1]/scale)
+    ax.set_zlim3d(0, sys.zpts[-1]/scale)
+
     plt.show()
 
 def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1):

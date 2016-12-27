@@ -36,14 +36,14 @@ alpha = 2.3e6 # absorption coefficient [1/m]
 f = lambda x: phi * alpha * np.exp(-alpha * x)
 sys.generation(f)
 
-# Electrostatic potential
+# Electrostatic potential dimensionless
 v_left  = np.log(1e17/8e17)
 v_right = -sys.Eg[sys.nx-1] - np.log(1e15/1.8e19)
 
 v = np.linspace(v_left, v_right, sys.nx)
-v = sesame.poisson_solver(sys, v)
+solution = sesame.solve(sys, {'v':v})
 
 # IV curve
 voltages = np.linspace(0, 0.95, 40)
-guess = {'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,)), 'v':v}
-sesame.IVcurve(sys, voltages, guess, '1dpnIV', eps=1)
+solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
+sesame.IVcurve(sys, voltages, solution, '1dpnIV', eps=1)

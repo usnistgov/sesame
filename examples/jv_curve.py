@@ -76,7 +76,8 @@ if __name__ == '__main__':
     v = np.tile(v, sys.ny) # replicate the guess in the y-direction
 
     # Call Poisson solver
-    v = sesame.poisson_solver(sys, v)
+    solution = {'v':v}
+    solution = sesame.solve(sys, solution)
 
     #---------------------------------------------------------------
     #                           Step 2
@@ -84,12 +85,12 @@ if __name__ == '__main__':
     # Initial arrays for the quasi-Fermi levels
     efn = np.zeros((sys.nx*sys.ny,))
     efp = np.zeros((sys.nx*sys.ny,))
-    result = {'efn':efn, 'efp':efp, 'v':v}
+    solution.update({'efn': efn, 'efp': efp})
 
     # Loop at zero bias with increasing defect density of states
     for amp in [0.0001, 0.01]:
         sys = system(amp)
-        result = sesame.ddp_solver(sys, result, eps=1)
+        solution = sesame.solve(sys, solution, eps=1)
 
     #---------------------------------------------------------------
     #                           Step 3
@@ -99,4 +100,4 @@ if __name__ == '__main__':
 
     # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, result, '2dpnIV.vapp', eps=1)
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp', eps=1)

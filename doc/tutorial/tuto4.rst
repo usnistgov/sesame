@@ -39,3 +39,5 @@ We can visualize the plane to make sure it resembles what we expect::
     sesame.plot_plane_defects(sys)
 
 
+.. image:: 3dpn.*
+   :align: center

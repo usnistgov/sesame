@@ -137,14 +137,24 @@ which is computed as follows::
 The Poisson equation is solved with an initial guess::
 
     v = np.linspace(v_left, v_right, sys.nx)
-    v = sesame.poisson_solver(sys, v)
+    solution = sesame.solve(sys, {'v':v})
+
+Note that :func:`~sesame.solve` is the multi-purpose solver of the package. When
+a dictionary ``{'v': array}`` is passed to this function, Sesame will understand
+that only the electrostatic potential of the system at thermal equilibrium needs
+to be solved for.
 
 Finally, the function `~sesame.solvers.IVcurve` loops over the applied voltages
 and saves the results::
 
     voltages = np.linspace(0, 0.95, 40)
-    guess = {'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,)), 'v':v}
-    sesame.IVcurve(sys, voltages, guess, '1dpnIV.vapp', eps=1)
+    solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
+    sesame.IVcurve(sys, voltages, solution, '1dpnIV', eps=1)
+
+On the second line, the guess dictionary is updated with arrays for the
+quasi-Fermi levels. The keys for these entries need to be ``'efn'`` and ``efp``
+so that Sesame understands that the drift diffusion Poisson equations are to be
+solved.
 
 The data files will have names like ``1dpnIV.vapp_0.npz`` where the number 0
 is the index of of the array ``voltages``. We will see how to extract the data
