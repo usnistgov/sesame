@@ -457,6 +457,11 @@ div.badge img {
     height: 149px;
 }
 
+
+dt:target, .highlighted {
+    background-color: #fbf1aa;
+}
+
 /* have arguments of functions or classes also a monospace font */
 table.longtable.docutils > tbody > tr > td:first-child,
 dl.function > dt,
