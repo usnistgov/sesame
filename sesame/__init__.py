@@ -6,7 +6,7 @@ for module in __all__:
     exec('from . import {0}'.format(module))
 
 available = [('builder', ['Builder']),
-             ('solvers', ['ddp_solver', 'poisson_solver', 'IVcurve']),
+             ('solvers', ['solve', 'IVcurve']),
              ('analyzer', ['Analyzer'])]
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))

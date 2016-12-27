@@ -49,7 +49,7 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
             print("Iterative sparse solver failed with output info: ", info)
             exit(1)
 
-def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300, 
+def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300, 
                    eps=None, verbose=True, use_mumps=False, iterative=False):
     """
     Poisson solver of the system at thermal equilibrium.
@@ -58,9 +58,9 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
     ----------
     sys: Builder
         The discretized system.
-    guess: numpy array of floats
-        One-dimensional array of the guess for the electrostatic potential
-        across the system.
+    guess: dictionary with one numpy array of floats
+        Dictionary containing the one-dimensional array of the guess for the
+        electrostatic potential across the system. The key should be ``'v'``.
     tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
@@ -83,9 +83,11 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
     Returns
     -------
-    v_final: numpy array of floats
-        The final solution of the electrostatic potential in a one-dimensional
-        array.
+
+    solution: dictionary with one numpy array of floats or ``None``.
+        Dictionary containing the one-dimensional array of the solution for the
+        electrostatic potential across the system. The key is ``'v'``. ``None``
+        is returned if no solution has been found.
     """
 
     # import the module that create F and J
@@ -96,7 +98,7 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
 
     # first step of the Newton Raphson solver
-    v = guess
+    v = guess['v']
 
     cc = 0
     clamp = 5.
@@ -119,11 +121,11 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
         if error < tol:
             converged = True
-            v_final = v
+            solution = {'v': v}
             break 
 
         if error == np.nan:
-            print("The dirft diffusion Poisson solver diverged.")
+            print("The drift diffusion Poisson solver diverged.")
             break
 
         if eps is None or error < eps:
@@ -135,29 +137,29 @@ def poisson_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,
 
         v = v + dv
 
-        # outputing status of solution procedure every so often
+        # outputting status of solution procedure every so often
         if verbose:
             print('step {0}, error = {1}'.format(cc, error))
 
     if converged:
-        return v_final
+        return solution
     else:
         print("No solution found!\n")
         return None
 
 
-def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
+def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
                eps=None, verbose=True, use_mumps=False, iterative=False):
     """
-    Drift Diffusion Poisson solver of the system at out of equilibrium.
+    Drift Diffusion Poisson solver of the system out of equilibrium
 
     Parameters
     ----------
     sys: Builder
         The discretized system.
     guess: dictionary of numpy arrays of floats
-        Contains the one-dimensional arrays of the initial guesses for the electron
-        quasi-Fermi level, the hole quasi-Fermi level and the
+        Contains the one-dimensional arrays of the initial guesses for the
+        electron quasi-Fermi level, the hole quasi-Fermi level and the
         electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
     tol: float
         Accepted error made by the Newton-Raphson scheme.
@@ -181,10 +183,13 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
 
     Returns
     -------
-    solution: dictionary or None
-        Keys are 'efn', 'efp' and 'v'. The values contain one-dimensional numpy
-        arrays of the solution. Returns ``None`` is failed to converge.
+
+    solution: dictionary with  numpy arrays of floats or ``None``.
+        Dictionary containing the one-dimensional arrays of the solution. The
+        keys are the same as the ones for the guess. ``None`` is returned if no
+        solution has been found.
     """
+
 
     # import the module that create F and J
     if periodic_bcs == False and sys.dimension != 1:
@@ -247,21 +252,80 @@ def ddp_solver(sys, guess, tol=1e-9, periodic_bcs=True, maxiter=300,\
         efp += defp
         v += dv
 
-        # outputing status of solution procedure every so often
+        # outputting status of solution procedure every so often
         if verbose:
             print('step {0}, error = {1}'.format(cc, error))
-
+    
     if converged:
         return solution
     else:
         print("No solution found!\n")
         return None
 
-def IVcurve(sys, voltages, guess, file_name, tol=1e-9, periodic_bcs=True, maxiter=300,\
-            eps=None, verbose=True, use_mumps=False, iterative=False,\
-            Matlab_format=False):
+
+def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
+          eps=None, verbose=True, use_mumps=False, iterative=False):
     """
-    Solve the drift diffusion poisson equation for the voltages provided. The
+    Multi-purpose solver of Sesame.  If only the electrostatic potential is
+    given as a guess, then the Poisson solver is used. If quasi-Fermi levels are
+    passed, the Drift Diffusion Poisson solver is used.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    guess: dictionary of numpy arrays of floats
+        Contains the one-dimensional arrays of the initial guesses for the
+        electron quasi-Fermi level, the hole quasi-Fermi level and the
+        electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
+    tol: float
+        Accepted error made by the Newton-Raphson scheme.
+    periodic_bcs: boolean
+        Defines the choice of boundary conditions in the y-direction. True
+        (False) corresponds to periodic (abrupt) boundary conditions.
+    maxiter: integer
+        Maximum number of steps taken by the Newton-Raphson scheme.
+    eps: float
+        Newton error above which a slow Newton convergence is chosen. The
+        default is to use the fastest correction.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step if set to True (default).
+    use_mumps: boolean
+        Defines if the MUMPS library should be used to solve for the Newton
+        correction. Default is False.
+    iterative: boolean
+        Defines if an iterative method should be used to solve for the Newton
+        correction instead of a direct method. Default is False.
+
+    Returns
+    -------
+
+    solution: dictionary with  numpy arrays of floats or ``None``.
+        Dictionary containing the one-dimensional arrays of the solution. The
+        keys are the same as the ones for the guess. ``None`` is returned if no
+        solution has been found.
+
+    """
+
+    if 'efn' in guess.keys():
+        solution = ddp_solver(sys, guess, tol=tol, periodic_bcs=periodic_bcs,\
+                              maxiter=maxiter, eps=eps, verbose=verbose,\
+                              use_mumps=use_mumps, iterative=iterative)
+    else:
+        solution = poisson_solver(sys, guess, tol=tol,\
+                                  periodic_bcs=periodic_bcs,\
+                                  maxiter=maxiter, eps=eps, verbose=verbose,\
+                                  use_mumps=use_mumps, iterative=iterative)
+    
+    return solution
+
+
+def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
+            maxiter=300, eps=None, verbose=True, use_mumps=False,\
+            iterative=False, Matlab_format=False):
+    """
+    Solve the Drift Diffusion Poisson equations for the voltages provided. The
     results are stored in files with ``.npz`` format. Note that the potential
     is always applied on the right contact.
 
@@ -343,10 +407,9 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-9, periodic_bcs=True, maxite
         result['v'][s] = phi_right + q*vapp
 
         # Call the Drift Diffusion Poisson solver
-        result = ddp_solver(sys, result, tol=tol,\
-                            periodic_bcs=periodic_bcs,\
-                            maxiter=maxiter, eps=eps, verbose=verbose,\
-                            use_mumps=use_mumps, iterative=iterative)
+        result = solve(sys, result, tol=tol, periodic_bcs=periodic_bcs,\
+                       maxiter=maxiter, eps=eps, verbose=verbose,\
+                       use_mumps=use_mumps, iterative=iterative)
 
         if result is not None:
             name = file_name + "_{0}".format(idx)
