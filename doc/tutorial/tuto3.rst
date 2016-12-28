@@ -155,9 +155,9 @@ on) in :doc:`tutorial 5 <analysis>`.
 
 **Solvers options:** 
 
-* Both :func:`~sesame.solvers.solve` can make use of the MUMPS library if Sesame
+* :func:`~sesame.solvers.solve` can use the MUMPS library if Sesame
   was built against it. For that, pass the argument ``use_mumps=True`` to the
-  functions. 
+  function. 
 
 * For large systems where a direct computation of the Newton correction
   is impractical, we made possible to use an iterative solver. Use the argument

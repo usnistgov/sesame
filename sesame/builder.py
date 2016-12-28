@@ -194,7 +194,7 @@ class Builder():
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
-    def add_line_defects(self, location, E, N, Se, Sh=None, defect_type='u-center'):
+    def add_line_defects(self, location, E, N, Se, Sh=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a line.
@@ -211,10 +211,9 @@ class Builder():
             Surface recombination velocity of electrons [m/s].
         Sh: float
             Surface recombination velocity of holes [m/s].
-        defect_type: string
-            Type of the defect corresponding to the change of the defect charge
-            occuring at the neutral energy level. Possible types are 'acceptor',
-            'donor' or 'u-center' (default).
+        transition: tuple
+            Charge transition occurring at the energy level E.  The tuple (p, q)
+            represents a defect with transition p/q.
 
         Warnings
         --------
@@ -232,7 +231,7 @@ class Builder():
             Sh = Se
 
         self.extra_charge_locations.append(location)
-        self.defects_types.append(defect_type)
+        self.defects_types.append(transition)
 
         s, dl = get_line_defects_sites(self, location)
 
@@ -244,7 +243,7 @@ class Builder():
         self.nextra.append(self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy))
         self.pextra.append(self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy))
 
-    def add_plane_defects(self, location, E, N, Se, Sh=None, defect_type='u-center'):
+    def add_plane_defects(self, location, E, N, Se, Sh=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a plane.
@@ -263,10 +262,9 @@ class Builder():
             Surface recombination velocity of electrons [m/s].
         Sh: float
             Surface recombination velocity of holes [m/s].
-        defect_type: string
-            Type of the defect corresponding to the change of the defect charge
-            occuring at the neutral energy level. Possible types are 'acceptor',
-            'donor' or 'u-center' (default).
+        transition: tuple
+            Charge transition occurring at the energy level E.  The tuple (p, q)
+            represents a defect with transition p/q.
 
         Warnings
         --------
@@ -288,7 +286,7 @@ class Builder():
             Sh = Se
 
         self.extra_charge_locations.append(location)
-        self.defects_types.append(defect_type)
+        self.defects_types.append(transition)
 
         s, _, _, _ = utils.plane_defects_sites(self, location) 
 

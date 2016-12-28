@@ -59,7 +59,7 @@ The Shockley-Read-Hall takes the form
 where :math:`n^2_i = N_C N_V e^{-E_g/k_BT}, n_1 = N_C e^{-(E_C - E_T) /k_BT} ,
 p_1 = N_V e^{- (E_T - E_V) /k_BT}`, where :math:`E_T` is the
 energy level of the trap state. The above can be derived on very general grounds
-(see Ref. [FON81], page 34). :math:`\tau_{n,(p)}` is the bulk lifetime for
+(see Ref. [1]_, page 34). :math:`\tau_{n,(p)}` is the bulk lifetime for
 electrons (holes). It is given by
 
 .. math::
@@ -108,19 +108,22 @@ velocity).
 
 Additional charges: line and plane defects
 ............................................
-Additional charged defect can be added to the system to simulate, for example,
+Additional charged defects can be added to the system to simulate, for example,
 grain boundaries in a semiconductor. Grain boundaries separate crystallites of
-different orientation. They occupy a reduced dimensionality space (e.g.  2D
+different orientation. They occupy a reduced dimensionality space (e.g. 2D
 planes embedded in a 3D material), and typically possess a high density of
 defects (dangling bonds, wrong bonds, \cdots). These lead to localized states
 within the gap, which may lead to charging of the grain boundary, and increased
-recombination at the grain boundary
+recombination at the grain boundary.
+
+Considering energy levels with charge transitions :math:`\alpha_j/\beta_j`, the
+charge density at the defect sites reads
 
 .. math::
-    Q = q\sum_j\frac{\rho_j}{2}(1-2f_j)
+    Q = q\sum_j \rho_j (\mathrm{max}(\alpha_j, \beta_j) (1-f_j) + \mathrm{min}(\alpha_j, \beta_j) f_j)
 
-where :math:`\rho_j` is the 2D defect density of the state at energy :math:`E_j`.
-The occupancy of the `j`-th defect level :math:`f_j` is given by [SHOXX]
+where :math:`\rho_j` is the 2D defect density of state at energy :math:`E_j`.
+The occupancy of the `j`-th defect level :math:`f_j` is given by [2]_
 
 .. math::
     f_j = \frac{S_n n_{\rm GB} + S_p \bar p_j}{S_n(n_{\rm GB}+\bar n_j) + S_p(p_{\rm GB}+\bar p_j)} 
@@ -212,4 +215,5 @@ These relations for the currents will be used in the discretization of Eq.
 :eq:`ddp`.
 
 .. rubric:: References
-.. [FON81] Fonash S. J., *Solar cell device physics*, Academic Press 1981.
+.. [1] S. J. Fonash, *Solar cell device physics*, Academic Press 1981.
+.. [2] W. Shockley, W. T. Read, Jr., *Phys. Rev.*, **87**, 835 (1952).
