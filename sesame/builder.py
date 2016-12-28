@@ -213,7 +213,8 @@ class Builder():
             Surface recombination velocity of holes [m/s].
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
-            represents a defect with transition p/q.
+            represents a defect with transition p/q (level empty to level
+            occupied).
 
         Warnings
         --------
@@ -264,7 +265,8 @@ class Builder():
             Surface recombination velocity of holes [m/s].
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
-            represents a defect with transition p/q.
+            represents a defect with transition p/q (level empty to level
+            occupied).
 
         Warnings
         --------
