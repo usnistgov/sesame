@@ -129,7 +129,7 @@ defects density of states at zero bias::
     # Loop at zero bias with increasing defect density of states
     for amp in [0.0001, 0.01]:
         sys = system(amp)
-        solution = sesame.solve(sys, solution, eps=1)
+        solution = sesame.solve(sys, solution)
 
 Now we have a descent guess for the rest of the IV curve. We create the original
 system with the desired line defects density of states and loop over the applied
@@ -140,7 +140,7 @@ voltages::
 
     # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp', eps=1)
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')
 
 While it is tempting to run :func:`~sesame.solvers.solve` in parallel for each
 values of applied voltage, the solver will likely fail with this approach for
@@ -163,9 +163,3 @@ on) in :doc:`tutorial 5 <analysis>`.
   is impractical, we made possible to use an iterative solver. Use the argument
   ``iterative=True`` to activate it. Note that we have not tested this feature
   extensively and a solution is not guaranteed.
-
-* We implemented two ways to modify the Newton correction to reach convergence,
-  one seems to give a slower convergence but is useful in that way.  The parameter
-  ``eps`` sets the Newton error above which the slow converging Newton correction
-  is used. This seems to be useful when convergence of the Newton algorithm is
-  difficult, and when using the iterative inner solver.

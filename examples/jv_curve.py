@@ -90,7 +90,7 @@ if __name__ == '__main__':
     # Loop at zero bias with increasing defect density of states
     for amp in [0.0001, 0.01]:
         sys = system(amp)
-        solution = sesame.solve(sys, solution, eps=1)
+        solution = sesame.solve(sys, solution)
 
     #---------------------------------------------------------------
     #                           Step 3
@@ -100,4 +100,4 @@ if __name__ == '__main__':
 
     # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp', eps=1)
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')

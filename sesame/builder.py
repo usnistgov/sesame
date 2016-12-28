@@ -153,17 +153,17 @@ class Builder():
         ----------
         mat: dictionary 
             Contains the material parameters
-            Keys are Nc (Nv): conduction (valence) effective densities of
-            states [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon: material's
-            permitivitty, mu_e (mu_h): electron (hole) mobility
-            [m\ :sup:`2`/V/s],
-            tau_e (tau_h): electron (hole) bulk lifetime [s], Et: energy
-            level of the bulk recombination centers [eV], band_offset: band
-            offset setting the zero of potential [eV].
+            Keys are Nc (Nv): conduction (valence) effective densities of states
+            [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
+            material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
+            :sup:`2`/V/s], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
+            energy level of the bulk recombination centers [eV], band_offset:
+            band offset setting the zero of potential [eV].
         location: Boolean function
             Definition of the region containing the material. This function must
-            take a tuple of real world coordinates (e.g. (x, y)) as parameters, and return True (False) if the
-            lattice node is inside (outside) the region.
+            take a tuple of real world coordinates (e.g. (x, y)) as parameters,
+            and return True (False) if the lattice node is inside (outside) the
+            region.
         """
 
         # sites belonging to the region

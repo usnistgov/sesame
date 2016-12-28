@@ -149,7 +149,7 @@ and saves the results::
 
     voltages = np.linspace(0, 0.95, 40)
     solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
-    sesame.IVcurve(sys, voltages, solution, '1dpnIV', eps=1)
+    sesame.IVcurve(sys, voltages, solution, '1dpnIV')
 
 On the second line, the guess dictionary is updated with arrays for the
 quasi-Fermi levels. The keys for these entries need to be ``'efn'`` and ``efp``

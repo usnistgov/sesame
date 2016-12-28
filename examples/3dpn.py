@@ -7,7 +7,7 @@ Lx = 3e-6 #[m]
 Ly = 5e-6 #[m]
 Lz = 2e-6 #[m]
 # extent of the junction from the left contact [m]
-junction = 10e-6 
+junction = 10e-9 
 
 # Mesh
 x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 

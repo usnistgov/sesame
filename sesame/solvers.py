@@ -15,17 +15,13 @@ except:
     pass
 
 
-def refine(dx):
-    # This damping procedure was taken from Solid-State Electronics, vol. 19,
+def damping(dx):
+    # This damping procedure is inspired from Solid-State Electronics, vol. 19,
     # pp. 991-992 (1976).
 
-    a = np.abs(dx) < 1
-    b = np.abs(dx) >= 3.7
-    c = a == b # intersection of a and b
+    b = np.abs(dx) > 1
+    dx[b] = np.log(1+np.abs(dx[b])*1.72)*np.sign(dx[b])
 
-    dx[a] /= 2
-    dx[b] = np.sign(dx[b]) * np.log(abs(dx[b]))/2
-    dx[c] = np.sign(dx[c]) * abs(dx[c])**(0.2)/2
 
 def sparse_solver(J, f, iterative=False, use_mumps=False):
     if not iterative:
@@ -50,7 +46,7 @@ def sparse_solver(J, f, iterative=False, use_mumps=False):
             exit(1)
 
 def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300, 
-                   eps=None, verbose=True, use_mumps=False, iterative=False):
+                   verbose=True, use_mumps=False, iterative=False):
     """
     Poisson solver of the system at thermal equilibrium.
 
@@ -68,9 +64,6 @@ def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,
         (False) corresponds to periodic (abrupt) boundary conditions.
     maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    eps: float
-        Newton error above which a slow Newton convergence is chosen. The
-        default is to use the fastest correction.
     verbose: boolean
         The solver returns the step number and the associated error at every
         step if set to True (default).
@@ -101,7 +94,6 @@ def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,
     v = guess['v']
 
     cc = 0
-    clamp = 5.
     converged = False
 
     while converged != True:
@@ -114,7 +106,7 @@ def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,
         # solve linear system
         f, J = mod.getFandJ_eq(sys, v, use_mumps)
         dv = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
-        dv = dv.transpose()
+        dv.transpose()
 
         # compute error
         error = max(np.abs(dv))
@@ -125,17 +117,12 @@ def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,
             break 
 
         if error == np.nan:
-            print("The drift diffusion Poisson solver diverged.")
+            print("The Poisson solver diverged.")
             break
 
-        if eps is None or error < eps:
-            # try to compute the next step with clamping method
-            dv   = dv / (1 + np.abs(dv/clamp))
-        elif eps is not None and error >= eps:
-            # try a smaller refinement
-            refine(dv)
-
-        v = v + dv
+        # Newton correction damping
+        damping(dv)
+        v += dv
 
         # outputting status of solution procedure every so often
         if verbose:
@@ -149,7 +136,7 @@ def poisson_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,
 
 
 def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
-               eps=None, verbose=True, use_mumps=False, iterative=False):
+               verbose=True, use_mumps=False, iterative=False):
     """
     Drift Diffusion Poisson solver of the system out of equilibrium
 
@@ -168,9 +155,6 @@ def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         (False) corresponds to periodic (abrupt) boundary conditions.
     maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    eps: float
-        Newton error above which a slow Newton convergence is chosen. The
-        default is to use the fastest correction.
     verbose: boolean
         The solver returns the step number and the associated error at every
         step if set to True (default).
@@ -203,7 +187,6 @@ def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
     efn, efp, v = guess['efn'], guess['efp'], guess['v']
 
     cc = 0
-    clamp = 5.
     converged = False
 
     while converged != True:
@@ -217,7 +200,7 @@ def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         f = modF.getF(sys, v, efn, efp)
         J = modJ.getJ(sys, v, efn, efp, use_mumps)
         dx = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
-        dx = dx.transpose()
+        dx.transpose()
 
         # compute error
         error = max(np.abs(dx))
@@ -231,26 +214,11 @@ def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
             print("The drift diffusion Poisson solver diverged.")
             break
 
-        if eps is None or error < eps:
-            # try to compute the next step with clamping method
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv   = dx[2::3]
-
-            defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
-            defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
-            dv   = dv / (1 + np.abs(dv/clamp))
-        elif eps is not None and error >= eps:
-            # try a smaller refinement
-            refine(dx)
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv   = dx[2::3]
-
-        # new values of efn, efp, v
-        efn += defn
-        efp += defp
-        v += dv
+        # make sure that enormous corrections are damped
+        damping(dx)
+        efn += dx[0::3]
+        efp += dx[1::3]
+        v   += dx[2::3]
 
         # outputting status of solution procedure every so often
         if verbose:
@@ -264,7 +232,7 @@ def ddp_solver(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
 
 
 def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
-          eps=None, verbose=True, use_mumps=False, iterative=False):
+          verbose=True, use_mumps=False, iterative=False):
     """
     Multi-purpose solver of Sesame.  If only the electrostatic potential is
     given as a guess, then the Poisson solver is used. If quasi-Fermi levels are
@@ -285,9 +253,6 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         (False) corresponds to periodic (abrupt) boundary conditions.
     maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    eps: float
-        Newton error above which a slow Newton convergence is chosen. The
-        default is to use the fastest correction.
     verbose: boolean
         The solver returns the step number and the associated error at every
         step if set to True (default).
@@ -310,19 +275,19 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
 
     if 'efn' in guess.keys():
         solution = ddp_solver(sys, guess, tol=tol, periodic_bcs=periodic_bcs,\
-                              maxiter=maxiter, eps=eps, verbose=verbose,\
+                              maxiter=maxiter, verbose=verbose,\
                               use_mumps=use_mumps, iterative=iterative)
     else:
         solution = poisson_solver(sys, guess, tol=tol,\
                                   periodic_bcs=periodic_bcs,\
-                                  maxiter=maxiter, eps=eps, verbose=verbose,\
+                                  maxiter=maxiter, verbose=verbose,\
                                   use_mumps=use_mumps, iterative=iterative)
     
     return solution
 
 
 def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
-            maxiter=300, eps=None, verbose=True, use_mumps=False,\
+            maxiter=300, verbose=True, use_mumps=False,\
             iterative=False, Matlab_format=False):
     """
     Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -349,9 +314,6 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         (False) corresponds to periodic (abrupt) boundary conditions.
     maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    eps: float
-        Newton error above which a slow Newton convergence is chosen. The
-        default is to use the fastest correction.
     verbose: boolean
         The solver returns the step number and the associated error at every
         step, and this function prints the current applied voltage if set to True (default).
@@ -408,7 +370,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
 
         # Call the Drift Diffusion Poisson solver
         result = solve(sys, result, tol=tol, periodic_bcs=periodic_bcs,\
-                       maxiter=maxiter, eps=eps, verbose=verbose,\
+                       maxiter=maxiter, verbose=verbose,\
                        use_mumps=use_mumps, iterative=iterative)
 
         if result is not None:
