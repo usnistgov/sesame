@@ -30,14 +30,24 @@ class Analyzer():
     data: dictionary
         Dictionary containing 1D arrays of electron and hole quasi-Fermi levels
         and the electrostatic potential across the system. Keys must be 'efn',
-        'efp', 'v'.
+        'efp', and/or 'v'.
     """
 
     def __init__(self, sys, data):
         self.sys = sys
-        self.efn = data['efn']
-        self.efp = data['efp']
-        self.v   = data['v']
+        self.v = data['v']
+
+        # check for efn
+        if 'efn' in data.keys():
+            self.efn = data['efn']
+        else:
+            self.efn = 0 * self.v
+
+        # check for efp
+        if 'efp' in data.keys():
+            self.efp = data['efp']
+        else:
+            self.efp = 0 * self.v
 
         # sites of the system
         self.sites = np.arange(sys.nx*sys.ny*sys.nz, dtype=int)

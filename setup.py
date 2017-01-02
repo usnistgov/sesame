@@ -44,10 +44,10 @@ cmdclass = {'build_ext': ve_build_ext}
 
 
 def status_msgs(*msgs):
-    print('=' * 75)
+    print()
     for msg in msgs:
         print(msg)
-    print('=' * 75)
+    print()
 
 
 
@@ -95,17 +95,14 @@ if 'mumps' in config.sections():
 
     try:
         run_setup(packages, ext_modules)
-        status_msgs(
-            "Build summary: Build successful.")
+        status_msgs("Done")
     except BuildFailed as exc:
         status_msgs(
             exc.cause,
             "WARNING: The MUMPS extension could not be compiled. " +
             "Retrying the build without the MUMPS extension now.")
         run_setup(['sesame'], [])
-        status_msgs(
-            "Build summary: The MUMPS extension could not be compiled. " +  
-            "Plain-Python build succeeded.")
+        status_msgs("Done")
 else:
     run_setup(['sesame'], [])
-    status_msgs( "Build summary: Plain-Python build succeeded.")
+    status_msgs( "Done")
