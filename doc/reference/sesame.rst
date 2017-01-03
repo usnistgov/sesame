@@ -33,8 +33,8 @@ From `sesame.solvers`
 ---------------------
 .. autosummary::
 
-   poisson_solver
-   ddp_solver
+    solve
+    IVcurve
 
 .. currentmodule:: sesame.analyzer
 
