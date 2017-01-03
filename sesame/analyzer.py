@@ -8,12 +8,12 @@ try:
     try:
         from mpl_toolkits import mplot3d
         has3d = True
-    except ImportError:
-        warnings.warn("3D plotting not available.", RuntimeWarning)
+    except:
         has3d = False
-except ImportError:
-    warnings.warn("matplotlib is not available", RuntimeWarning)
+        pass
+except:
     mpl_enabled = False
+    pass
 
 
 
