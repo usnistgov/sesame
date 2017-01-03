@@ -96,51 +96,65 @@ def get_jac(x, sys, equilibrium, periodic_bcs, use_mumps):
 
 def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
            maxiter=300, verbose=True, use_mumps=False,\
-           iterative=False, inner_tol=1e-6):
+           iterative=False, inner_tol=1e-6, htp=1):
  
-    cc = 0
-    converged = False
 
-    while converged != True:
-        cc = cc + 1
-        # break if no solution found after maxiterations
-        if cc > maxiter:
-            print("Maximum number of iterations reached without solution: "\
-                  + "no solution found!\n")
-            break
+    htpy = np.linspace(1./htp, 1, htp)
+    f0 = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
 
-        # solve linear system
-        f = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
-        J = get_jac(x, sys, equilibrium, periodic_bcs, use_mumps)
-        dx = sparse_solver(J, -f, use_mumps, iterative, inner_tol)
-        dx.transpose()
-
-        # compute error
-        error = max(np.abs(dx))
-
-        # damping and new value of x
-        damping(dx)
-        x += dx
-
-        if error < tol:
-            converged = True
-            break 
-
-        if np.isnan(error):
-            print("The Newton solver diverged.")
-            break
-
-        # outputting status of solution procedure every so often
+    for gdx, gamma in enumerate(htpy):
         if verbose:
-            print('step {0}, error = {1}'.format(cc, error))
+            print("\nNewton loop {0}/{1}".format(gdx+1, htp))
 
+        if gamma < 1:
+            htol = 1
+        else:
+            htol = tol
+
+        cc = 0
+        converged = False
+
+        while converged != True:
+            cc = cc + 1
+            # break if no solution found after maxiterations
+            if cc > maxiter:
+                print("Maximum number of iterations reached without solution: "\
+                      + "no solution found!\n")
+                break
+
+            # solve linear system
+            f = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
+            f -= (1-gamma)*f0
+            J = get_jac(x, sys, equilibrium, periodic_bcs, use_mumps)
+            dx = sparse_solver(J, -f, use_mumps, iterative, inner_tol)
+            dx.transpose()
+
+            # compute error
+            error = max(np.abs(dx))
+
+            # damping and new value of x
+            damping(dx)
+            x += dx
+
+            if error < htol:
+                converged = True
+                break 
+
+            if np.isnan(error):
+                print("The Newton solver diverged.")
+                break
+
+            # outputting status of solution procedure every so often
+            if verbose:
+                print('step {0}, error = {1}'.format(cc, error))
     if converged:
         return x
     else:
         return None
 
 def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
-          verbose=True, use_mumps=False, iterative=False, inner_tol=1e-6):
+          verbose=True, use_mumps=False, iterative=False, inner_tol=1e-6,\
+          htp=1):
     """
     Multi-purpose solver of Sesame.  If only the electrostatic potential is
     given as a guess, then the Poisson solver is used. If quasi-Fermi levels are
@@ -172,6 +186,8 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         correction instead of a direct method. Default is False.
     inner_tol: float
         Error of the inner iterative solver when used.
+    htp: integer
+        Number of homotopic Newton loops to perform.
 
     Returns
     -------
@@ -191,7 +207,7 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         x = newton(sys, x, False, tol=tol, periodic_bcs=periodic_bcs,\
                    maxiter=maxiter, verbose=verbose,\
                    use_mumps=use_mumps, iterative=iterative,\
-                   inner_tol=inner_tol)
+                   inner_tol=inner_tol, htp=htp)
         if x is not None:
             x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
     else:
@@ -200,7 +216,7 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         x = newton(sys, x, True, tol=tol, periodic_bcs=periodic_bcs,\
                    maxiter=maxiter, verbose=verbose,\
                    use_mumps=use_mumps, iterative=iterative,\
-                   inner_tol=inner_tol)
+                   inner_tol=inner_tol, htp=htp)
         if x is not None:
             x = {'v': x}
 
@@ -209,7 +225,7 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
 
 def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
             maxiter=300, verbose=True, use_mumps=False,\
-            iterative=False, inner_tol=1e-6, fmt='npz'):
+            iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
     """
     Solve the Drift Diffusion Poisson equations for the voltages provided. The
     results are stored in files with ``.npz`` format by default (See below for
@@ -247,6 +263,8 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         correction instead of a direct method. Default is False.
     inner_tol: float
         Error of the inner iterative solver when used.
+    htp: integer
+        Number of homotopic Newton loops to perform.
     fmt: string
         Format string for the data files. Use ``mat`` to save the data in a
         Matlab format (version 5 and above).
@@ -296,7 +314,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         result = solve(sys, result, tol=tol, periodic_bcs=periodic_bcs,\
                        maxiter=maxiter, verbose=verbose,\
                        use_mumps=use_mumps, iterative=iterative,\
-                       inner_tol=inner_tol)
+                       inner_tol=inner_tol, htp=htp)
 
         if result is not None:
             name = file_name + "_{0}".format(idx)
