@@ -25,6 +25,7 @@ def damping(dx):
 
 def sparse_solver(J, f, iterative, use_mumps, inner_tol):
     if not iterative:
+        spsolve = lg.spsolve
         if use_mumps: 
             if mumps_available:
                 spsolve = mumps.spsolve
@@ -32,8 +33,6 @@ def sparse_solver(J, f, iterative, use_mumps, inner_tol):
                 J = J.tocsr()
                 warnings.warn('Could not import MUMPS. Default back to Scipy.'\
                               , UserWarning)
-        else:
-            spsolve = lg.spsolve
         dx = spsolve(J, f)
         return dx
     else:
@@ -97,10 +96,8 @@ def get_jac(x, sys, equilibrium, periodic_bcs, use_mumps):
 def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
            maxiter=300, verbose=True, use_mumps=False,\
            iterative=False, inner_tol=1e-6, htp=1):
- 
 
     htpy = np.linspace(1./htp, 1, htp)
-    f0 = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
 
     for gdx, gamma in enumerate(htpy):
         if verbose:
@@ -113,6 +110,7 @@ def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
 
         cc = 0
         converged = False
+        f0 = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
 
         while converged != True:
             cc = cc + 1
@@ -126,7 +124,7 @@ def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
             f = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
             f -= (1-gamma)*f0
             J = get_jac(x, sys, equilibrium, periodic_bcs, use_mumps)
-            dx = sparse_solver(J, -f, use_mumps, iterative, inner_tol)
+            dx = sparse_solver(J, -f, iterative, use_mumps, inner_tol)
             dx.transpose()
 
             # compute error
