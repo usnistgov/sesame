@@ -1,5 +1,4 @@
 import numpy as np
-import warnings
 from . import utils
 
 try:
@@ -8,11 +7,9 @@ try:
     try:
         from mpl_toolkits import mplot3d
         has3d = True
-    except ImportError:
-        warnings.warn("3D plotting not available.", RuntimeWarning)
+    except:
         has3d = False
-except ImportError:
-    warnings.warn("matplotlib is not available", RuntimeWarning)
+except:
     mpl_enabled = False
 
 def plot_line_defects(sys, scale=1e-6, ls='-o'):

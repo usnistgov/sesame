@@ -10,10 +10,8 @@ try:
         has3d = True
     except:
         has3d = False
-        pass
 except:
     mpl_enabled = False
-    pass
 
 
 
