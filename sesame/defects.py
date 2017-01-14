@@ -10,8 +10,6 @@ from math import exp
 
 def defectsF(sys, n, p, rho, r=None):
 
-    vt = sys.scaling.energy
-
     for cdx, c in enumerate(sys.defects_types):
         sites = sys.extra_charge_sites[cdx]
         E = sys.defects_energies[cdx]
@@ -35,8 +33,8 @@ def defectsF(sys, n, p, rho, r=None):
 
         if E is not None: # no integration, vectorize as much as possible
             # additional charge
-            _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E/vt)
-            _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E/vt)
+            _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
+            _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E)
 
             if sys.dimension == 2:
                 N = N / dl
@@ -52,15 +50,15 @@ def defectsF(sys, n, p, rho, r=None):
         else: # integral to perform, quad requires single value function
             # additional recombination (density of states does not matter)
             def _r(E, sdx, site):
-                _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E/vt)
-                _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E/vt)
+                _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
+                _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
                 res = (_np[sdx] - ni2[sdx]) \
                       / ((_n[sdx]+_n1) / Sh + (_p[sdx]+_p1) / Se)
                 return res
 
             if r is not None:
-                r[sites] += [quad(_r, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                r[sites] += [quad(_r, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                   args=(sdx, s))[0] \
                              for sdx, s in enumerate(sites)]
                 if sys.dimension == 2:
@@ -68,8 +66,8 @@ def defectsF(sys, n, p, rho, r=None):
 
             # additional charge
             def _rho(E, sdx, site):
-                _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E/vt)
-                _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E/vt)
+                _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
+                _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
                 # dl scaling simplifies in occupancy
                 f = (Se*_n[sdx] + Sh*_p1) / (Se*(_n[sdx]+_n1) + Sh*(_p[sdx]+_p1))
@@ -81,7 +79,7 @@ def defectsF(sys, n, p, rho, r=None):
                     res *= N(E)
                 return res
 
-            rho[sites] += [quad(_rho, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+            rho[sites] += [quad(_rho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                 args=(sdx, s))[0] \
                            for sdx, s in enumerate(sites)]
 
@@ -92,8 +90,6 @@ def defectsF(sys, n, p, rho, r=None):
             
 def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
              dr_defn=None, dr_defp=None, dr_dv=None):
-
-    vt = sys.scaling.energy
 
     for cdx, c in enumerate(sys.defects_types):
         sites = sys.extra_charge_sites[cdx]
@@ -120,8 +116,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         # multipurpose derivative of rho
         def drho(E, sdx, site, var):
-            _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E/vt)
-            _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E/vt)
+            _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
+            _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
             if var == 'v':
                 res = (b-a) * (Se**2*_n[sdx]*_n1 + 2*Sh*Se*_np[sdx]\
@@ -143,8 +139,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         # multipurpose derivative of recombination
         def dr(E, sdx, site, var):
-            _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E/vt)
-            _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E/vt)
+            _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
+            _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
             if var == 'efn':
                 res = _np[sdx]*((_n[sdx]+_n1)/Sh + (_p[sdx]+_p1)/Se)\
@@ -163,8 +159,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
         # actual computation of things
         if E is not None: # no integration, vectorize as much as possible
             # additional charge
-            _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E/vt)
-            _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E/vt)
+            _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
+            _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E)
 
             if sys.dimension == 2:
                 N = N / dl
@@ -187,18 +183,18 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         else: # integral to perform, quad requires single value function
             # always compute drho_dv
-            drho_dv[sites] += [quad(drho, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+            drho_dv[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                     args=(sdx, s, 'v'))[0] \
                                for sdx, s in enumerate(sites)]
             if sys.dimension == 2:
                 drho_dv[sites] /= dl
 
             if drho_defn is not None:
-                drho_defn[sites] += [quad(drho, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                drho_defn[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                           args=(sdx, s, 'efn'))[0] \
                                      for sdx, s in enumerate(sites)]
 
-                drho_defp[sites] += [quad(drho, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                drho_defp[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                           args=(sdx, s, 'efp'))[0] \
                                      for sdx, s in enumerate(sites)]
                 if sys.dimension == 2:
@@ -207,13 +203,13 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
 
             if dr_defn is not None:
-                dr_defn[sites] += [quad(dr, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                dr_defn[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                         args=(sdx, s, 'efn'))[0] \
                                    for sdx, s in enumerate(sites)]
-                dr_defp[sites] += [quad(dr, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                dr_defp[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                         args=(sdx, s, 'efp'))[0] \
                                    for sdx, s in enumerate(sites)]
-                dr_dv[sites] += [quad(dr, -sys.Eg[s]/2.*vt, sys.Eg[s]/2.*vt,\
+                dr_dv[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                       args=(sdx, s, 'v'))[0] \
                                  for sdx, s in enumerate(sites)]
 

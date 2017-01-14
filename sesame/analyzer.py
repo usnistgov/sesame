@@ -383,7 +383,7 @@ class Analyzer():
         fig = plt.figure(figsize=(8,6))
         ax = fig.add_subplot(1,1,1, projection='3d')
         Z = data_xy.T
-        ax.plot_surface(X, Y, Z,  alpha=alpha, cmap=cmap)
+        ax.plot_surface(X, Y, Z,  cmap=cmap)
         ax.mouse_init(rotate_btn=1, zoom_btn=3)
         plt.xlabel('x')
         plt.ylabel('y')

@@ -204,7 +204,10 @@ class Builder():
 
         self.extra_charge_locations.append(location)
         self.defects_types.append(transition)
-        self.defects_energies.append(E)
+        if E is not None:
+            self.defects_energies.append(E / self.scaling.energy)
+        else:
+            self.defects_energies.append(E)
 
         if len(location) == 2:
             s, dl = get_line_defects_sites(self, location)
@@ -228,7 +231,7 @@ class Builder():
         if isinstance(N, float):
             f = N / NN
         else:
-            f = lambda E: N(E) / NN
+            f = lambda E: N(E*self.scaling.energy) / NN
         n = lambda s, E: self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy)
         p = lambda s, E: self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy)
         self.Nextra.append(f)
