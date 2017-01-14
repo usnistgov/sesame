@@ -49,7 +49,7 @@ def system(amp=1):
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
-    sys.add_line_defects([p1, p2], E, N, S)
+    sys.add_line_defects([p1, p2], N, S, E=E)
 
     # Define a function for the generation rate
     phi = 1e21 # photon flux [1/(m^2 s)]

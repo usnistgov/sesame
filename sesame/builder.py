@@ -52,10 +52,14 @@ class Builder():
         building the system.
     gtot: float
         Dimensionless integral of the generation rate.
-    nextra: list of 1D numpy arrays of floats
-        Dimensionless equilibrium electron density from the defect states.
-    pextra: list of 1D numpy arrays of floats
-        Dimensionless hole density from the defect states.
+    nextra: list of functions
+        Dimensionless equilibrium electron density from the defect states. Each
+        function takes a site and an energy (with its unit) with respect to
+        midgap.
+    pextra: list of functions
+        Dimensionless hole density from the defect states. Each
+        function takes a site and an energy (with its unit) with respect to
+        midgap.
     extra_charge_sites: list of lists
         List of the lists of all defect sites in the order they were added to
         the system.
@@ -142,7 +146,9 @@ class Builder():
         self.pextra  = []
         self.extra_charge_sites = []
         self.defects_types = []
+        self.defects_energies = []
         self.extra_charge_locations = []
+        self.perp_dl = []
 
 
     def add_material(self, mat, location=lambda pos: True):
@@ -194,7 +200,42 @@ class Builder():
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
-    def add_line_defects(self, location, E, N, Se, Sh=None, transition=(1,-1)):
+    def add_defects(self, location, N, Se, Sh, E, transition):
+
+        self.extra_charge_locations.append(location)
+        self.defects_types.append(transition)
+        self.defects_energies.append(E)
+
+        if len(location) == 2:
+            s, dl = get_line_defects_sites(self, location)
+            self.perp_dl.append(dl)
+        elif len(location) == 4:
+            s, _, _, _ = utils.plane_defects_sites(self, location) 
+            self.perp_dl.append(1.)
+        else:
+            print("Wrong definition for the defects location: the list must"+\
+                  "contain two points for a line, four points for a plane.")
+            exit(1)
+
+        self.extra_charge_sites += [s]
+
+        if Sh == None:
+            Sh = Se
+        self.Seextra.append(Se / self.scaling.velocity)
+        self.Shextra.append(Sh / self.scaling.velocity)
+
+        NN = self.scaling.density * self.scaling.length
+        if isinstance(N, float):
+            f = N / NN
+        else:
+            f = lambda E: N(E) / NN
+        n = lambda s, E: self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy)
+        p = lambda s, E: self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy)
+        self.Nextra.append(f)
+        self.nextra.append(n)
+        self.pextra.append(p)
+ 
+    def add_line_defects(self, location, N, Se, Sh=None, E=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a line.
@@ -203,14 +244,18 @@ class Builder():
         ----------
         location: list of two array_like coordinates [(x1, y1), (x2, y2)] 
             The coordinates in [m] define a line of defects in 2D.
-        E: float 
-            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
-        N: float
-            Defect density of states [m\ :sup:`-2` ].
+        N: float or function
+            Defect density of states [m\ :sup:`-2` ]. Provide a float when the
+            defect density of states is a delta function, or a function
+            returning a float for a continuum. This function should take a
+            single energy argument in [eV].
         Se: float
             Surface recombination velocity of electrons [m/s].
         Sh: float
             Surface recombination velocity of holes [m/s].
+        E: float 
+            Energy level of a single state defined with respect to E\ :sub:`g`/2
+            [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level
@@ -224,27 +269,12 @@ class Builder():
 
         See Also
         --------
-        add_plane_defects for adding plane defects in 3D.
+        add_plane_defects
         """
-        
-        # if one wants same S for electrons and holes
-        if Sh == None:
-            Sh = Se
+           
+        self.add_defects(location, N, Se, Sh, E, transition)
 
-        self.extra_charge_locations.append(location)
-        self.defects_types.append(transition)
-
-        s, dl = get_line_defects_sites(self, location)
-
-        self.extra_charge_sites += [s]
-
-        self.Nextra.append(N / (self.scaling.density * self.scaling.length) / dl)
-        self.Seextra.append(Se / self.scaling.velocity / dl)
-        self.Shextra.append(Sh / self.scaling.velocity / dl)
-        self.nextra.append(self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy))
-        self.pextra.append(self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy))
-
-    def add_plane_defects(self, location, E, N, Se, Sh=None, transition=(1,-1)):
+    def add_plane_defects(self, location, N, Se, Sh=None, E=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a plane.
@@ -255,14 +285,18 @@ class Builder():
             The coordinates in [m] define a plane of defects in 3D. The first
             two coordinates define a line that must be parallel to the line
             defined by the last two points.
-        E: float 
-            Energy level of the states defined with respect to E\ :sub:`g`/2 [eV].
-        N: float
-            Defect density of states [m\ :sup:`-2` ].
+        N: float or function
+            Defect density of states [m\ :sup:`-2` ]. Provide a float when the
+            defect density of states is a delta function, or a function
+            returning a float for a continuum. This function should take a
+            single energy argument in [eV].
         Se: float
             Surface recombination velocity of electrons [m/s].
         Sh: float
             Surface recombination velocity of holes [m/s].
+        E: float 
+            Energy level of a single state defined with respect to E\ :sub:`g`/2
+            [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level
@@ -279,28 +313,10 @@ class Builder():
 
         See Also
         --------
-        add_line_defects for adding line defects in 2D.
+        add_line_defects
         """
-
-
-        # if one wants same S for electrons and holes
-        if Sh == None:
-            Sh = Se
-
-        self.extra_charge_locations.append(location)
-        self.defects_types.append(transition)
-
-        s, _, _, _ = utils.plane_defects_sites(self, location) 
-
-        self.extra_charge_sites += [s]
-
-        N = N / (self.scaling.density * self.scaling.length)
-        self.Nextra.append(N * np.ones((len(s),)))
-        self.Seextra.append(Se / self.scaling.velocity * np.ones((len(s),)))
-        self.Shextra.append(Sh / self.scaling.velocity * np.ones((len(s),)))
-        self.nextra.append(self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy))
-        self.pextra.append(self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy))
-
+        self.add_defects(location, N, Se, Sh, E, transition)
+ 
     def doping_profile(self, density, location):
 
         s = get_sites(self, location)

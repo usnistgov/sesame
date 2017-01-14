@@ -64,7 +64,7 @@ p1 = (20e-9, 2.5e-6)   #[m]
 p2 = (2.9e-6, 2.5e-6)  #[m]
 
 # Pass the information to the system
-sys.add_line_defects([p1, p2], E, N, S)
+sys.add_line_defects([p1, p2], N, S, E=E)
 
 
 sesame.plot(sys, sys.mu_e)

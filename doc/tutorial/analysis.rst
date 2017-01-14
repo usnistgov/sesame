@@ -93,8 +93,9 @@ system::
 
 
     # Get the defect state equilibrium densities
-    nGB = sys.nextra[0]
-    pGB = sys.pextra[0]
+    E = sys.defects_energies[0]
+    nGB = sys.nextra[0](sites, E)
+    pGB = sys.pextra[0](sites, E)
 
     # Compute the carrier densities
     n = az.electron_density((p1, p2))

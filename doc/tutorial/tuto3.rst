@@ -63,7 +63,7 @@ we rewrite inside its own function::
         p1 = (20e-9, 2.5e-6)   #[m]
         p2 = (2.9e-6, 2.5e-6)  #[m]
 
-        sys.add_line_defects([p1, p2], E, N, S)
+        sys.add_line_defects([p1, p2], N, S, E=E)
 
         # Define a function for the generation rate
         phi = 1e21 # photon flux [1/(m^2 s)]
@@ -76,8 +76,8 @@ we rewrite inside its own function::
 Note that we added the parameter ``amp`` that will allow us to turn on slowly
 the line defects density of states.
 
-In this example the drift diffusion Poisson solver does not converge even at
-zero bias. Our procedure to find a good guess is therefore the following:
+In this example we show a procedure to start the drift diffusion Poisson solver
+with a good guess:
 
 1. Solve the Poisson equation to get the electrostatic potential of the system
    with reduced line defects density of states.

@@ -105,7 +105,7 @@ define a defect gap state as follows::
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
     # Pass the information to the system
-    sys.add_line_defects([p1, p2], E, N, S)
+    sys.add_line_defects([p1, p2], N, S, E=E)
 
 .. note::
    * Avoid adding charges on the contacts of the system, as these will not be
@@ -120,7 +120,10 @@ define a defect gap state as follows::
 
      .. code-block:: python
 
-        sys.add_line_defects([p1, p2], E, N, Sn, Sp)
+        sys.add_line_defects([p1, p2], N, Sn, Sp, E=E)
+   * A continuum of states can be considered by providing a function for the defect
+     density of states (without passing any energy). Simply passing a float
+     results in a density of states independent of the energy.
 
 
 Visualizing the system
