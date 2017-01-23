@@ -55,14 +55,15 @@ def defectsF(sys, n, p, rho, r=None):
 
                 res = (_np[sdx] - ni2[sdx]) \
                       / ((_n[sdx]+_n1) / Sh + (_p[sdx]+_p1) / Se)
+
+                if sys.dimension == 2:
+                    res /= dl[sdx]
                 return res
 
             if r is not None:
                 r[sites] += [quad(_r, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                   args=(sdx, s))[0] \
                              for sdx, s in enumerate(sites)]
-                if sys.dimension == 2:
-                    r[sites] /= dl
 
             # additional charge
             def _rho(E, sdx, site):
@@ -77,14 +78,15 @@ def defectsF(sys, n, p, rho, r=None):
                     res *= N
                 else: # if N is callable
                     res *= N(E)
+
+                if sys.dimension == 2:
+                    res /= dl[sdx]
                 return res
 
             rho[sites] += [quad(_rho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                 args=(sdx, s))[0] \
                            for sdx, s in enumerate(sites)]
 
-            if sys.dimension == 2:
-                rho[sites] /= dl
 
 
             
@@ -135,6 +137,9 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 res *= N
             else: # if N is callable
                 res *= N(E)
+
+            if sys.dimension == 2:
+                res /= dl[sdx]
             return res
 
         # multipurpose derivative of recombination
@@ -154,6 +159,9 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 res = (_np[sdx] - ni2[sdx]) * (_p[sdx]/Se - _n[sdx]/Sh)
 
             res /= ((_n[sdx]+_n1)/Sh + (_p[sdx]+_p1)/Se)**2
+
+            if sys.dimension == 2:
+                res /= dl[sdx]
             return res
 
         # actual computation of things
@@ -186,8 +194,6 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             drho_dv[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                     args=(sdx, s, 'v'))[0] \
                                for sdx, s in enumerate(sites)]
-            if sys.dimension == 2:
-                drho_dv[sites] /= dl
 
             if drho_defn is not None:
                 drho_defn[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
@@ -197,10 +203,6 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 drho_defp[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                           args=(sdx, s, 'efp'))[0] \
                                      for sdx, s in enumerate(sites)]
-                if sys.dimension == 2:
-                    drho_defn[sites] /= dl
-                    drho_defp[sites] /= dl
-
 
             if dr_defn is not None:
                 dr_defn[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
@@ -212,8 +214,3 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 dr_dv[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                       args=(sdx, s, 'v'))[0] \
                                  for sdx, s in enumerate(sites)]
-
-                if sys.dimension == 2:
-                    dr_defn[sites] /= dl
-                    dr_defp[sites] /= dl
-                    dr_dv[sites]   /= dl

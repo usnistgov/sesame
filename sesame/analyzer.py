@@ -50,12 +50,15 @@ class Analyzer():
         # sites of the system
         self.sites = np.arange(sys.nx*sys.ny*sys.nz, dtype=int)
 
-    def line(self, p1, p2):
+    @staticmethod
+    def line(system, p1, p2):
         """
         Compute the path and sites between two points.
 
         Parameters
         ----------
+        system: Builder
+            The discretized system.
         p1, p2: array-like (x, y)
             Two points defining a line.
 
@@ -67,7 +70,7 @@ class Analyzer():
 
         p1 = (p1[0], p1[1], 0)
         p2 = (p2[0], p2[1], 0)
-        s, x, _, _, _ = Bresenham(self.sys, p1, p2)
+        s, x, _, _, _ = Bresenham(system, p1, p2)
         return x, s
 
     def electron_density(self, location=None):
@@ -93,7 +96,7 @@ class Analyzer():
             sites = self.sites
         else:
             p1, p2 = location
-            _, sites = self.line(p1, p2)
+            _, sites = self.line(self.sys, p1, p2)
         n = get_n(self.sys, self.efn, self.v, sites)
         return n
 
@@ -120,7 +123,7 @@ class Analyzer():
             sites = self.sites
         else:
             p1, p2 = location
-            _, sites = self.line(p1, p2)
+            _, sites = self.line(self.sys, p1, p2)
         p = get_p(self.sys, self.efp, self.v, sites)
         return p
 
@@ -143,7 +146,7 @@ class Analyzer():
             sites = self.sites
         else:
             p1, p2 = location
-            _, sites = self.line(p1, p2)
+            _, sites = self.line(self.sys, p1, p2)
         p = get_p(self.sys, self.efp, self.v, sites)
 
         ni2 = self.sys.ni[sites]**2
@@ -175,7 +178,7 @@ class Analyzer():
             sites = self.sites
         else:
             p1, p2 = location
-            _, sites = self.line(p1, p2)
+            _, sites = self.line(self.sys, p1, p2)
 
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
@@ -201,7 +204,7 @@ class Analyzer():
             sites = self.sites
         else:
             p1, p2 = location
-            _, sites = self.line(p1, p2)
+            _, sites = self.line(self.sys, p1, p2)
 
         n = get_n(self.sys, self.efn, self.v, sites)
         p = get_p(self.sys, self.efp, self.v, sites)
@@ -230,7 +233,7 @@ class Analyzer():
 
         if location is not None:
             p1, p2 = location
-            X, sites = self.line(p1, p2)
+            X, sites = self.line(self.sys, p1, p2)
             jn = get_jn(self.sys, self.efn, self.v, sites[:-1], sites[1:], X[1:]-X[:-1])
         else:
             Nx, Ny = self.sys.nx, self.sys.ny
@@ -266,7 +269,7 @@ class Analyzer():
 
         if location is not None:
             p1, p2 = location
-            X, sites = self.line(p1, p2)
+            X, sites = self.line(self.sys, p1, p2)
             jp = get_jp(self.sys, self.efp, self.v, sites[:-1], sites[1:], X[1:]-X[:-1])
         else:
             Nx, Ny = self.sys.nx, self.sys.ny
