@@ -66,6 +66,17 @@ class Analyzer():
         -------
         s, sites: numpay arrays
             Curvilinear abscissa and sites of the line.
+
+        Notes
+        -----
+        This method can be used with an instance of the Analyzer():
+
+        >>> az = sesame.Analyzer(sys, res)
+        >>> X, sites = az.line(sys, p1, p2)
+
+        or without it:
+
+        >>> X, sites = sesame.Analyzer.line(sys, p1, p2)
         """
 
         p1 = (p1[0], p1[1], 0)

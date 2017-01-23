@@ -16,7 +16,8 @@ load a data file and create this object::
     from jv_curve import system
 
     results = np.load('data.vapp_0.npz')
-    az = sesame.Analyzer(system(), results)
+    sys = system()
+    az = sesame.Analyzer(sys, results)
 
 In the table below we show the syntax used to get some attributes of the
 :func:`~sesame.builder.Builder`
@@ -52,7 +53,7 @@ abscissae along the line, and the grid sites::
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
-    X, sites = az.line(p1, p2)
+    X, sites = az.line(sys, p1, p2)
 
 Scalar quantities like densities or recombination are obtained either for the
 entire system, or on a line::
@@ -93,7 +94,7 @@ system::
 
 
     # Get the defect state equilibrium densities
-    E = sys.defects_energies[0]
+    E = -0.25 # eV
     nGB = sys.nextra[0](sites, E)
     pGB = sys.pextra[0](sites, E)
 
