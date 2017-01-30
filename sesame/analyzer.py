@@ -1,4 +1,4 @@
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
+from scipy.interpolate import InterpolatedUnivariateSpline as spline, interp2d
 from .utils import Bresenham
 from .observables import *
 
@@ -307,7 +307,7 @@ class Analyzer():
             Scale to apply to the axes of the plot.
 
         """
-        self.current_map(True)
+        self.current_map(True, cmap, scale)
 
     def hole_current_map(self, cmap='gnuplot', scale=1e6):
         """
@@ -321,9 +321,9 @@ class Analyzer():
             Scale to apply to the axes of the plot.
 
         """
-        self.current_map(False)
+        self.current_map(False, cmap, scale)
 
-    def current_map(self, electron):
+    def current_map(self, electron, cmap, scale):
 
         if not mpl_enabled:
             raise RuntimeError("matplotlib was not found, but is required "
@@ -334,8 +334,9 @@ class Analyzer():
 
         x, y = self.sys.xpts[:-1], self.sys.ypts[:-1]
         nx, ny = len(x), len(y)
-        s = np.arange(nx*ny, dtype=int)
-
+        
+        s = np.asarray([i + j*self.sys.nx for j in range(self.sys.ny-1)\
+                                     for i in range(self.sys.nx-1)])
         dx = np.tile(self.sys.dx, ny)
         dy = np.repeat(self.sys.dy, nx)
 
