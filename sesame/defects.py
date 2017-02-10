@@ -1,19 +1,20 @@
-# These functions define the model for the charge a the defects.
+# These functions define the model for the charge at the defects.
 #
 # The functions we integrate are somewhat repetitive because I want to avoid
 # making numerous Python function calls by quad
 
 import numpy as np
 from scipy.integrate import quad
+from scipy.constants import m_e, epsilon_0,k
 from math import exp
 
 
 def defectsF(sys, n, p, rho, r=None):
 
-    for cdx, c in enumerate(sys.defects_types):
-        sites = sys.extra_charge_sites[cdx]
-        E = sys.defects_energies[cdx]
-        a, b = max(c), min(c)
+    for defect in sys.defects_list:
+        sites = defect.sites
+        E = defect.energy
+        a, b = max(defect.transition), min(defect.transition)
 
         # carrier densities
         _n = n[sites]
@@ -21,29 +22,29 @@ def defectsF(sys, n, p, rho, r=None):
         ni2 = sys.ni[sites]**2
         _np = _n * _p
 
-        # surface recombination velocities: float
-        Se = sys.Seextra[cdx]
-        Sh = sys.Shextra[cdx]
+        # thermal velocity: arrays
+        ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        ve = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
+        vh = ct * np.sqrt(3/(sys.mass_h[sites]*m_e))
+
+        # capture cross setions: float
+        se = defect.sigma_e
+        sh = defect.sigma_h
 
         # density of states: float or function
-        N = sys.Nextra[cdx]
-
-        if sys.dimension == 2:
-            dl = sys.perp_dl[cdx]
+        N = defect.dos
+        dl = defect.perp_dl # array in 2D, float 1. in 3D
 
         if E is not None: # no integration, vectorize as much as possible
-            # additional charge
             _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
             _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E)
 
-            if sys.dimension == 2:
-                N = N / dl
-                Se, Sh = Se / dl, Sh / dl
-
-            rho[sites] += N * (a + (b-a)*(Se*_n + Sh*_p1)\
-                             / (Se*(_n+_n1) + Sh*(_p+_p1)))
+            # additional charge
+            f = (se*ve*_n + sh*vh*_p1) / (se*ve*(_n+_n1) + sh*vh*(_p+_p1))
+            rho[sites] += N / dl * (a + (b-a)*f)
 
             # additional recombination
+            Se, Sh = se*ve*N/dl, sh*vh/dl
             if r is not None:
                 r[sites] += (_np - ni2) / ((_n+_n1)/Sh + (_p+_p1)/Se)
 
@@ -54,7 +55,12 @@ def defectsF(sys, n, p, rho, r=None):
                 _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
                 res = (_np[sdx] - ni2[sdx]) \
-                      / ((_n[sdx]+_n1) / Sh + (_p[sdx]+_p1) / Se)
+                      / ((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))
+
+                if not callable(N):
+                    res *= N
+                else: # if N is callable
+                    res *= N(E)
 
                 if sys.dimension == 2:
                     res /= dl[sdx]
@@ -70,8 +76,8 @@ def defectsF(sys, n, p, rho, r=None):
                 _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
                 _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
-                # dl scaling simplifies in occupancy
-                f = (Se*_n[sdx] + Sh*_p1) / (Se*(_n[sdx]+_n1) + Sh*(_p[sdx]+_p1))
+                f = (se*ve[sdx]*_n[sdx] + sh*vh[sdx]*_p1) \
+                  / (se*ve[sdx]*(_n[sdx]+_n1) + sh*vh[sdx]*(_p[sdx]+_p1))
                 res = a + (b-a)*f
 
                 if not callable(N):
@@ -93,10 +99,11 @@ def defectsF(sys, n, p, rho, r=None):
 def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
              dr_defn=None, dr_defp=None, dr_dv=None):
 
-    for cdx, c in enumerate(sys.defects_types):
-        sites = sys.extra_charge_sites[cdx]
-        E = sys.defects_energies[cdx]
-        a, b = max(c), min(c)
+
+    for defect in sys.defects_list:
+        sites = defect.sites
+        E = defect.energy
+        a, b = max(defect.transition), min(defect.transition)
 
         # carrier densities
         _n = n[sites]
@@ -104,17 +111,20 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
         ni2 = sys.ni[sites]**2
         _np = _n * _p
 
-        # surface recombination velocities: float
-        Se = sys.Seextra[cdx]
-        Sh = sys.Shextra[cdx]
+        # thermal velocity: arrays
+        ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        ve = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
+        vh = ct * np.sqrt(3/(sys.mass_h[sites]*m_e))
+
+        # capture cross setions: float
+        se = defect.sigma_e
+        sh = defect.sigma_h
 
         # density of states: float or function
-        N = sys.Nextra[cdx]
-        n1 = sys.nextra[cdx]
-        p1 = sys.pextra[cdx]
+        N = defect.dos
 
         if sys.dimension == 2:
-            dl = sys.perp_dl[cdx]
+            dl = defect.perp_dl
 
         # multipurpose derivative of rho
         def drho(E, sdx, site, var):
@@ -122,16 +132,17 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
             if var == 'v':
-                res = (b-a) * (Se**2*_n[sdx]*_n1 + 2*Sh*Se*_np[sdx]\
-                               + Sh**2*_p[sdx]*_p1)
+                res = (b-a) * ((se*ve[sdx])**2*_n[sdx]*_n1 +\
+                                2*(sh*vh[sdx])*(se*ve[sdx])*_np[sdx]\
+                                + (sh*vh[sdx])**2*_p[sdx]*_p1)
 
             if var == 'efn':
-                res =  (b-a) * Se*_n[sdx] * (Se*_n1 + Sh*_p[sdx])
+                res =  (b-a) * se*ve[sdx]*_n[sdx] * (se*ve[sdx]*_n1 + sh*vh[sdx]*_p[sdx])
 
             if var == 'efp':
-                res = -(b-a) * (Se*_n[sdx] + Sh*_p1) * Sh*_p[sdx]
+                res = -(b-a) * (se*ve[sdx]*_n[sdx] + sh*vh[sdx]*_p1) * sh*vh[sdx]*_p[sdx]
 
-            res /= (Se*(_n[sdx]+_n1)+Sh*(_p[sdx]+_p1))**2
+            res /= (se*ve[sdx]*(_n[sdx]+_n1)+sh*vh[sdx]*(_p[sdx]+_p1))**2
 
             if not callable(N):
                 res *= N
@@ -148,17 +159,22 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
 
             if var == 'efn':
-                res = _np[sdx]*((_n[sdx]+_n1)/Sh + (_p[sdx]+_p1)/Se)\
-                       - (_np[sdx] - ni2[sdx])*_n[sdx]/Sh
+                res = _np[sdx]*((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))\
+                       - (_np[sdx] - ni2[sdx])*_n[sdx]/(sh*vh[sdx])
 
             if var == 'efp':
-                res = _np[sdx]*((_n[sdx]+_n1)/Sh + (_p[sdx]+_p1)/Se)\
-                        - (_np[sdx] - ni2[sdx])*_p[sdx]/Se
+                res = _np[sdx]*((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))\
+                        - (_np[sdx] - ni2[sdx])*_p[sdx]/(se*ve[sdx])
 
             if var == 'v':
-                res = (_np[sdx] - ni2[sdx]) * (_p[sdx]/Se - _n[sdx]/Sh)
+                res = (_np[sdx] - ni2[sdx]) * (_p[sdx]/(se*ve[sdx]) - _n[sdx]/(sh*vh[sdx]))
 
-            res /= ((_n[sdx]+_n1)/Sh + (_p[sdx]+_p1)/Se)**2
+            res /= ((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))**2
+
+            if not callable(N):
+                res *= N
+            else: # if N is callable
+                res *= N(E)
 
             if sys.dimension == 2:
                 res /= dl[sdx]
@@ -170,18 +186,15 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
             _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E)
 
-            if sys.dimension == 2:
-                N = N / dl
-                Se, Sh = Se / dl, Sh / dl
-
-            d = (Se*(_n+_n1)+Sh*(_p+_p1))**2
-            drho_dv[sites] += N * (b-a) * (Se**2*_n*_n1 + 2*Sh*Se*_np\
-                                           + Sh**2*_p*_p1) / d 
+            d = (se*ve*(_n+_n1)+sh*vh*(_p+_p1))**2
+            drho_dv[sites] += N/dl * (b-a) * ((se*ve)**2*_n*_n1 + 2*sh*vh*se*ve*_np\
+                                           + (sh*vh)**2*_p*_p1) / d 
 
             if drho_defn is not None:
-                drho_defn[sites] += N * (b-a) * Se*_n * (Se*_n1 + Sh*_p) / d
-                drho_defp[sites] += -N * (b-a) * (Se*_n + Sh*_p1) * Sh*_p / d
-
+                drho_defn[sites] += N/dl * (b-a) * se*ve*_n * (se*ve*_n1 + sh*vh*_p) / d
+                drho_defp[sites] += -N/dl * (b-a) * (se*ve*_n + sh*vh*_p1) * sh*vh*_p / d
+                
+                Se, Sh = se*ve*N/dl, sh*vh*N/dl
                 dr_defn[sites] += (_np*((_n+_n1)/Sh + (_p+_p1)/Se) - (_np-ni2)*_n/Sh)\
                                   / ((_n+_n1)/Sh + (_p+_p1)/Se)**2
                 dr_defp[sites] += (_np*((_n+_n1)/Sh + (_p+_p1)/Se) - (_np-ni2)*_p/Se)\

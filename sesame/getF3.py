@@ -44,7 +44,7 @@ def getF(sys, v, efn, efp):
     r = get_bulk_rr(sys, n, p)
 
     # charge defects
-    if len(sys.extra_charge_sites) != 0:
+    if len(sys.defects_list) != 0:
         defectsF(sys, n, p, rho, r)
 
     # charge devided by epsilon
