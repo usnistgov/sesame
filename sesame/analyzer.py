@@ -450,7 +450,7 @@ class Analyzer():
         """
         return self.bulk_recombination_current('radiative')
 
-    def bulk_recombination(self, mec):
+    def bulk_recombination_current(self, mec):
         x = self.sys.xpts / self.sys.scaling.length
         if self.sys.ny > 1:
             y = self.sys.ypts / self.sys.scaling.length
