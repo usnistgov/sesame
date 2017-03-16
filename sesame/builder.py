@@ -6,8 +6,14 @@ from itertools import product
 
 from . import utils
 
+# named tuple of all the dimensions
+dimensions = namedtuple('dimensions', ['density', 'energy', 'mobility', 'time',\
+                                       'length', 'generation', 'velocity'])
 
-
+# named tuple of the characteristics of a defect
+defect = namedtuple('defect', ['sites', 'location', \
+                               'dos', 'energy', 'sigma_e', 'sigma_h',\
+                               'transition', 'perp_dl'])
 
 class Builder():
     """
@@ -38,6 +44,8 @@ class Builder():
         valence bands.
     Eg: numpy array of floats
         Dimensionless band gap.
+    ni: numpy array of floats
+        Dimensionless intrinsic density.
     mu_e, mu_h:  numpy arrays of floats
         Dimensionless mobilities of electron and holes.
     tau_e, tau_h:  numpy arrays of floats
@@ -52,22 +60,10 @@ class Builder():
         building the system.
     gtot: float
         Dimensionless integral of the generation rate.
-    nextra: list of functions
-        Dimensionless equilibrium electron density from the defect states. Each
-        function takes a site and an energy (with its unit) with respect to
-        midgap.
-    pextra: list of functions
-        Dimensionless hole density from the defect states. Each
-        function takes a site and an energy (with its unit) with respect to
-        midgap.
-    extra_charge_sites: list of lists
-        List of the lists of all defect sites in the order they were added to
-        the system.
-    extra_charge_locations: list of lists
-        List of the lists of all defect locations in the order they were added to
-        the system.
-    ni: numpy array of floats
-        Dimensionless intrinsic density.
+    defects_list: list of named tuples
+        List of named tuples containing the characteristics ofthe defects in the
+        order they were added to the system. The field names are sites,
+        location, dos, energy, sigma_e, sigma_h, transition, perp_dl.
     scaling: named tuple
         Contains the scaling applied to physical quantities. The field names are
         density, energy, mobility, time, length, generation, velocity.
@@ -93,10 +89,6 @@ class Builder():
         # recombination velocities
         Sc = xscale / t0
 
-        # named tuple of all the dimensions
-        dimensions = namedtuple('dimensions', 
-                     ['density', 'energy', 'mobility', 'time',\
-                      'length', 'generation', 'velocity'])
         self.scaling = dimensions(N, vt, mu, t0, xscale, U, Sc)
 
 
@@ -126,6 +118,8 @@ class Builder():
         self.Nv      = np.zeros((nx*ny*nz,), dtype=float)
         self.Eg      = np.zeros((nx*ny*nz,), dtype=float)
         self.epsilon = np.zeros((nx*ny*nz,), dtype=float)
+        self.mass_e  = np.zeros((nx*ny*nz,), dtype=float)
+        self.mass_h  = np.zeros((nx*ny*nz,), dtype=float)
         self.mu_e    = np.zeros((nx*ny*nz,), dtype=float)
         self.mu_h    = np.zeros((nx*ny*nz,), dtype=float)
         self.tau_e   = np.zeros((nx*ny*nz,), dtype=float)
@@ -139,17 +133,7 @@ class Builder():
         self.Cn      = np.zeros((nx*ny*nz,), dtype=float)
         self.Cp      = np.zeros((nx*ny*nz,), dtype=float)
 
-        self.Nextra  = []
-        self.Seextra = []
-        self.Shextra = []
-        self.nextra  = []
-        self.pextra  = []
-        self.extra_charge_sites = []
-        self.defects_types = []
-        self.defects_energies = []
-        self.extra_charge_locations = []
-        self.perp_dl = []
-
+        self.defects_list = []
 
     def add_material(self, mat, location=lambda pos: True):
         """
@@ -164,7 +148,10 @@ class Builder():
             material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
             :sup:`2`/V/s], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
             energy level of the bulk recombination centers [eV], band_offset:
-            band offset setting the zero of potential [eV].
+            band offset setting the zero of potential [eV], B: radiation
+            recombination constant [m\ :sup:`3`/s], Cn (Cp): Auger recombination constant for
+            electrons (holes) [m\ :sup:`6`/s], mass_e (mass_h): effective mass of electrons
+            (holes).
         location: Boolean function
             Definition of the region containing the material. This function must
             take a tuple of real world coordinates (e.g. (x, y)) as parameters,
@@ -180,63 +167,65 @@ class Builder():
         vt = self.scaling.energy
         mu = self.scaling.mobility
 
-        # fill in arrays
-        self.Nc[s]      = mat['Nc'] / N
-        self.Nv[s]      = mat['Nv'] / N
-        self.Eg[s]      = mat['Eg'] / vt
-        self.epsilon[s] = mat['epsilon']
-        self.mu_e[s]    = mat['mu_e'] / mu
-        self.mu_h[s]    = mat['mu_h'] / mu
-        self.tau_e[s]   = mat['tau_e'] / t
-        self.tau_h[s]   = mat['tau_h'] / t
-        self.bl[s]      = mat['band_offset'] / vt
-        self.B[s]       = mat['B'] / ((1./N)/t)
-        self.Cn[s]      = mat['Cn'] / ((1./N**2)/t)
-        self.Cp[s]      = mat['Cp'] / ((1./N**2)/t)
+        # default material parameters
+        mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
+              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6,\
+              'tau_h': 1e-6, 'band_offset': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
-        Etrap = mat['Et'] / self.scaling.energy
+        for key in mat.keys():
+            mt[key] = mat[key]
+
+        # fill in arrays
+        self.Nc[s]      = mt['Nc'] / N
+        self.Nv[s]      = mt['Nv'] / N
+        self.Eg[s]      = mt['Eg'] / vt
+        self.epsilon[s] = mt['epsilon']
+        self.mass_e[s]  = mt['mass_e']
+        self.mass_h[s]  = mt['mass_h']
+        self.mu_e[s]    = mt['mu_e'] / mu
+        self.mu_h[s]    = mt['mu_h'] / mu
+        self.tau_e[s]   = mt['tau_e'] / t
+        self.tau_h[s]   = mt['tau_h'] / t
+        self.bl[s]      = mt['band_offset'] / vt
+        self.B[s]       = mt['B'] / ((1./N)/t)
+        self.Cn[s]      = mt['Cn'] / ((1./N**2)/t)
+        self.Cp[s]      = mt['Cp'] / ((1./N**2)/t)
+
+        Etrap = mt['Et'] / self.scaling.energy
         self.n1[s]      = self.Nc[s] * np.exp(-self.Eg[s]/2 + Etrap)
         self.p1[s]      = self.Nv[s] * np.exp(-self.Eg[s]/2 - Etrap)
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
-    def add_defects(self, location, N, Se, Sh, E, transition):
+    def add_defects(self, location, N, sigma_e, sigma_h, E, transition):
 
-        self.extra_charge_locations.append(location)
-        self.defects_types.append(transition)
         if E is not None:
-            self.defects_energies.append(E / self.scaling.energy)
-        else:
-            self.defects_energies.append(E)
+            E /= self.scaling.energy
 
         if len(location) == 2:
             s, dl = get_line_defects_sites(self, location)
-            self.perp_dl.append(dl)
         elif len(location) == 4:
             s, _, _, _ = utils.plane_defects_sites(self, location) 
-            self.perp_dl.append(1.)
+            dl = 1.
         else:
             print("Wrong definition for the defects location: the list must"+\
                   "contain two points for a line, four points for a plane.")
             exit(1)
 
-        self.extra_charge_sites += [s]
 
-        if Sh == None:
-            Sh = Se
-        self.Seextra.append(Se / self.scaling.velocity)
-        self.Shextra.append(Sh / self.scaling.velocity)
+        if sigma_h == None:
+            sigma_h = sigma_e
+        sigma_e /= self.scaling.length**2
+        sigma_h /= self.scaling.length**2
 
         NN = self.scaling.density * self.scaling.length
         if isinstance(N, float):
             f = N / NN
         else:
             f = lambda E: N(E*self.scaling.energy) / NN
-        n = lambda s, E: self.Nc[s] * np.exp(-self.Eg[s]/2 + E/self.scaling.energy)
-        p = lambda s, E: self.Nv[s] * np.exp(-self.Eg[s]/2 - E/self.scaling.energy)
-        self.Nextra.append(f)
-        self.nextra.append(n)
-        self.pextra.append(p)
+
+        params = defect(s, location, f, E, sigma_e, sigma_h, transition, dl)
+        self.defects_list.append(params)
  
     def add_line_defects(self, location, N, Se, Sh=None, E=None, transition=(1,-1)):
         """
