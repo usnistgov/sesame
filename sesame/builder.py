@@ -488,7 +488,11 @@ def get_line_defects_sites(system, location):
     for _ in range(Dx + Dy):
         e1 = error(system.xpts[i], system.ypts[j+incy])
         e2 = error(system.xpts[i+incx], system.ypts[j])
-        if e1 < e2:
+        if incx == 0:
+            condition = e1 <= e2 # for lines x = constant
+        else:
+            condition = e1 < e2
+        if condition:
             j += incy
             perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
         else:
