@@ -6,14 +6,59 @@ from itertools import product
 
 from . import utils
 
-# named tuple of all the dimensions
-dimensions = namedtuple('dimensions', ['density', 'energy', 'mobility', 'time',\
-                                       'length', 'generation', 'velocity'])
-
 # named tuple of the characteristics of a defect
 defect = namedtuple('defect', ['sites', 'location', \
                                'dos', 'energy', 'sigma_e', 'sigma_h',\
                                'transition', 'perp_dl'])
+
+class Scaling():
+    """
+    An object defining the scalings of the drift-difusion-Poisson equation. The
+    temperature of the system is specified when an instance is created. The
+    default is 300 K.
+
+    Parameters
+    ----------
+    T: float
+        Temperature for the simulation.
+
+    Attributes
+    ----------
+    denisty: float
+        Density scale taken equal to 10\ :sup:`19` cm\ :sup:`-3`.
+    energy: float
+        Energy scale.
+    mobility: float
+        Mobility scale taken equal to 1 cm\ :sup:`2`/(V.s).
+    time: float
+        Time scale.
+    length: float
+        Length scale.
+    generation: float
+        Scale of generation and recombination rates.
+    velocity: float
+        Velocity scale.
+    current: float
+        Electrical current density scale.
+    """
+    def __init__(self, T=300):
+        # densities
+        self.density = 1e19 * 1e6 # [m^-3]
+        # energies
+        self.energy = cts.k * T / cts.e
+        # mobilities [m^2 / (V.s)]
+        self.mobility = 1 * 1e-4
+        # time [s]
+        self.time = cts.epsilon_0 / (self.mobility * cts.e * self.density)
+        # lengths [m]
+        self.length = np.sqrt(cts.epsilon_0 * self.energy / (cts.e * self.density))
+        # generation rate [m^-3 s^-1]
+        self.generation = (self.density * self.mobility * self.energy) / self.length**2 
+        # recombination velocities
+        self.velocity = self.length / self.time
+        # current
+        self.current = cts.k * T * self.mobility * self.density / self.length
+
 
 class Builder():
     """
@@ -64,36 +109,15 @@ class Builder():
         List of named tuples containing the characteristics ofthe defects in the
         order they were added to the system. The field names are sites,
         location, dos, energy, sigma_e, sigma_h, transition, perp_dl.
-    scaling: named tuple
-        Contains the scaling applied to physical quantities. The field names are
-        density, energy, mobility, time, length, generation, velocity.
     """
 
 
     def __init__(self, xpts, ypts=None, zpts=None, T=300):
-        # T is temperature in Kelvin
 
-        # scalings for...
-        # densities
-        N = 1e19 * 1e6 # [m^-3]
-        # energies
-        vt = cts.k * T / cts.e
-        # mobilities [m^2 / (V.s)]
-        mu = 1 * 1e-4
-        # time [s]
-        t0 = cts.epsilon_0 / (mu * cts.e* N)
-        # lengths [m]
-        xscale = np.sqrt(cts.epsilon_0 * vt / (cts.e * N))
-        # generation rate [m^-3 s^-1]
-        U = (N * mu * vt) / xscale**2 
-        # recombination velocities
-        Sc = xscale / t0
-
-        self.scaling = dimensions(N, vt, mu, t0, xscale, U, Sc)
-
+        self.scaling = Scaling(T)
 
         self.xpts = xpts
-        self.dx = (self.xpts[1:] - self.xpts[:-1]) / xscale
+        self.dx = (self.xpts[1:] - self.xpts[:-1]) / self.scaling.length
         self.nx = xpts.shape[0]
         self.dimension = 1
 
@@ -101,7 +125,7 @@ class Builder():
         self.ny = 1
         if ypts is not None:
             self.ypts = ypts
-            self.dy = (self.ypts[1:] - self.ypts[:-1]) / xscale
+            self.dy = (self.ypts[1:] - self.ypts[:-1]) / self.scaling.length
             self.ny = ypts.shape[0]
             self.dimension = 2
 
@@ -109,7 +133,7 @@ class Builder():
         self.nz = 1
         if zpts is not None:
             self.zpts = zpts
-            self.dz = (self.zpts[1:] - self.zpts[:-1]) / xscale
+            self.dz = (self.zpts[1:] - self.zpts[:-1]) / self.scaling.length
             self.nz = zpts.shape[0]
             self.dimension = 3
 
@@ -348,7 +372,7 @@ class Builder():
 
     def generation(self, f):
         """
-        Distribution of photogenerated carriers.
+        Distribution of generated carriers.
 
         Parameters
         ----------

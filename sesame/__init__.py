@@ -5,7 +5,7 @@ __all__ = ['builder', 'analyzer']
 for module in __all__:
     exec('from . import {0}'.format(module))
 
-available = [('builder', ['Builder']),
+available = [('builder', ['Scaling', 'Builder']),
              ('solvers', ['solve', 'IVcurve']),
              ('analyzer', ['Analyzer'])]
 for module, names in available:

@@ -44,7 +44,7 @@ def defectsF(sys, n, p, rho, r=None):
             rho[sites] += N / dl * (a + (b-a)*f)
 
             # additional recombination
-            Se, Sh = se*ve*N/dl, sh*vh/dl
+            Se, Sh = se*ve*N/dl, sh*vh*N/dl
             if r is not None:
                 r[sites] += (_np - ni2) / ((_n+_n1)/Sh + (_p+_p1)/Se)
 
