@@ -5,7 +5,7 @@
 
 import numpy as np
 from scipy.integrate import quad
-from scipy.constants import m_e, epsilon_0,k
+from scipy.constants import m_e, epsilon_0
 from math import exp
 
 

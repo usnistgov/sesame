@@ -10,6 +10,7 @@ available via the :func:`~sesame.analyzer.Analyzer` object. In the code below we
 load a data file and create this object::
 
     import numpy as np
+    from scipy.constants import m_e, epsilon_0
     import sesame
 
     # import the system
@@ -102,8 +103,15 @@ system::
     n = az.electron_density((p1, p2))
     p = az.hole_density((p1, p2))
 
+    # Compute the thermal velocity
+    scaling = sesame.Scaling()
+    ct = np.sqrt(epsilon_0/scaling.density)/scaling.mobility
+    vth = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
+
     # Compute the normalized surface recombination velocity and the recombination
-    S = 1e5*1e-2 / sys.scaling.velocity
+    sigma = sys.defects_list[0].sigma_e
+    NGB = sys.defects_list[0].dos
+    S = sigma * NGB * vth
     ni = sys.ni[0] # intrinsic density taken at the first site (random)
     R = S * (n*p - ni**2) / (n + nGB + p + pGB)
 

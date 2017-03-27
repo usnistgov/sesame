@@ -15,6 +15,7 @@ From `sesame.builder`
 ---------------------
 .. autosummary::
 
+   Scaling
    Builder
 
 .. currentmodule:: sesame.plotter
