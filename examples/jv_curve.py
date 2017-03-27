@@ -42,14 +42,14 @@ def system(amp=1):
     sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
 
     # gap state characteristics
-    S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+    s = 1e-16 * 1e-4         # trap capture cross section [m^2]
     E = -0.25                # energy of gap state (eV) from midgap
     N = amp * 2e14 * 1e4           # defect density [1/m^2]
 
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
-    sys.add_line_defects([p1, p2], N, S, E=E)
+    sys.add_line_defects([p1, p2], N, s, E=E)
 
     # Define a function for the generation rate
     phi = 1e21 # photon flux [1/(m^2 s)]

@@ -42,7 +42,7 @@ CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
 sys.add_material(CdTe)
 
 # gap state characteristics
-S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+s = 1e-16 * 1e-4         # trap capture cross section [m^2]
 E = -0.25                # energy of gap state (ev) from midgap
 N = 2e14 * 1e4           # defect density [1/m^2]
 
@@ -54,7 +54,7 @@ q1 = (1.0e-6, 4.5e-6, 1e-9) #[m]
 q2 = (2.9e-6, 4.5e-6, 1e-9) #[m]
 
 # pass the information to the system
-sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
+sys.add_plane_defects([p1, p2, q1, q2], N, s, E=E)
 
 # visualize the system
 sesame.plot_plane_defects(sys)

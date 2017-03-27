@@ -9,7 +9,7 @@ sys = sesame.Builder(x)
 
 CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
         'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-        'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+        'Et':0
 sys.add_material(CdTe)
 
 junction = 50e-9 # extent of the junction from the left contact [m]

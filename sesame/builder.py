@@ -251,7 +251,7 @@ class Builder():
         params = defect(s, location, f, E, sigma_e, sigma_h, transition, dl)
         self.defects_list.append(params)
  
-    def add_line_defects(self, location, N, Se, Sh=None, E=None, transition=(1,-1)):
+    def add_line_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a line.
@@ -265,10 +265,10 @@ class Builder():
             defect density of states is a delta function, or a function
             returning a float for a continuum. This function should take a
             single energy argument in [eV].
-        Se: float
-            Surface recombination velocity of electrons [m/s].
-        Sh: float
-            Surface recombination velocity of holes [m/s].
+        sigma_e: float
+            Electron capture cross section [m\ :sup:`2`].
+        sigma_h: float
+            Hole capture cross section [m\ :sup:`2`].
         E: float 
             Energy level of a single state defined with respect to E\ :sub:`g`/2
             [eV]. Set to `None` for a continuum of states.
@@ -288,9 +288,9 @@ class Builder():
         add_plane_defects
         """
            
-        self.add_defects(location, N, Se, Sh, E, transition)
+        self.add_defects(location, N, sigma_e, sigma_h, E, transition)
 
-    def add_plane_defects(self, location, N, Se, Sh=None, E=None, transition=(1,-1)):
+    def add_plane_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
         charge of the system. These charges are distributed on a plane.
@@ -306,10 +306,10 @@ class Builder():
             defect density of states is a delta function, or a function
             returning a float for a continuum. This function should take a
             single energy argument in [eV].
-        Se: float
-            Surface recombination velocity of electrons [m/s].
-        Sh: float
-            Surface recombination velocity of holes [m/s].
+        sigma_e: float
+            Electron capture cross section [m\ :sup:`2`].
+        sigma_h: float
+            Hole capture cross section [m\ :sup:`2`].
         E: float 
             Energy level of a single state defined with respect to E\ :sub:`g`/2
             [eV]. Set to `None` for a continuum of states.
@@ -331,7 +331,7 @@ class Builder():
         --------
         add_line_defects
         """
-        self.add_defects(location, N, Se, Sh, E, transition)
+        self.add_defects(location, N, sigma_e, sigma_h, E, transition)
  
     def doping_profile(self, density, location):
 
