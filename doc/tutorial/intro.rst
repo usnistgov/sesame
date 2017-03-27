@@ -22,15 +22,15 @@ the drift-diffusion-Poisson equations
 .. math:: 
    \vec{\nabla}\cdot \vec{J}_n &= -q(G-R)\\
    \vec{\nabla}\cdot \vec{J}_p &= q(G-R)\\
-   \Delta \phi &= \frac{\rho}{\epsilon}
+   \Delta \phi &= \frac{\rho}{\epsilon\epsilon_0}
    :label: ddp
 
 with the currents
 
 .. math:: 
-   \vec{J}_n &= -q\mu_n n \vec{\nabla} \phi + eD_n \vec{\nabla}n 
-   
-   \vec{J}_p &= -q\mu_p p \vec{\nabla} \phi - eD_p \vec{\nabla}p
+   \vec{J}_n &= -q\mu_n n \vec{\nabla} \phi + qD_n \vec{\nabla}n \\
+   \vec{J}_p &= -q\mu_p p \vec{\nabla} \phi - qD_p \vec{\nabla}p
+   :label: currents
 
 where :math:`n, p` are the electron and hole number densities, and :math:`\phi`
 is the electrostatic potential. :math:`J_{n(p)}` is the charge current density
@@ -39,9 +39,30 @@ charge. :math:`\rho` is the local charge and :math:`\epsilon` is the dielectric
 constant of the material. :math:`\mu_{n,p}` is the electron/hole
 mobility, and is related the diffusion :math:`D _{n,p}` by :math:`D_{n,p} =
 k_BT\mu_{n,p}/q`.  :math:`G` is the generation rate density, :math:`R` is the
-recombination. The natural length scale is the Debye length, given by
-:math:`\lambda = \epsilon k_B T /(q^2 N )`, where :math:`N` is the concentration
-relevant to the problem. 
+recombination and we denote the net generation rate :math:`U=G-R`. The natural
+length scale is the Debye length, given by :math:`\lambda = \epsilon_0 k_B T /(q^2
+N )`, where :math:`N` is the concentration relevant to the problem. Combining
+Eqs. :eq:`ddp` and Eqs. :eq:`currents`, and scaling by the Debye length leads to
+the following system
+
+.. math:: 
+   \widetilde{\vec{\nabla}} \cdot \left(-\bar n \widetilde{\vec{\nabla}} \bar \phi + \widetilde{\vec{\nabla}}\bar n \right) &= \bar U
+
+   \widetilde{\vec{\nabla}} \cdot \left(-\bar p \widetilde{\vec{\nabla}}\bar \phi - \widetilde{\vec{\nabla}}\bar p \right) &= -\bar U
+
+   \widetilde{\Delta} \bar \phi &= \frac{\bar n - \bar p}{\epsilon}
+
+where :math:`\widetilde{\vec{\nabla}}` is the dimensionless spatial first derivative
+operator, :math:`\widetilde{\Delta}` is the dimensionless Laplacian and 
+the dimensionless variables are
+
+.. math::
+   \bar \phi &= \frac{e\phi}{k_BT}\\
+   \bar n &= n/N \\
+   \bar p &= p/N \\
+   \bar U &= \frac{U \lambda^2}{ND} \\
+   \bar t &= t \frac{q\mu N}{\epsilon_0} \\
+   \bar J_{n,p} &= J_{n,p} \frac{qD_{n,p}N}{\lambda} 
 
 We suppose that the recombination is through three mechanims:
 Shockley-Read-Hall, radiative and Auger.  Unlike the defect-mediated
