@@ -236,13 +236,14 @@ class Builder():
                   "contain two points for a line, four points for a plane.")
             exit(1)
 
-
+        # The scale of the density of states is also the inverse of the scale 
+        # for the capture cross section
+        NN = self.scaling.density * self.scaling.length # m^-2
         if sigma_h == None:
             sigma_h = sigma_e
-        sigma_e /= self.scaling.length**2
-        sigma_h /= self.scaling.length**2
+        sigma_e *= NN
+        sigma_h *= NN
 
-        NN = self.scaling.density * self.scaling.length
         if isinstance(N, float):
             f = N / NN
         else:
