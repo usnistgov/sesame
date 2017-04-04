@@ -49,7 +49,7 @@ def defectsF(sys, n, p, rho, r=None):
                 r[sites] += (_np - ni2) / ((_n+_n1)/Sh + (_p+_p1)/Se)
 
         else: # integral to perform, quad requires single value function
-            # additional recombination (density of states does not matter)
+            # additional recombination
             def _r(E, sdx, site):
                 _n1 = sys.Nc[site] * exp(-sys.Eg[site]/2 + E)
                 _p1 = sys.Nv[site] * exp(-sys.Eg[site]/2 - E)
