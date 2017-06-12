@@ -6,8 +6,8 @@ will use the system created in :doc:`tutorial 3 <tuto3>`.
 The data analysis requires to compute carrier densities, currents and plot data.
 In order to avoid having to deal with the folded discretized system, we provide
 a set of methods callable with real space coordinates. These methods are
-available via the :func:`~sesame.analyzer.Analyzer` object. In the code below we
-load a data file and create this object::
+available via the :func:`~sesame.analyzer.Analyzer` class. In the code below we
+load a data file and create an instance of that class::
 
     import numpy as np
     from scipy.constants import m_e, epsilon_0
@@ -93,26 +93,28 @@ system::
     efp = result['efp'][sites]
     v   = result['v'][sites]
 
+    # Units
+    scaling = sesame.Scaling()  # dimensions of physical quantities
 
     # Get the defect state equilibrium densities
+    vt = scaling.energy
     E = -0.25 # eV
-    nGB = sys.nextra[0](sites, E)
-    pGB = sys.pextra[0](sites, E)
+    nGB = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E/vt)
+    pGB = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E/vt)
 
     # Compute the carrier densities
     n = az.electron_density((p1, p2))
     p = az.hole_density((p1, p2))
 
     # Compute the thermal velocity
-    scaling = sesame.Scaling()
     ct = np.sqrt(epsilon_0/scaling.density)/scaling.mobility
     vth = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
 
     # Compute the normalized surface recombination velocity and the recombination
     sigma = sys.defects_list[0].sigma_e
     NGB = sys.defects_list[0].dos
-    S = sigma * NGB * vth
-    ni = sys.ni[0] # intrinsic density taken at the first site (random)
+    S = sigma * NGB * vth / sys.defects_list[0].perp_dl
+    ni = np.sqrt(nGB*pGB)  # intrinsic density
     R = S * (n*p - ni**2) / (n + nGB + p + pGB)
 
     # R is a 1D array containing the recombination at all the defect sites. To
@@ -121,10 +123,19 @@ system::
     sp = spline(X, R)
     JGB = sp.integral(X[0], X[-1])
 
-Observe how we accessed the dimension of the surface recombination velocity with
-``sys.scaling.velocity``. Other dimensions can be obtained similarly with the
-self-explanatory field names density, energy, mobility, time, length,
-generation.
+Observe how we accessed the dimensions of physical quantities. We created an
+object ``scaling`` from the class :func:`~sesame.builder.Scaling`, and called
+the desired attribute of that object. Available dimensions are:
+density, energy, mobility, time, length, and generation. Theses dimensions
+(except mobility) depend on the temperature given when creating an 
+instance of the class :func:`~sesame.builder.Scaling` (default is 300 K).
+
+The attribute of Builder called ``defects_list`` is a list of named tuples. This
+list stores the parameters of each defect originally added to the system. The
+field names of the named tuples are ``sites``, ``location``, ``dos``, ``energy``,
+``sigma_e``, ``sigma_h``, ``transition``, ``perp_dl``. The last field contains
+the lattice distance perpendicular to the line of defects. It is necessary to
+normalize the recombination velocity and in 2D.
 
 .. seealso:: In case the methods available in the
    :func:`~sesame.analyzer.Analyzer` are not enough (especially in 3D), the

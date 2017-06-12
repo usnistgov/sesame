@@ -45,20 +45,18 @@ we rewrite inside its own function::
 
         # Region 1
         reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-                'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-                'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+                'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
         sys.add_material(reg1, lambda pos: (pos[1] <= 2.4e-6) | (pos[1] >= 2.6e-6))
 
         # Region 2
         reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-                'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-                'Et':0, 'band_offset':0, 'B':0, 'Cp':0}
+                'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
         sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
 
         # gap state characteristics
-        S = 1e5 * 1e-2           # trap recombination velocity [m/s]
-        E = -0.25                # energy of gap state (eV) from midgap
-        N = amp * 2e14 * 1e4           # defect density [1/m^2]
+        s = 1e-15 * 1e-4               # trap capture cross section [m^2]
+        E = -0.25                      # energy of gap state (eV) from midgap
+        N = amp * 2e13 * 1e4           # defect density [1/m^2]
 
         p1 = (20e-9, 2.5e-6)   #[m]
         p2 = (2.9e-6, 2.5e-6)  #[m]
@@ -66,8 +64,8 @@ we rewrite inside its own function::
         sys.add_line_defects([p1, p2], N, S, E=E)
 
         # Define a function for the generation rate
-        phi = 1e21 # photon flux [1/(m^2 s)]
-        alpha = 2.3e6 # absorption coefficient [1/m]
+        phi = 1e21          # photon flux [1/(m^2 s)]
+        alpha = 2.3e6       # absorption coefficient [1/m]
         f = lambda x, y: phi * alpha * np.exp(-alpha * x)
         sys.generation(f)
 

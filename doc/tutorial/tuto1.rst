@@ -45,11 +45,10 @@ accessible through the top-level `sesame` package. See the :doc:`reference
 documentation <../reference/index>`.
 
 Now we need to add a material to our system. A material is defined using a
-dictionary and add it to the system::
+dictionary that is then added to the system::
 
     CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     sys.add_material(CdTe)
 
@@ -57,12 +56,10 @@ where ``Nc`` (``Nv``) is the effective density of states of the conduction
 (valence) band (:math:`\mathrm{m^{-3}}`), ``Eg`` is the material band gap
 (:math:`\mathrm{eV}`), ``epsilon`` is the material's dielectric constant,
 ``mu_e`` (``mu_h``) is the electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot
-s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime
-(:math:`\mathrm{s}`), ``Et`` is the bulk recombination centers energy
-level (:math:`\mathrm{eV}`), ``band_offset`` is a band offset that sets the
-zero of potential (:math:`\mathrm{eV}`), ``B`` is the radiative radiation
-coefficient (:math:`\mathrm{m^3/s}`), ``Cn`` (``Cp``) is the Auger recombination
-coefficient for electrons (holes).
+s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime. For the full list
+of material parameters available, see the documentation of the method
+:func:`~sesame.builder.Builder.add_material` of the :func:`~sesame.builder.Builder`.
+
 
 .. note::
    We assumed that a single material/region makes the entire system.
@@ -140,12 +137,12 @@ The Poisson equation is solved with an initial guess::
     solution = sesame.solve(sys, {'v':v})
 
 Note that :func:`~sesame.solve` is the multi-purpose solver of the package. When
-a dictionary ``{'v': array}`` is passed to this function, Sesame will understand
-that only the electrostatic potential of the system at thermal equilibrium needs
-to be solved for.
+a single dictionary ``{'v': array}`` is passed to this function (the key needs
+to be 'v'), Sesame will understand that only the electrostatic potential of the
+system at thermal equilibrium needs to be solved for.
 
 Finally, the function `~sesame.solvers.IVcurve` loops over the applied voltages
-and saves the results::
+and saves the results in the designated file::
 
     voltages = np.linspace(0, 0.95, 40)
     solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})

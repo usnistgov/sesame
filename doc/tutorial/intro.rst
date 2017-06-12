@@ -133,7 +133,7 @@ Additional charged defects can be added to the system to simulate, for example,
 grain boundaries in a semiconductor. Grain boundaries separate crystallites of
 different orientation. They occupy a reduced dimensionality space (e.g. 2D
 planes embedded in a 3D material), and typically possess a high density of
-defects (dangling bonds, wrong bonds, \cdots). These lead to localized states
+defects (dangling bonds, wrong bonds). These lead to localized states
 within the gap, which may lead to charging of the grain boundary, and increased
 recombination at the grain boundary.
 

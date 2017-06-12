@@ -170,7 +170,7 @@ class Builder():
             Keys are Nc (Nv): conduction (valence) effective densities of states
             [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
             material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
-            :sup:`2`/V/s], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
+            :sup:`2`/(V s)], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
             energy level of the bulk recombination centers [eV], band_offset:
             band offset setting the zero of potential [eV], B: radiation
             recombination constant [m\ :sup:`3`/s], Cn (Cp): Auger recombination constant for

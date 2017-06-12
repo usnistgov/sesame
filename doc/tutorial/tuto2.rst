@@ -25,19 +25,21 @@ grid with a finer lattice around it::
     import sesame
     import numpy as np
 
-    
     # dimensions of the system
     Lx = 3e-6 # [m]
     Ly = 5e-6 # [m]
+
     # extent of the junction from the left contact [m]
     junction = 10e-9 
 
+    # Mesh
     x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
                         np.linspace(1.2e-6, Lx, 50)))
     y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
                         np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
                         np.linspace(2.75e-6, Ly, 50)))
 
+    # Create a system
     sys = sesame.Builder(x, y)
 
     def region(pos):
@@ -71,8 +73,7 @@ function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
 
     # Dictionary with the material parameters
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+            'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     # Add the material to the system
     sys.add_material(reg1, region1)
@@ -85,8 +86,7 @@ all sites not in region 1 will be in region 2::
 
     # Dictionary with the material parameters
     reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+            'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     # Add the material to the system
     sys.add_material(reg2, lambda pos: 1 - region1(pos))
@@ -96,16 +96,20 @@ Now we add some local charges to simulate the defect line of our system. We
 define a defect gap state as follows::
 
     # gap state characteristics
-    S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+    s = 1e-15 * 1e-4         # trap capture cross section [m^2]
     E = -0.25                # energy of gap state (eV) from midgap
-    N = 2e14 * 1e4           # defect density [1/m^2]
+    N = 2e13 * 1e4           # defect density [1/m^2]
 
     # Specify the two points that make the line containing additional charges
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
     # Pass the information to the system
-    sys.add_line_defects([p1, p2], N, S, E=E)
+    sys.add_line_defects([p1, p2], N, s, E=E, transition=(1/-1))
+
+The type of the charge transition :math:`\alpha/\beta` is specified as
+shown above. In our example we chose a mixture of donor and acceptor at energy
+E. An acceptor would be described by (-1,0) and a donor by (1,0).
 
 .. note::
    * Avoid adding charges on the contacts of the system, as these will not be
@@ -120,10 +124,10 @@ define a defect gap state as follows::
 
      .. code-block:: python
 
-        sys.add_line_defects([p1, p2], N, Sn, Sp, E=E)
-   * A continuum of states can be considered by providing a function for the defect
-     density of states (without passing any energy). Simply passing a float
-     results in a density of states independent of the energy.
+        sys.add_line_defects([p1, p2], N, sn, sp, E=E)
+   * A continuum of states can be considered by omitting the energy argument
+     above. The density of states can be a callable function or a numerical
+     value, in which case the density of states is independent of the energy.
 
 
 Visualizing the system

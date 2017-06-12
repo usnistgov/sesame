@@ -23,7 +23,7 @@ the rectangle::
     # gap state characteristics
     S = 1e5 * 1e-2           # trap recombination velocity [m/s]
     E = -0.25                # energy of gap state (ev) from midgap
-    N = 2e14 * 1e4           # defect density [1/m^2]
+    N = 2e13 * 1e4           # defect density [1/m^2]
 
     p1 = (1e-6, .5e-6, 1e-6)            # [m]
     p2 = (2.9e-6, .5e-6, 1e-6)          # [m]

@@ -36,15 +36,15 @@ sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
 # dictionary with the material parameters
 CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-        'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-        'Et':0, 'band_offset':0, 'B':0, 'Cn':0, 'Cp':0}
+        'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
+
 # add the material to the system
 sys.add_material(CdTe)
 
 # gap state characteristics
-s = 1e-16 * 1e-4         # trap capture cross section [m^2]
+s = 1e-15 * 1e-4         # trap capture cross section [m^2]
 E = -0.25                # energy of gap state (ev) from midgap
-N = 2e14 * 1e4           # defect density [1/m^2]
+N = 2e13 * 1e4           # defect density [1/m^2]
 
 # specify the four points that define the plane containing additional charges
 p1 = (1e-6, .5e-6, 1e-6)    #[m]
