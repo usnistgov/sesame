@@ -45,9 +45,9 @@ def sparse_solver(J, f, iterative, use_mumps, inner_tol):
             print("Iterative sparse solver failed with output info: ", info)
             exit(1)
 
-def get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps):
-    # Compute the right hand side of Ax=b
-    if equilibrium:
+def get_system(x, sys, equilibrium, periodic_bcs, use_mumps):
+    # Compute the right hand side of J * x = f
+    if equilibrium is None:
         if periodic_bcs == False and sys.dimension != 1:
             rhs = importlib.import_module('.getFandJ_eq{0}_abrupt'\
                            .format(sys.dimension), 'sesame')
@@ -55,45 +55,26 @@ def get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps):
             rhs = importlib.import_module('.getFandJ_eq{0}'\
                            .format(sys.dimension), 'sesame')
 
-        rhs, _ = rhs.getFandJ_eq(sys, x, use_mumps)
+        f, J = rhs.getFandJ_eq(sys, x, use_mumps)
     else:
         if periodic_bcs == False and sys.dimension != 1:
             rhs = importlib.import_module('.getF{0}_abrupt'\
                            .format(sys.dimension), 'sesame')
-        else:
-            rhs = importlib.import_module('.getF{0}'\
-                           .format(sys.dimension), 'sesame')
-
-        rhs = rhs.getF(sys, x[2::3], x[0::3], x[1::3])
-
-    return rhs
-
-
-def get_jac(x, sys, equilibrium, periodic_bcs, use_mumps):
-    # Compute the left hand side of Ax=b
-    if equilibrium:
-        if periodic_bcs == False and sys.dimension != 1:
-            lhs = importlib.import_module('.getFandJ_eq{0}_abrupt'\
-                           .format(sys.dimension), 'sesame')
-        else:
-            lhs = importlib.import_module('.getFandJ_eq{0}'\
-                           .format(sys.dimension), 'sesame')
-
-        _, lhs = lhs.getFandJ_eq(sys, x, use_mumps)
-    else:
-        if periodic_bcs == False and sys.dimension != 1:
             lhs = importlib.import_module('.jacobian{0}_abrupt'\
                            .format(sys.dimension), 'sesame')
         else:
+            rhs = importlib.import_module('.getF{0}'\
+                           .format(sys.dimension), 'sesame')
             lhs = importlib.import_module('.jacobian{0}'\
                            .format(sys.dimension), 'sesame')
 
-        lhs = lhs.getJ(sys, x[2::3], x[0::3], x[1::3], use_mumps)
+        f = rhs.getF(sys, x[2::3], x[0::3], x[1::3], equilibrium['v'])
+        J = lhs.getJ(sys, x[2::3], x[0::3], x[1::3], use_mumps)
 
-    return lhs
+    return f, J
 
 
-def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
+def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
            maxiter=300, verbose=True, use_mumps=False,\
            iterative=False, inner_tol=1e-6, htp=1):
 
@@ -110,7 +91,8 @@ def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
 
         cc = 0
         converged = False
-        f0 = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
+        if gamma != 1:
+            f0, _ = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
 
         while converged != True:
             cc = cc + 1
@@ -121,9 +103,9 @@ def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
                 break
 
             # solve linear system
-            f = get_rhs(x, sys, equilibrium, periodic_bcs, use_mumps)
-            f -= (1-gamma)*f0
-            J = get_jac(x, sys, equilibrium, periodic_bcs, use_mumps)
+            f, J = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
+            if gamma != 1:
+                f -= (1-gamma)*f0
             dx = sparse_solver(J, -f, iterative, use_mumps, inner_tol)
             dx.transpose()
 
@@ -150,7 +132,7 @@ def newton(sys, x, equilibrium, tol=1e-6, periodic_bcs=True,\
     else:
         return None
 
-def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
+def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300,\
           verbose=True, use_mumps=False, iterative=False, inner_tol=1e-6,\
           htp=1):
     """
@@ -166,6 +148,9 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         Contains the one-dimensional arrays of the initial guesses for the
         electron quasi-Fermi level, the hole quasi-Fermi level and the
         electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
+    equilibrium: numpy array of floats
+        Electrostatic potential of the system at thermal equilibrium. If not
+        provided, the solver will solve for it before doing anything else.
     tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
@@ -196,29 +181,35 @@ def solve(sys, guess, tol=1e-6, periodic_bcs=True, maxiter=300,\
         solution has been found.
 
     """
+    # Solve for potential at equilibrium first no matter what
+    if equilibrium is None:
+        x = guess['v']
+
+        x = newton(sys, x, None, tol=tol, periodic_bcs=periodic_bcs,\
+                   maxiter=maxiter, verbose=verbose,\
+                   use_mumps=use_mumps, iterative=iterative,\
+                   inner_tol=inner_tol, htp=htp)
+        if x is not None:
+            equilibrium = {'v': x}
+
+    # If Efn is provided, one wants a nonequilibrium solution 
     if 'efn' in guess.keys():
         x = np.zeros((3*sys.nx*sys.ny*sys.nz,), dtype=np.float64)
         x[0::3] = guess['efn']
         x[1::3] = guess['efp']
         x[2::3] = guess['v']
 
-        x = newton(sys, x, False, tol=tol, periodic_bcs=periodic_bcs,\
+        x = newton(sys, x, equilibrium, tol=tol, periodic_bcs=periodic_bcs,\
                    maxiter=maxiter, verbose=verbose,\
                    use_mumps=use_mumps, iterative=iterative,\
                    inner_tol=inner_tol, htp=htp)
         if x is not None:
             x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
+
+        return x
+    # If Efn is not provided, one only wants the equilibrium potential
     else:
-        x = guess['v']
-
-        x = newton(sys, x, True, tol=tol, periodic_bcs=periodic_bcs,\
-                   maxiter=maxiter, verbose=verbose,\
-                   use_mumps=use_mumps, iterative=iterative,\
-                   inner_tol=inner_tol, htp=htp)
-        if x is not None:
-            x = {'v': x}
-
-    return x
+        return equilibrium
 
 
 def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
@@ -236,7 +227,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         The discretized system.
     voltages: array-like
         List of voltages for which the current should be computed.
-    guess: dictionary of numpy arrays
+    guess: dictionary of numpy arrays of floats
         Starting point of the solver. Keys of the dictionary must be 'efn',
         'efp', 'v' for the electron and quasi-Fermi levels, and the
         electrostatic potential respectively.
@@ -279,7 +270,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
     """
     nx = sys.nx
 
-    # determine what the potential on the left and right should be
+    # determine what the potential on the left and right might be
     if sys.rho[0] < 0: # p-doped
         phi_left = -sys.Eg[0] - np.log(abs(sys.rho[0])/sys.Nv[0])
     else: # n-doped
@@ -292,6 +283,28 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
         q = -1
 
+    # Make a linear guess and solve for the eqilibrium potential
+    v = np.linspace(phi_left, phi_right, sys.nx)
+    if sys.dimension == 2:
+        v = np.tile(v, sys.ny) # replicate the guess in the y-direction
+    if sys.dimension == 3:
+        v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y and z-direction
+
+    if verbose:
+        print("\nSolving for the equilibrium electrostatic potential...")
+    phi_eq = solve(sys, {'v':v}, tol=tol, periodic_bcs=periodic_bcs,\
+                   maxiter=maxiter, verbose=verbose,\
+                   use_mumps=use_mumps, iterative=iterative,\
+                   inner_tol=inner_tol, htp=htp)
+    if phi_eq is None:
+        print("The solver failed to converge")
+        print("Aborting now.")
+        exit(1)   
+    else:
+        if verbose:
+            print("\ndone")
+
+    # create a dictionary 'result' with efn and efp
     result = guess
 
     # sites of the right contact
@@ -306,10 +319,11 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
             print("\napplied voltage: {0} V".format(voltages[idx]))
 
         # Apply the voltage on the right contact
-        result['v'][s] = phi_right + q*vapp
+
+        result['v'][s] = phi_eq['v'][s] + q*vapp
 
         # Call the Drift Diffusion Poisson solver
-        result = solve(sys, result, tol=tol, periodic_bcs=periodic_bcs,\
+        result = solve(sys, result, equilibrium=phi_eq, tol=tol, periodic_bcs=periodic_bcs,\
                        maxiter=maxiter, verbose=verbose,\
                        use_mumps=use_mumps, iterative=iterative,\
                        inner_tol=inner_tol, htp=htp)

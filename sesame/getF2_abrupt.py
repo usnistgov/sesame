@@ -2,7 +2,7 @@ import numpy as np
 from .observables import *
 from .defects  import defectsF
 
-def getF(sys, v, efn, efp):
+def getF(sys, v, efn, efp, veq):
     ###########################################################################
     #               organization of the right hand side vector                #
     ###########################################################################
@@ -104,15 +104,8 @@ def getF(sys, v, efn, efp):
     jpx = get_jp(sys, efp, v, sites, sites+1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = 0
-    p_eq = 0
-    #TODO tricky here to decide
-    if sys.rho[Nx] < 0: # p doped
-        p_eq = -sys.rho[sites]
-        n_eq = sys.ni[sites]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[sites]
-        p_eq = sys.ni[sites]**2 / n_eq
+    n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
+    p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
 
     an = jnx - sys.Scn[0] * (n[sites] - n_eq)
     ap = jpx + sys.Scp[0] * (p[sites] - p_eq)
@@ -149,14 +142,8 @@ def getF(sys, v, efn, efp):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar)
 
     # b_n, b_p and b_v values
-    n_eq = 0
-    p_eq = 0
-    if sys.rho[2*Nx-1] < 0: # p doped
-        p_eq = -sys.rho[2*Nx-1]
-        n_eq = sys.ni[sites]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[2*Nx-1]
-        p_eq = sys.ni[sites]**2 / n_eq
+    n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
+    p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
 
     bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
     bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)

@@ -105,25 +105,26 @@ def getFandJ_eq(sys, v, use_mumps):
     columns += list(chain.from_iterable(dfv_cols))
     data += list(chain.from_iterable(dfv_data))
 
-
     ###########################################################################
     #                   left contact: i = 0 and 0 <= j <= Ny-1                #
     ###########################################################################
     # list of the sites on the left side
     sites = _sites[:, 0].flatten()
 
-    # update vector
-    av_rows = sites
-    vec[av_rows] = 0 # to ensure Dirichlet BCs
+    # update vector with no surface charges
+    vec[sites] = v[sites+1]-v[sites]
 
     # update Jacobian
-    dav_rows = sites
-    dav_cols = sites
-    dav_data = [1 for s in sites] # dv_s = 0
+    dv = -np.ones(len(sites),)
+    dvp1 = np.ones(len(sites),)
 
-    rows += dav_rows.tolist()
-    columns += dav_cols.tolist()
-    data += dav_data
+    dav_rows = zip(sites, sites)
+    dav_cols = zip(sites, sites+1)
+    dav_data = zip(dv, dvp1)
+
+    rows += list(chain.from_iterable(dav_rows))
+    columns += list(chain.from_iterable(dav_cols))
+    data += list(chain.from_iterable(dav_data))
 
     ###########################################################################
     #                 right contact: i = Nx-1 and 0 <= j <= Ny-1              #
@@ -131,18 +132,20 @@ def getFandJ_eq(sys, v, use_mumps):
     # list of the sites on the right side
     sites = _sites[:, Nx-1].flatten()
 
-    # update vector
-    bv_rows = sites
-    vec[bv_rows] = 0 # to ensure Dirichlet BCs
+    # update vector with no surface charges
+    vec[sites] = v[sites-1]-v[sites-2]
 
     # update Jacobian
-    dbv_rows = sites
-    dbv_cols = sites
-    dbv_data = [1 for s in sites] # dv_s = 0
+    dv = np.ones(len(sites),)
+    dvm1 = -np.ones(len(sites),)
 
-    rows += dbv_rows.tolist()
-    columns += dbv_cols.tolist()
-    data += dbv_data
+    dbv_rows = zip(sites, sites)
+    dbv_cols = zip(sites-1, sites)
+    dbv_data = zip(dvm1, dv)
+
+    rows += list(chain.from_iterable(dbv_rows))
+    columns += list(chain.from_iterable(dbv_cols))
+    data += list(chain.from_iterable(dbv_data))
 
     ###########################################################################
     #                  boundary: 0 < i < Nx-1 and j = Ny-1                    #

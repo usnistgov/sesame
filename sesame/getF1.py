@@ -1,7 +1,7 @@
 import numpy as np
 from .observables import *
 
-def getF(sys, v, efn, efp):
+def getF(sys, v, efn, efp, veq):
     ###########################################################################
     #               organization of the right hand side vector                #
     ###########################################################################
@@ -23,8 +23,6 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = range(Nx)
-
     # carrier densities
     n = sys.Nc * np.exp(-sys.bl + efn + v)
     p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
@@ -83,23 +81,16 @@ def getF(sys, v, efn, efp):
     jpx = get_jp(sys, efp, v, 0, 1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = 0
-    p_eq = 0
-    #TODO tricky here to decide
-    if sys.rho[0] < 0: # p doped
-        p_eq = -sys.rho[0]
-        n_eq = sys.ni[0]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[0]
-        p_eq = sys.ni[0]**2 / n_eq
+    n_eq = sys.Nc[0] * np.exp(-sys.bl[0] + veq[0])
+    p_eq = sys.Nv[0] * np.exp(-sys.Eg[0] + sys.bl[0] - veq[0])
         
     an = jnx - sys.Scn[0] * (n[0] - n_eq)
     ap = jpx + sys.Scp[0] * (p[0] - p_eq)
-    av = 0 # to ensure Dirichlet BCs
+    av = 0 # Dirichlet
 
-    vec[[0]] = an
-    vec[[1]] = ap
-    vec[[2]] = av
+    vec[0] = an
+    vec[1] = ap
+    vec[2] = av
 
     ###########################################################################
     #                         right boundary: i = Nx-1                        #
@@ -116,21 +107,15 @@ def getF(sys, v, efn, efp):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites])
 
     # b_n, b_p and b_v values
-    n_eq = 0
-    p_eq = 0
-    if sys.rho[-1] < 0: # p doped
-        p_eq = -sys.rho[-1]
-        n_eq = sys.ni[-1]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[-1]
-        p_eq = sys.ni[-1]**2 / n_eq
+    n_eq = sys.Nc[-1] * np.exp(-sys.bl[-1] + veq[-1])
+    p_eq = sys.Nv[-1] * np.exp(-sys.Eg[-1] + sys.bl[-1] - veq[-1])
         
     bn = jnx_s + sys.Scn[1] * (n[-1] - n_eq)
     bp = jpx_s - sys.Scp[1] * (p[-1] - p_eq)
-    bv = 0 # Dirichlet BC
+    bv = 0
 
-    vec[[3*(Nx-1)]] = bn
-    vec[[3*(Nx-1)+1]] = bp
-    vec[[3*(Nx-1)+2]] = bv      
+    vec[3*(Nx-1)] = bn
+    vec[3*(Nx-1)+1] = bp
+    vec[3*(Nx-1)+2] = bv      
 
     return vec
