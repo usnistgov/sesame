@@ -108,12 +108,12 @@ system::
 
     # Compute the thermal velocity
     ct = np.sqrt(epsilon_0/scaling.density)/scaling.mobility
-    vth = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
+    vth = ct * np.sqrt(3/(sys.mass_e[sites[0]]*m_e))
 
-    # Compute the normalized surface recombination velocity and the recombination
+    # Compute the surface recombination velocity and the recombination
     sigma = sys.defects_list[0].sigma_e
     NGB = sys.defects_list[0].dos
-    S = sigma * NGB * vth / sys.defects_list[0].perp_dl
+    S = sigma * NGB * vth
     ni = np.sqrt(nGB*pGB)  # intrinsic density
     R = S * (n*p - ni**2) / (n + nGB + p + pGB)
 
@@ -135,7 +135,7 @@ list stores the parameters of each defect originally added to the system. The
 field names of the named tuples are ``sites``, ``location``, ``dos``, ``energy``,
 ``sigma_e``, ``sigma_h``, ``transition``, ``perp_dl``. The last field contains
 the lattice distance perpendicular to the line of defects. It is necessary to
-normalize the recombination velocity and in 2D.
+normalize the recombination velocity in 2D.
 
 .. seealso:: In case the methods available in the
    :func:`~sesame.analyzer.Analyzer` are not enough (especially in 3D), the
