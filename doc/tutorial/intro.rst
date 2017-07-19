@@ -107,10 +107,28 @@ where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 
 Boundary conditions at the contacts
 ...................................
-The boundary conditions for carriers at charge-collecting contacts located at
-:math:`x=0` and `x = L` are typically
-parameterized with the surface recombination velocities for electrons and holes
-at the contacts, denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
+In thermal equilibrium, the electroneutrality of the system imposes that no
+charge accumlates at the contacts located at :math:`x=0` and `x = L`, which
+implies the following boundary conditions 
+
+.. math::
+   \frac{\partial \phi}{\partial x}(0, y, z) = \frac{\partial \phi}{\partial x}(L, y, z) = 0
+   :label: bc1
+
+Out of thermal equilibrium, we impose Dirichlet boundary conditions on the
+electrostatic potential. For example, in the presence of an applied bias
+:math:`V` at :math:`x=L`, the boundary conditions are
+
+.. math::
+   \phi(0, y, z) &= \phi^{eq}(0,y,z)\\
+   \phi(L, y, z) &= \phi^{eq}(L,y,z) + qV
+
+where :math:`\phi^{eq}` is the equilibrium electrostatic potential subject to
+the boundary conditions Eq. :eq:`bc1`.
+For the drift-diffusion equations, the boundary conditions for carriers at
+charge-collecting contacts are typically parameterized with the
+surface recombination velocities for electrons and holes at the contacts,
+denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
 
 .. math::
    \vec{J}_n(0,y,z) \cdot \vec{u}_x &= qS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
