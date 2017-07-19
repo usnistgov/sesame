@@ -77,6 +77,9 @@ if __name__ == '__main__':
     solution = {'v':v}
     solution = sesame.solve(sys, solution)
 
+    # Make a copy of the equilibrium potential
+    veq = np.copy(solution['v'])
+
     #---------------------------------------------------------------
     #                           Step 2
     #---------------------------------------------------------------
@@ -88,7 +91,7 @@ if __name__ == '__main__':
     # Loop at zero bias with increasing defect density of states
     for amp in [0.0001, 0.01]:
         sys = system(amp)
-        solution = sesame.solve(sys, solution)
+        solution = sesame.solve(sys, solution, equilibrium=veq)
 
     #---------------------------------------------------------------
     #                           Step 3
