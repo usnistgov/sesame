@@ -8,7 +8,7 @@ Geometry and governing equations
 .................................
 
 Our model system is shown below. It is a semiconductor device connected to two
-contacts in :math:`x=0` and :math:`x=L` (where :math:`L` is the the length of
+contacts in :math:`x=0` and :math:`x=L` (where :math:`L` is the length of
 the device in the :math:`x`-direction). The doped regions are drawn for the
 example only, any doping profile can be considered.
 
@@ -64,7 +64,7 @@ the dimensionless variables are
    \bar t &= t \frac{q\mu N}{\epsilon_0} \\
    \bar J_{n,p} &= J_{n,p} \frac{qD_{n,p}N}{\lambda} 
 
-We suppose that the recombination is through three mechanims:
+We suppose that the recombination is through three mechanisms:
 Shockley-Read-Hall, radiative and Auger.  Unlike the defect-mediated
 recombination, radiative and Auger processes are respectively second and third
 order in charge density. For this reason they become more important at higher
@@ -108,7 +108,7 @@ where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 Boundary conditions at the contacts
 ...................................
 In thermal equilibrium, the electroneutrality of the system imposes that no
-charge accumlates at the contacts located at :math:`x=0` and `x = L`, which
+charge accumulates at the contacts located at :math:`x=0` and `x = L`, which
 implies the following boundary conditions 
 
 .. math::
@@ -141,7 +141,7 @@ where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.
 In being collected by a contact, a carrier in the valence or conduction band
 loses its energy and relaxes to the chemical potential of the bulk contact.
 This is essentially a recombination process. The recombination velocity may be
-thought of identically as a carrier lifetime in twho dimension (considering
+thought of identically as a carrier lifetime in two dimension (considering
 Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
 velocity).  
 
@@ -215,7 +215,7 @@ density is related to these quantities as
    :label: np
 
 where the term :math:`b_l` essentially sets (or is set by) the zero of energy
-for the electrostatic potential (the default value is 0).  Quasi-fermi levels
+for the electrostatic potential (the default value is 0).  Quasi-Fermi levels
 are convenient in part because they guarantee that carrier densities are always
 positive. While carrier densities vary by many orders of magnitude, quasi-Fermi
 levels require much less variation to describe the system. The signs in Eq.
