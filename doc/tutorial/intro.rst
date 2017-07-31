@@ -175,7 +175,7 @@ and holes respectively. :math:`\bar n_j` and :math:`\bar p_j` are
    \bar n_j &= N_C e^{\left(-E_g/2 + E_j\right)/k_BT}\\
    \bar p_j &= N_V e^{(-E_g/2 - E_j)/k_BT}
 
-where :math:`E_j` is calculated from the valence band edge, :math:`N_C`
+where :math:`E_j` is calculated from midgap, :math:`N_C`
 (:math:`N_V`) is the conduction (valence) band effective density of states.
 
 

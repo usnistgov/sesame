@@ -10,7 +10,8 @@ def system(amp=1):
 
     # Mesh
     x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
-                        np.linspace(1.2e-6, Lx, 50)))
+                        np.linspace(1.2e-6, 2.9e-6, 50, endpoint=False),
+                        np.linspace(2.9e-6, Lx, 10)))
     y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
                         np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
                         np.linspace(2.75e-6, Ly, 50)))

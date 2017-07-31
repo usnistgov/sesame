@@ -68,7 +68,7 @@ def get_system(x, sys, equilibrium, periodic_bcs, use_mumps):
             lhs = importlib.import_module('.jacobian{0}'\
                            .format(sys.dimension), 'sesame')
 
-        f = rhs.getF(sys, x[2::3], x[0::3], x[1::3], equilibrium['v'])
+        f = rhs.getF(sys, x[2::3], x[0::3], x[1::3], equilibrium)
         J = lhs.getJ(sys, x[2::3], x[0::3], x[1::3], use_mumps)
 
     return f, J
@@ -183,14 +183,10 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
     """
     # Solve for potential at equilibrium first no matter what
     if equilibrium is None:
-        x = guess['v']
-
-        x = newton(sys, x, None, tol=tol, periodic_bcs=periodic_bcs,\
-                   maxiter=maxiter, verbose=verbose,\
-                   use_mumps=use_mumps, iterative=iterative,\
-                   inner_tol=inner_tol, htp=htp)
-        if x is not None:
-            equilibrium = {'v': x}
+        equilibrium = newton(sys, guess['v'], None, tol=tol, periodic_bcs=periodic_bcs,\
+                      maxiter=maxiter, verbose=verbose,\
+                      use_mumps=use_mumps, iterative=iterative,\
+                      inner_tol=inner_tol, htp=htp)
 
     # If Efn is provided, one wants a nonequilibrium solution 
     if 'efn' in guess.keys():
@@ -209,7 +205,7 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
         return x
     # If Efn is not provided, one only wants the equilibrium potential
     else:
-        return equilibrium
+        return {'v': equilibrium}
 
 
 def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
