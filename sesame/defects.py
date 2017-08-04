@@ -33,7 +33,7 @@ def defectsF(sys, n, p, rho, r=None):
 
         # density of states: float or function
         N = defect.dos
-        dl = defect.perp_dl # array in 2D, float 1. in 3D
+        dl = defect.perp_dl 
 
         if E is not None: # no integration, vectorize as much as possible
             _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
@@ -58,12 +58,9 @@ def defectsF(sys, n, p, rho, r=None):
                       / ((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))
 
                 if not callable(N):
-                    res *= N
+                    res *= N / dl[sdx]
                 else: # if N is callable
-                    res *= N(E)
-
-                if sys.dimension == 2:
-                    res /= dl[sdx]
+                    res *= N(E) / dl[sdx]
                 return res
 
             if r is not None:
@@ -81,12 +78,9 @@ def defectsF(sys, n, p, rho, r=None):
                 res = a + (b-a)*f
 
                 if not callable(N):
-                    res *= N
+                    res *= N / dl[sdx]
                 else: # if N is callable
-                    res *= N(E)
-
-                if sys.dimension == 2:
-                    res /= dl[sdx]
+                    res *= N(E) / dl[sdx]
                 return res
 
             rho[sites] += [quad(_rho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
@@ -122,9 +116,7 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         # density of states: float or function
         N = defect.dos
-
-        if sys.dimension == 2:
-            dl = defect.perp_dl
+        dl = defect.perp_dl
 
         # multipurpose derivative of rho
         def drho(E, sdx, site, var):
@@ -145,12 +137,9 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             res /= (se*ve[sdx]*(_n[sdx]+_n1)+sh*vh[sdx]*(_p[sdx]+_p1))**2
 
             if not callable(N):
-                res *= N
+                res *= N / dl[sdx]
             else: # if N is callable
-                res *= N(E)
-
-            if sys.dimension == 2:
-                res /= dl[sdx]
+                res *= N(E) / dl[sdx]
             return res
 
         # multipurpose derivative of recombination
@@ -172,12 +161,9 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
             res /= ((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))**2
 
             if not callable(N):
-                res *= N
+                res *= N / dl[sdx]
             else: # if N is callable
-                res *= N(E)
-
-            if sys.dimension == 2:
-                res /= dl[sdx]
+                res *= N(E) / dl[sdx]
             return res
 
         # actual computation of things

@@ -227,10 +227,9 @@ class Builder():
             E /= self.scaling.energy
 
         if len(location) == 2:
-            s, dl = get_line_defects_sites(self, location)
+            s, dl = utils.get_line_defects_sites(self, location)
         elif len(location) == 4:
-            s, _, _, _ = utils.plane_defects_sites(self, location) 
-            dl = 1.
+            s, _, _, _, dl = utils.plane_defects_sites(self, location) 
         else:
             print("Wrong definition for the defects location: the list must"+\
                   "contain two points for a line, four points for a plane.")
@@ -280,7 +279,7 @@ class Builder():
 
         Warnings
         --------
-        * Addition of line defects is defined for two-dimensional systems only.
+        * Line defects are defined for two-dimensional systems only.
 
         * We assume that no additional charge is on the contacts.
 
@@ -324,9 +323,10 @@ class Builder():
         * The planes must be rectangles with at least one edge parallel to
           either the x or y or z-axis.
 
-        * Addition of plane defects is defined for three-dimensional systems only.
+        * The two lines that define a plane must be parallel to either x or y or
+          z-axis
 
-        * We assume that no additional charge is on the contacts.
+        * Plane defects are defined for three-dimensional systems only.
 
         See Also
         --------
@@ -469,51 +469,3 @@ def get_sites(sys, location):
         return sites[mask.astype(bool)]
 
 
-def get_line_defects_sites(system, location):
-    # find the sites closest to the straight line defined by
-    # (xa,ya,za) and (xb,yb,zb) 
-
-    xa, ya = location[0]
-    xb, yb = location[1]
-    ia, ja, _ = utils.get_indices(system, (xa, ya, 0))
-    ib, jb, _ = utils.get_indices(system, (xb, yb, 0))
-
-    Dx = abs(ib - ia)    # distance to travel in X
-    Dy = abs(jb - ja)    # distance to travel in Y
-    if ia < ib:
-        incx = 1           # x will increase at each step
-    elif ia > ib:
-        incx = -1          # x will decrease at each step
-    else:
-        incx = 0
-    if ja < jb:
-        incy = 1           # y will increase at each step
-    elif ja > jb:
-        incy = -1          # y will decrease at each step
-    else:
-        incy = 0
-
-    # take the numerator of the distance of a point to the line
-    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
-
-    i, j = ia, ja
-    perp_dl = []
-    sites = [i + j*system.nx]
-    for _ in range(Dx + Dy):
-        e1 = error(system.xpts[i], system.ypts[j+incy])
-        e2 = error(system.xpts[i+incx], system.ypts[j])
-        if incx == 0:
-            condition = e1 <= e2 # for lines x = constant
-        else:
-            condition = e1 < e2
-        if condition:
-            j += incy
-            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
-        else:
-            i += incx
-            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
-        sites.append(i + j*system.nx)
-    perp_dl.append(perp_dl[-1])
-    perp_dl = np.asarray(perp_dl)
-
-    return sites, perp_dl

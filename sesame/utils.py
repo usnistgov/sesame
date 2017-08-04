@@ -79,6 +79,7 @@ def Bresenham(system, p1, p2):
     icoord = [i]
     jcoord = [j]
     kcoord = [k1]
+
     for _ in range(Dx + Dy):
         e1 = error(system.xpts[i], system.ypts[j+incy])
         e2 = error(system.xpts[i+incx], system.ypts[j])
@@ -114,7 +115,7 @@ def check_plane(P1, P2, P3, P4):
     check = True
 
     # 1. check if the two lines are perpendicular to th z-axis
-    if np.dot(v1, (0,0,1)) != 0 and np.dot(v3, (0,0,1)):
+    if np.dot(v1, (0,0,1)) != 0 and np.dot(v2, (0,0,1)):
         check = False
         print("The lines defining the plane defects defined by the four points "\
             + "{0}, {1}, {2}, {3}".format(P1, P2, P3, P4) +\
@@ -147,6 +148,56 @@ def check_plane(P1, P2, P3, P4):
         print(msg)
         exit(1)
 
+
+def get_line_defects_sites(system, location):
+    # find the sites closest to the straight line defined by
+    # (xa,ya,za) and (xb,yb,zb) 
+
+    xa, ya = location[0]
+    xb, yb = location[1]
+    ia, ja, _ = get_indices(system, (xa, ya, 0))
+    ib, jb, _ = get_indices(system, (xb, yb, 0))
+
+    Dx = abs(ib - ia)    # distance to travel in X
+    Dy = abs(jb - ja)    # distance to travel in Y
+    if ia < ib:
+        incx = 1           # x will increase at each step
+    elif ia > ib:
+        incx = -1          # x will decrease at each step
+    else:
+        incx = 0
+    if ja < jb:
+        incy = 1           # y will increase at each step
+    elif ja > jb:
+        incy = -1          # y will decrease at each step
+    else:
+        incy = 0
+
+    # take the numerator of the distance of a point to the line
+    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
+
+    i, j = ia, ja
+    perp_dl = []
+    sites = [i + j*system.nx]
+    for _ in range(Dx + Dy):
+        e1 = error(system.xpts[i], system.ypts[j+incy])
+        e2 = error(system.xpts[i+incx], system.ypts[j])
+        if incx == 0:
+            condition = e1 <= e2 # for lines x = constant
+        else:
+            condition = e1 < e2
+        if condition:
+            j += incy
+            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
+        else:
+            i += incx
+            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+        sites.append(i + j*system.nx)
+    perp_dl.append(perp_dl[-1])
+    perp_dl = np.asarray(perp_dl)
+    return sites, perp_dl
+
+
 def plane_defects_sites(sys, location):
     """
     Get sites and coordinates of the locations containing additional charges
@@ -171,6 +222,8 @@ def plane_defects_sites(sys, location):
         Grid of the x-coordinates of the sites [m].
     yccord: numpy array of floats
         Grid of the y-coordinates of the sites [m].
+    perp_dl: numpy array of floats
+        Lattice constants localy orthogonal to the plane.
 
     Notes
     -----
@@ -187,7 +240,7 @@ def plane_defects_sites(sys, location):
     # points indices on the grid
     i1, j1, k1 = get_indices(sys, P1)
     i2, j2, k2 = get_indices(sys, P2)
-    # check if the two lines are in the same direction, if not, flip the second line
+    # check if the two lines are in the same sense, if not, flip the second line
     if np.dot(P2 - P1, P4 - P3) > 0:
         i3, j3, k3 = get_indices(sys, P3)
     else:
@@ -224,6 +277,7 @@ def plane_defects_sites(sys, location):
         incz = -1
        
     sites, xcoord, ycoord, zcoord = [], [], [], []
+    perp_dl = np.array([])
 
     s, _, ic, jc, kc = Bresenham(sys, P1, P2)
 
@@ -231,7 +285,7 @@ def plane_defects_sites(sys, location):
     xcoord.append(sys.xpts[ic])
     ycoord.append(sys.ypts[jc])
     zcoord.append(sys.zpts[kc])
-
+    print(incx, incy, incz)
     for _ in range(travel-1):
         # find the coordinates of the next line
         e1 = error(sys.xpts[i1+incx], sys.ypts[j1], sys.zpts[k1])
@@ -242,29 +296,47 @@ def plane_defects_sites(sys, location):
             if e1 < e2:
                 i1, j1, k1 = i1 + incx, j1, k1
                 i2, j2, k2 = i2 + incx, j2, k2
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1 + incy, k1
                 i2, j2, k2 = i2, j2 + incy, k2
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incy == 0 and incx != 0:
-            if e1 < e3:
+            if e1 == e3:
+                condition = incz == 0
+            else:
+                condition = e1 < e3
+            if condition:
                 i1, j1, k1 = i1 + incx, j1, k1
                 i2, j2, k2 = i2 + incx, j2, k2
+                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incx == 0 and incy != 0:
-            if e2 < e3:
+            if e2 == e3:
+                condition = incz == 0
+            else:
+                condition = e2 < e3
+            if condition:
                 i1, j1, k1 = i1, j1 + incy, k1
                 i2, j2, k2 = i2, j2 + incy, k2
+                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
 
         if incx == 0 and incy == 0:
             i1, j1, k1 = i1, j1, k1 + incz
             i2, j2, k2 = i2, j2, k2 + incz
+            if j1 == j2:
+                dl = (sys.dy[k1] + sys.dy[k1+1])/2.
+            if i1 == i2:
+                dl = (sys.dx[k1] + sys.dx[k1+1])/2.
 
         x1, x2 = sys.xpts[i1], sys.xpts[i2]
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
@@ -277,7 +349,10 @@ def plane_defects_sites(sys, location):
         ycoord.append(sys.ypts[jc])
         zcoord.append(sys.zpts[kc])
 
+        # replicate perp_dl for all sites on the line
+        perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
+
     xcoord = np.asarray(xcoord)
     ycoord = np.asarray(ycoord)
     zcoord = np.asarray(zcoord)
-    return sites, xcoord, ycoord, zcoord
+    return sites, xcoord, ycoord, zcoord, perp_dl

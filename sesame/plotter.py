@@ -64,7 +64,7 @@ def plot_plane_defects(sys, scale=1e-6):
 
     for c in sys.defects_list:
 
-        _, X, Y, Z = utils.plane_defects_sites(sys, c.location) 
+        _, X, Y, Z, _ = utils.plane_defects_sites(sys, c.location) 
 
         X = X / scale
         Y = Y / scale

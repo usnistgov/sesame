@@ -11,7 +11,8 @@ junction = 10e-9
 
 # Mesh
 x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
-                    np.linspace(1.2e-6, Lx, 50)))
+                    np.linspace(1.2e-6, 2.9e-6, 50, endpoint=False),
+                    np.linspace(2.9e-6, Lx, 10)))
 y = np.linspace(0, Ly, 100)
 z = np.linspace(0, Lz, 50)
 
