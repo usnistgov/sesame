@@ -288,7 +288,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
 
     if verbose:
         print("\nSolving for the equilibrium electrostatic potential...")
-    phi_eq = solve(sys, {'v':v}, tol=tol, periodic_bcs=periodic_bcs,\
+    phi_eq = newton(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
                    maxiter=maxiter, verbose=verbose,\
                    use_mumps=use_mumps, iterative=iterative,\
                    inner_tol=inner_tol, htp=htp)
@@ -316,7 +316,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
 
         # Apply the voltage on the right contact
 
-        result['v'][s] = phi_eq['v'][s] + q*vapp
+        result['v'][s] = phi_eq[s] + q*vapp
 
         # Call the Drift Diffusion Poisson solver
         result = solve(sys, result, equilibrium=phi_eq, tol=tol, periodic_bcs=periodic_bcs,\
