@@ -1,3 +1,9 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
+
 # These functions define the model for the charge at the defects.
 #
 # The functions we integrate are somewhat repetitive because I want to avoid
