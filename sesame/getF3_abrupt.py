@@ -41,6 +41,10 @@ def getF(sys, v, efn, efp, veq):
     n = sys.Nc * np.exp(-sys.bl + efn + v)
     p = sys.Nv * np;exp(-sys.Eg + sys.bl + efp - v)
 
+    # equilibrium carrier densities
+    n_eq = sys.Nc * np.exp(-sys.bl + veq)
+    p_eq = sys.Nv * np.exp(-sys.Eg + sys.bl - veq)
+
     # bulk charges
     rho = sys.rho - n + p
 
@@ -147,11 +151,8 @@ def getF(sys, v, efn, efp, veq):
                                    - (jpz_s - jpz_smNN)/dzbar)
 
         # b_n, b_p and b_v values
-        n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
-        p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
-            
-        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq[sites])
+        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq[sites])
         bv = 0 # Dirichlet BC
         # update right hand side vector
         update(bn, bp, bv, sites)
@@ -188,11 +189,8 @@ def getF(sys, v, efn, efp, veq):
     jpx = get_jp(sys, efp, v, sites, sites + 1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
-    p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
-        
-    an = jnx - sys.Scn[0] * (n[sites] - n_eq)
-    ap = jpx + sys.Scp[0] * (p[sites] - p_eq)
+    an = jnx - sys.Scn[0] * (n[sites] - n_eq[sites])
+    ap = jpx + sys.Scp[0] * (p[sites] - p_eq[sites])
     av = 0 # to ensure Dirichlet BCs
 
     update(an, ap, av, sites)

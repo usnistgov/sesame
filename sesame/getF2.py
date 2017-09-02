@@ -34,6 +34,10 @@ def getF(sys, v, efn, efp, veq):
     n = sys.Nc * np.exp(-sys.bl + efn + v)
     p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
 
+    # equilibrium carrier densities
+    n_eq = sys.Nc * np.exp(-sys.bl + veq)
+    p_eq = sys.Nv * np.exp(-sys.Eg + sys.bl - veq)
+
     # bulk charges
     rho = sys.rho - n + p
 
@@ -110,11 +114,8 @@ def getF(sys, v, efn, efp, veq):
     jpx = get_jp(sys, efp, v, sites, sites+1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
-    p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
-        
-    an = jnx - sys.Scn[0] * (n[sites] - n_eq)
-    ap = jpx + sys.Scp[0] * (p[sites] - p_eq)
+    an = jnx - sys.Scn[0] * (n[sites] - n_eq[sites])
+    ap = jpx + sys.Scp[0] * (p[sites] - p_eq[sites])
     av = 0 # to ensure Dirichlet BCs
 
     vec[3*sites] = an
@@ -147,11 +148,8 @@ def getF(sys, v, efn, efp, veq):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar)
 
     # b_n, b_p and b_v values
-    n_eq = sys.Nc[sites] * np.exp(-sys.bl[sites] + veq[sites])
-    p_eq = sys.Nv[sites] * np.exp(-sys.Eg[sites] + sys.bl[sites] - veq[sites])
-        
-    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq[sites])
+    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq[sites])
     bv = 0 # Dirichlet BC
 
     vec[3*sites] = bn
@@ -184,17 +182,8 @@ def getF(sys, v, efn, efp, veq):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar)
 
     # b_n, b_p and b_v values
-    n_eq = 0
-    p_eq = 0
-    if sys.rho[2*Nx-1] < 0: # p doped
-        p_eq = -sys.rho[2*Nx-1]
-        n_eq = sys.ni[sites]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[2*Nx-1]
-        p_eq = sys.ni[sites]**2 / n_eq
-        
-    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq[sites])
+    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq[sites])
     bv = 0 # Dirichlet BC
 
     vec[3*sites] = bn
@@ -227,17 +216,8 @@ def getF(sys, v, efn, efp, veq):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites] - (jpy_s - jpy_smN)/dybar)
 
     # b_n, b_p and b_v values
-    n_eq = 0
-    p_eq = 0
-    if sys.rho[2*Nx-1] < 0: # p doped
-        p_eq = -sys.rho[2*Nx-1]
-        n_eq = sys.ni[sites]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[2*Nx-1]
-        p_eq = sys.ni[sites]**2 / n_eq
-        
-    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+    bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq[sites])
+    bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq[sites])
     bv = 0 # Dirichlet BC
 
     vec[3*sites] = bn

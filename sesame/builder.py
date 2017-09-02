@@ -198,7 +198,7 @@ class Builder():
 
         # default material parameters
         mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
-              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6,\
+              'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, 'tau_e': 1e-6,\
               'tau_h': 1e-6, 'band_offset': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
         for key in mat.keys():
@@ -248,7 +248,7 @@ class Builder():
         sigma_e *= NN
         sigma_h *= NN
 
-        if isinstance(N, float):
+        if not callable(N):
             f = N / NN
         else:
             f = lambda E: N(E*self.scaling.energy) / NN
