@@ -3,7 +3,8 @@ Tutorial 2: Two-dimensional pn junction with a line defects
 In this tutorial we show how to build a two-dimensional pn junction containing a
 line defects. We focus on the creation of different regions and the addition of
 extra charges to the system. See :doc:`tutorial 1 <tuto1>` for the basics on the
-creation of systems.
+creation of systems. We present the tools available to vizualize the system
+created.
 
 .. seealso:: The example treated here is in the file ``2dpn.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -24,19 +25,21 @@ grid with a finer lattice around it::
     import sesame
     import numpy as np
 
-    
     # dimensions of the system
     Lx = 3e-6 # [m]
     Ly = 5e-6 # [m]
+
     # extent of the junction from the left contact [m]
     junction = 10e-9 
 
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, Lx, 100)))
-    y = np.concatenate((np.linspace(0, 2.25e-6, 100, endpoint=False), 
-                        np.linspace(2.25e-6, 2.75e-6, 100, endpoint=False),
-                        np.linspace(2.75e-6, Ly, 100)))
+    # Mesh
+    x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
+                        np.linspace(1.2e-6, Lx, 50)))
+    y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
+                        np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
+                        np.linspace(2.75e-6, Ly, 50)))
 
+    # Create a system
     sys = sesame.Builder(x, y)
 
     def region(pos):
@@ -66,23 +69,24 @@ function that defines the region for :math:`y<2.4~\mathrm{\mu m}` and
 
     def region1(pos):
         x, y = pos
-        return y < 2.4e-6 or y > 2.6e-6
+        return (y < 2.4e-6) | (y > 2.6e-6)
 
     # Dictionary with the material parameters
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     # Add the material to the system
     sys.add_material(reg1, region1)
 
-We can easily use ``region1`` to define the second region, since all sites not
-in region 1 will be in region 2::
+In the definition of ``region1``, observe how we define the statement OR. Here
+we use a bitwise logical operator. Other useful operators are ``&`` for AND,
+``~`` for NOT. Statements on each side of an operator must be in between
+parentheses.  We can easily use ``region1`` to define the second region, since
+all sites not in region 1 will be in region 2::
 
     # Dictionary with the material parameters
     reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     # Add the material to the system
     sys.add_material(reg2, lambda pos: 1 - region1(pos))
@@ -92,16 +96,20 @@ Now we add some local charges to simulate the defect line of our system. We
 define a defect gap state as follows::
 
     # gap state characteristics
-    S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+    s = 1e-15 * 1e-4         # trap capture cross section [m^2]
     E = -0.25                # energy of gap state (eV) from midgap
-    N = 2e14 * 1e4           # defect density [1/m^2]
+    N = 2e13 * 1e4           # defect density [1/m^2]
 
     # Specify the two points that make the line containing additional charges
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
     # Pass the information to the system
-    sys.add_line_defects([p1, p2], E, N, S)
+    sys.add_line_defects([p1, p2], N, s, E=E, transition=(1/-1))
+
+The type of the charge transition :math:`\alpha/\beta` is specified as
+shown above. In our example we chose a mixture of donor and acceptor at energy
+E. An acceptor would be described by (-1,0) and a donor by (1,0).
 
 .. note::
    * Avoid adding charges on the contacts of the system, as these will not be
@@ -116,11 +124,10 @@ define a defect gap state as follows::
 
      .. code-block:: python
 
-        sys.add_line_defects([p1, p2], E, N, Sn, Sp)
-
-As usual we finalize the creation of the system with::
-
-    sys.finalize()
+        sys.add_line_defects([p1, p2], N, sn, sp, E=E)
+   * A continuum of states can be considered by omitting the energy argument
+     above. The density of states can be a callable function or a numerical
+     value, in which case the density of states is independent of the energy.
 
 
 Visualizing the system
@@ -130,7 +137,7 @@ system, two functions are available for this purpose in two-dimensions. These
 plotting routines require the Matplotlib library. First we visualize the
 mobility across the system::
 
-    sesame.map2D(sys, sys.mu_e, 1e-6)
+    sesame.plot(sys, sys.mu_e)
 
 .. image:: 2dpnGB.png
    :align: center
@@ -143,7 +150,7 @@ itself.
 
 We can also visualize the line defects, as shown below::
 
-    sesame.plot_line_defects(sys, 1e-6)
+    sesame.plot_line_defects(sys)
 
 .. image:: system_plot.png
    :align: center

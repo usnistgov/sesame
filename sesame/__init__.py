@@ -1,21 +1,27 @@
-#!/usr/bin/env python
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
 
-__all__ = ['builder']
+from ._version import __version__
+
+__all__ = ['builder', 'analyzer']
 for module in __all__:
     exec('from . import {0}'.format(module))
 
-available = [('builder', ['Builder']),
-             ('solvers', ['ddp_solver', 'poisson_solver'])]
+available = [('builder', ['Scaling', 'Builder']),
+             ('solvers', ['solve', 'IVcurve']),
+             ('analyzer', ['Analyzer'])]
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))
     __all__.extend(names)
 
 try:
     from . import plotter
-    from .plotter import plot_line_defects, map2D, plot_plane_defects
+    from .plotter import plot_line_defects, plot, plot_plane_defects
 except:
     pass
 else:
-    __all__.extend(['plotter', 'plot_line_defects', 'map2D',
+    __all__.extend(['plotter', 'plot_line_defects', 'plot',
     'plot_plane_defects'])
 

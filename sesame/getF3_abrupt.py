@@ -1,7 +1,13 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
 from .observables import *
+from .defects import defectsF
 
-def getF(sys, v, efn, efp):
+def getF(sys, v, efn, efp, veq):
     ###########################################################################
     #               organization of the right hand side vector                #
     ###########################################################################
@@ -31,38 +37,29 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i + j*Nx + k*Nx*Ny for k in range(Nz) for j in range(Ny) for i in range(Nx)]
-
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * np;exp(-sys.Eg + sys.bl + efp - v)
+
+    # equilibrium carrier densities
+    n_eq = sys.Nc * np.exp(-sys.bl + veq)
+    p_eq = sys.Nv * np.exp(-sys.Eg + sys.bl - veq)
 
     # bulk charges
     rho = sys.rho - n + p
 
     # recombination rates
-    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)
+    r = get_bulk_rr(sys, n, p)
 
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
-
-            # extra charge density
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
-            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
-
-            # extra charge recombination
-            r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
+    # charge defects
+    if len(sys.defects_list) != 0:
+        defectsF(sys, n, p, rho, r)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon[sites]
+    rho = rho / sys.epsilon
+
+    # reshape the array as array[y-indices, x-indices]
+    _sites = np.arange(Nx*Ny*Nz, dtype=int).reshape(Nz, Ny, Nx)
 
     def currents(sys, efn, efp, v, dx, dxm1, dy, dym1, dz, dzm1, sites):
         jnx_s, jnx_sm1, jny_s, jny_smN, jnz_s, jnz_smNN = 0, 0, 0, 0, 0, 0
@@ -154,17 +151,8 @@ def getF(sys, v, efn, efp):
                                    - (jpz_s - jpz_smNN)/dzbar)
 
         # b_n, b_p and b_v values
-        n_eq = 0
-        p_eq = 0
-        if sys.rho[2*Nx-1] < 0: # p doped
-            p_eq = -sys.rho[2*Nx-1]
-            n_eq = sys.ni[sites]**2 / p_eq
-        else: # n doped
-            n_eq = sys.rho[2*Nx-1]
-            p_eq = sys.ni[sites]**2 / n_eq
-            
-        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq)
-        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq)
+        bn = jnx_s + sys.Scn[1] * (n[sites] - n_eq[sites])
+        bp = jpx_s - sys.Scp[1] * (p[sites] - p_eq[sites])
         bv = 0 # Dirichlet BC
         # update right hand side vector
         update(bn, bp, bv, sites)
@@ -176,9 +164,7 @@ def getF(sys, v, efn, efp):
     # We compute fn, fp, fv  on the inner part of the system.
 
     # list of the sites inside the system
-    sites = [i + j*Nx + k*Nx*Ny for k in range(1,Nz-1) 
-                                for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], (Ny-2)*(Nz-2))
@@ -196,26 +182,15 @@ def getF(sys, v, efn, efp):
     #        left boundary: i = 0, 0 <= j <= Ny-1, 0 <= k <= Nz-1             #
     ###########################################################################
     # list of the sites on the left side
-    sites = [j*Nx + k*Nx*Ny for k in range(Nz) for j in range(Ny)]
-    sites = np.asarray(sites)
+    sites = _sites[:, :, 0].flatten()
 
     # compute the currents
     jnx = get_jn(sys, efn, v, sites, sites + 1, sys.dx[0])
     jpx = get_jp(sys, efp, v, sites, sites + 1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = 0
-    p_eq = 0
-    #TODO tricky here to decide
-    if sys.rho[Nx] < 0: # p doped
-        p_eq = -sys.rho[sites]
-        n_eq = sys.ni[sites]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[sites]
-        p_eq = sys.ni[sites]**2 / n_eq
-        
-    an = jnx - sys.Scn[0] * (n[sites] - n_eq)
-    ap = jpx + sys.Scp[0] * (p[sites] - p_eq)
+    an = jnx - sys.Scn[0] * (n[sites] - n_eq[sites])
+    ap = jpx + sys.Scp[0] * (p[sites] - p_eq[sites])
     av = 0 # to ensure Dirichlet BCs
 
     update(an, ap, av, sites)
@@ -228,8 +203,7 @@ def getF(sys, v, efn, efp):
     #         right boundary: i = Nx-1, 0 < j < Ny-1, 0 < k < Nz-1            #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx + k*Nx*Ny for k in range(1,Nz-1) for j in range(1,Ny-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 1:Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = np.repeat(sys.dy[1:], Nz-2)
@@ -244,8 +218,7 @@ def getF(sys, v, efn, efp):
     #           right boundary: i = Nx-1, j = Ny-1, 0 < k < Nz-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + (Ny-1)*Nx + k*Nx*Ny for k in range(1,Nz-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = np.array([0])
@@ -260,8 +233,7 @@ def getF(sys, v, efn, efp):
     #              right boundary: i = Nx-1, j = 0, 0 < k < Nz-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + k*Nx*Ny for k in range(1,Nz-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 0, Nx-1].flatten()
 
     # lattice distances
     dy = np.repeat(sys.dy[-1], Nz-2)
@@ -276,8 +248,7 @@ def getF(sys, v, efn, efp):
     #           right boundary: i = Nx-1, 0 < j < Ny-1, k = Nz-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx + (Nz-1)*Nx*Ny for j in range(1,Ny-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 1:Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = sys.dy[1:]
@@ -292,8 +263,7 @@ def getF(sys, v, efn, efp):
     #              right boundary: i = Nx-1, 0 < j < Ny-1, k = 0              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + j*Nx for j in range(1,Ny-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 1:Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = sys.dy[1:]
@@ -308,8 +278,7 @@ def getF(sys, v, efn, efp):
     #                  right boundary: i = Nx-1, j = Ny-1, k = 0              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + (Ny-1)*Nx]
-    sites = np.asarray(sites)
+    sites = _sites[0, Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = np.array([0])
@@ -324,8 +293,7 @@ def getF(sys, v, efn, efp):
     #                  right boundary: i = Nx-1, j = Ny-1, k = Nz-1           #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + (Ny-1)*Nx + (Nz-1)*Nx*Ny]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, Ny-1, Nx-1].flatten()
 
     # lattice distances
     dy = np.array([0])
@@ -340,8 +308,7 @@ def getF(sys, v, efn, efp):
     #                  right boundary: i = Nx-1, j = 0, k = Nz-1              #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1 + (Nz-1)*Nx*Ny]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 0, Nx-1].flatten()
 
     # lattice distances
     dy = sys.dy[0]
@@ -356,8 +323,7 @@ def getF(sys, v, efn, efp):
     #                  right boundary: i = Nx-1, j = 0, k = 0                 #
     ###########################################################################
     # list of the sites on the right side
-    sites = [Nx-1]
-    sites = np.asarray(sites)
+    sites = _sites[0, 0, Nx-1].flatten()
 
     # lattice distances
     dy = sys.dy[0]
@@ -378,8 +344,7 @@ def getF(sys, v, efn, efp):
     #              z-face top: 0 < i < Nx-1, 0 < j < Ny-1, k = Nz-1           #
     ###########################################################################
     # list of the sites
-    sites = [i + j*Nx + (Nz-1)*Nx*Ny for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -396,8 +361,7 @@ def getF(sys, v, efn, efp):
     #             z- face bottom: 0 < i < Nx-1, 0 < j < Ny-1, k = 0           #
     ###########################################################################
     # list of the sites
-    sites = [i + j*Nx for j in range(1,Ny-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 1:Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Ny-2)
@@ -414,8 +378,7 @@ def getF(sys, v, efn, efp):
     #            y-face front: 0 < i < Nx-1, j = 0, 0 < k < Nz-1              #
     ###########################################################################
     # list of the sites
-    sites = [i + k*Nx*Ny for k in range(1,Nz-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
@@ -432,8 +395,7 @@ def getF(sys, v, efn, efp):
     #            y-face back: 0 < i < Nx-1, j = Ny-1, 0 < k < Nz-1            #
     ###########################################################################
     # list of the sites
-    sites = [i + (Ny-1)*Nx + k*Nx*Ny for k in range(1,Nz-1) for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[1:Nz-1, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dx = np.tile(sys.dx[1:], Nz-2)
@@ -459,8 +421,7 @@ def getF(sys, v, efn, efp):
     #         edge z top // y back: 0 < i < Nx-1, j = Ny-1, k = Nz-1          #
     ###########################################################################
     # list of the sites
-    sites = [i + (Ny-1)*Nx + (Nz-1)*Nx*Ny for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dy = np.array([0])
@@ -475,8 +436,7 @@ def getF(sys, v, efn, efp):
     #           edge z top // y front: 0 < i < Nx-1, j = 0, k = Nz-1          #
     ###########################################################################
     # list of the sites
-    sites = [i + (Nz-1)*Nx*Ny for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[Nz-1, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dy = np.repeat(sys.dy[0], Nx-2)
@@ -491,8 +451,7 @@ def getF(sys, v, efn, efp):
     #          edge z bottom // y back: 0 < i < Nx-1, j = Ny-1, k = 0         #
     ###########################################################################
     # list of the sites
-    sites = [i + (Ny-1)*Nx for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, Ny-1, 1:Nx-1].flatten()
 
     # lattice distances
     dy = np.array([0])
@@ -507,8 +466,7 @@ def getF(sys, v, efn, efp):
     #         edge z bottom // y front: 0 < i < Nx-1, j = 0, k = 0            #
     ###########################################################################
     # list of the sites
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = _sites[0, 0, 1:Nx-1].flatten()
 
     # lattice distances
     dy = np.repeat(sys.dy[0], Nx-2)

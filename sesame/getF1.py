@@ -1,7 +1,12 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
 from .observables import *
 
-def getF(sys, v, efn, efp):
+def getF(sys, v, efn, efp, veq):
     ###########################################################################
     #               organization of the right hand side vector                #
     ###########################################################################
@@ -23,39 +28,18 @@ def getF(sys, v, efn, efp):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i for i in range(Nx)]
-
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     rho = sys.rho - n + p
 
     # recombination rates
-    r = get_rr(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)
-
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        matches = sys.extra_charge_sites
-
-        nextra = sys.nextra[matches]
-        pextra = sys.pextra[matches]
-        _n = n[matches]
-        _p = p[matches]
-
-        # extra charge density
-        Se = sys.Seextra[matches]
-        Sh = sys.Shextra[matches]
-        f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
-        rho[matches] += sys.Nextra[matches] / 2. * (1 - 2*f)
-
-        # extra charge recombination
-        r[matches] += get_rr(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
+    r = get_bulk_rr(sys, n, p)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon[sites]
+    rho = rho / sys.epsilon
 
     ###########################################################################
     #                   inside the system: 0 < i < Nx-1                       #
@@ -64,8 +48,7 @@ def getF(sys, v, efn, efp):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.arange(1,Nx-1, dtype=int)
 
     # dxbar
     dx = sys.dx[1:]
@@ -99,28 +82,20 @@ def getF(sys, v, efn, efp):
     #                       left boundary: i = 0                              #
     ###########################################################################
     # compute the currents
-    s_sp1 = [(0, 1)]
     jnx = get_jn(sys, efn, v, 0, 1, sys.dx[0])
     jpx = get_jp(sys, efp, v, 0, 1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = 0
-    p_eq = 0
-    #TODO tricky here to decide
-    if sys.rho[0] < 0: # p doped
-        p_eq = -sys.rho[0]
-        n_eq = sys.ni[0]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[0]
-        p_eq = sys.ni[0]**2 / n_eq
+    n_eq = sys.Nc[0] * np.exp(-sys.bl[0] + veq[0])
+    p_eq = sys.Nv[0] * np.exp(-sys.Eg[0] + sys.bl[0] - veq[0])
         
     an = jnx - sys.Scn[0] * (n[0] - n_eq)
     ap = jpx + sys.Scp[0] * (p[0] - p_eq)
-    av = 0 # to ensure Dirichlet BCs
+    av = 0 # Dirichlet
 
-    vec[[0]] = an
-    vec[[1]] = ap
-    vec[[2]] = av
+    vec[0] = an
+    vec[1] = ap
+    vec[2] = av
 
     ###########################################################################
     #                         right boundary: i = Nx-1                        #
@@ -137,21 +112,15 @@ def getF(sys, v, efn, efp):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites])
 
     # b_n, b_p and b_v values
-    n_eq = 0
-    p_eq = 0
-    if sys.rho[-1] < 0: # p doped
-        p_eq = -sys.rho[-1]
-        n_eq = sys.ni[-1]**2 / p_eq
-    else: # n doped
-        n_eq = sys.rho[-1]
-        p_eq = sys.ni[-1]**2 / n_eq
+    n_eq = sys.Nc[-1] * np.exp(-sys.bl[-1] + veq[-1])
+    p_eq = sys.Nv[-1] * np.exp(-sys.Eg[-1] + sys.bl[-1] - veq[-1])
         
     bn = jnx_s + sys.Scn[1] * (n[-1] - n_eq)
     bp = jpx_s - sys.Scp[1] * (p[-1] - p_eq)
-    bv = 0 # Dirichlet BC
+    bv = 0
 
-    vec[[3*(Nx-1)]] = bn
-    vec[[3*(Nx-1)+1]] = bp
-    vec[[3*(Nx-1)+2]] = bv      
+    vec[3*(Nx-1)] = bn
+    vec[3*(Nx-1)+1] = bp
+    vec[3*(Nx-1)+2] = bv      
 
     return vec

@@ -1,6 +1,9 @@
-from scipy.interpolate import InterpolatedUnivariateSpline as spline
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
-from . import observables
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -50,191 +53,8 @@ def get_dl(sys, sites):
 
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 
-def extra_charges_path(sys, start, end):
-    """
-    Get sites and coordinates of the locations containing additional charges
-    distributed on a line.
 
-    Parameters
-    ----------
-
-    sys: Builder
-        The discretized system.
-    start: Tuple (x, y, z)
-        Coordinates of the first point of the line containing additional
-        charges in [m].
-    end: Tuple (x, y, z)
-        Coordinates of the last point of the line containing additional
-        charges [m].
-
-    Returns
-    -------
-
-    s: numpy array of integers
-        Sites numbers.
-    X: numpy array of floats
-        Incremental sum of the lattice size between sites.
-    xccord: numpy array of floats
-        Indices of the x-coordinates of the sites on the discretized lattice.
-    yccord: numpy array of floats
-        Indices of the y-coordinates of the sites on the discretized lattice.
-
-    Notes
-    -----
-    This only works in 2D.
-    """
-    # Return the path and the sites
-    xa, ya = start[0], start[1]
-    xb, yb = end[0], end[1]
-
-    # reorder the points do that they are in ascending order
-    if ya <= yb:
-        ia, ja, ka = get_indices(sys, (xa, ya, 0))
-        ib, jb, kb = get_indices(sys, (xb, yb, 0))
-    else:
-        ia, ja, ka = get_indices(sys, (xb, yb, 0))
-        ib, jb, kb = get_indices(sys, (xa, ya, 0))
-
-    distance = lambda x, y:\
-        abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)/\
-            np.sqrt((yb-ya)**2 + (xb-xa)**2)
-
-    def condition(x, y):
-        if ia <= ib:
-            return x <= ib and y <= jb and x < sys.nx-1 and y < sys.ny-1
-        else:
-            return x >= ib and y <= jb and x > 1 and y < sys.ny-1
-                        
-    xcoord, ycoord = [], []
-    s = [ia + ja*sys.nx]
-    X = [0]
-    x, y = ia, ja
-    while condition(x, y):
-        # distance between the point above (x,y) and the segment
-        d1 = distance(sys.xpts[x], sys.ypts[y+1])
-        # distance between the point right of (x,y) and the segment
-        d2 = distance(sys.xpts[x+1], sys.ypts[y])
-        # distance between the point left of (x,y) and the segment
-        d3 = distance(sys.xpts[x-1], sys.ypts[y])
-
-        if ia < ib: # overall direction is to the right
-            if d1 < d2:
-                x, y = x, y+1
-                X.append(X[-1] + sys.dy[y])
-            else:
-                x, y = x+1, y
-                X.append(X[-1] + sys.dx[x])
-        else: # overall direction is to the left
-            if d1 < d3:
-                x, y = x, y+1
-                X.append(X[-1] + sys.dy[y])
-            else:
-                x, y = x-1, y
-                X.append(X[-1] + sys.dx[x-1])
-        s.append(x + y*sys.nx)
-        xcoord.append(x)
-        ycoord.append(y)
-        
-    X = np.asarray(X)
-    xcoord = np.asarray(xcoord, dtype=int)
-    ycoord = np.asarray(ycoord, dtype=int)
-
-    # put everyting back to original order if inverted=True
-    if xa > xb:
-        s.reverse()
-        X = np.flipud(X[-1] - X) * sys.xscale
-        xcoord = np.flipud(xcoord)
-        ycoord = np.flipud(ycoord)
-    return s, X, xcoord, ycoord
-
-def bulk_recombination_current(sys, efn, efp, v):
-    """
-    Compute the bulk recombination current.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    efn: numpy array of floats
-        One-dimensional array containing the electron quasi-Fermi level.
-    efp: numpy array of floats
-        One-dimensional array containing the hole quasi-Fermi level.
-    v: numpy array of floats
-        One-dimensional array containing the electrostatic potential.
-
-    Returns
-    -------
-    JR: float
-        The integrated bulk recombination.
-
-    Warnings
-    --------
-    Not implemented in 3D.
-    """
-    u = []
-    for j in range(sys.ny):
-        # List of sites
-        s = [i + j*sys.nx for i in range(sys.nx)]
-
-        # Carrier densities
-        n = observables.get_n(sys, efn, v, s)
-        p = observables.get_p(sys, efp, v, s)
-
-        # Recombination
-        r = observables.get_rr(sys, n, p, sys.n1[s], sys.p1[s], sys.tau_e[s], sys.tau_h[s], s)
-        sp = spline(sys.xpts, r)
-        u.append(sp.integral(sys.xpts[0], sys.xpts[-1]))
-    if sys.ny == 1:
-        JR = u[-1]
-    if sys.ny > 1:
-        sp = spline(sys.ypts, u)
-        JR = sp.integral(sys.ypts[0], sys.ypts[-1])
-    return JR
- 
-def full_current(sys, efn, efp, v):
-    """
-    Compute the steady state current.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    efn: numpy array of floats
-        One-dimensional array containing the electron quasi-Fermi level.
-    efp: numpy array of floats
-        One-dimensional array containing the hole quasi-Fermi level.
-    v: numpy array of floats
-        One-dimensional array containing the electrostatic potential.
-
-    Returns
-    -------
-    JR: float
-        The integrated bulk recombination.
-
-    Warnings
-    --------
-    Not implemented in 3D.
-    """
-    # Define the sites between which computing the currents
-    sites_i = [sys.nx//2 + j*sys.nx for j in range(sys.ny)]
-    sites_ip1 = [sys.nx//2+1 + j*sys.nx for j in range(sys.ny)]
-    # And the corresponding lattice dimensions
-    dl = sys.dx[sys.nx//2]
-
-    # Compute the electron and hole currents
-    jn = observables.get_jn(sys, efn, v, sites_i, sites_ip1, dl)
-    jp = observables.get_jp(sys, efp, v, sites_i, sites_ip1, dl)
-
-    if sys.ny == 1:
-        j = jn + jp
-    if sys.ny > 1:
-        # Interpolate the results and integrate over the y-direction
-        j = spline(sys.ypts, jn+jp).integral(sys.ypts[0], sys.ypts[-1])
-
-    return j
-
-
-def Bresenham2d(system, p1, p2):
+def Bresenham(system, p1, p2):
     # Compute a digital line contained in the plane (x,y) and passing by the
     # points p1 and p2.
     i1, j1, k1 = get_indices(system, p1)
@@ -260,9 +80,11 @@ def Bresenham2d(system, p1, p2):
 
     i, j = i1, j1
     sites = [i + j*system.nx + k1*system.nx*system.ny]
+    X = [0]
     icoord = [i]
     jcoord = [j]
     kcoord = [k1]
+
     for _ in range(Dx + Dy):
         e1 = error(system.xpts[i], system.ypts[j+incy])
         e2 = error(system.xpts[i+incx], system.ypts[j])
@@ -272,13 +94,17 @@ def Bresenham2d(system, p1, p2):
             condition = e1 < e2
         if condition:
             j += incy
+            X.append(X[-1] + system.dy[j])
         else:
             i += incx
+            X.append(X[-1] + system.dx[i])
         sites.append(i + j*system.nx + k1*system.nx*system.ny)
         icoord.append(i)
         jcoord.append(j)
         kcoord.append(k1)
-    return sites, icoord, jcoord, kcoord
+    sites = np.asarray(sites)
+    X = np.asarray(X)
+    return sites, X, icoord, jcoord, kcoord
 
 def check_plane(P1, P2, P3, P4):
     # check if plane is within what can be handled
@@ -294,7 +120,7 @@ def check_plane(P1, P2, P3, P4):
     check = True
 
     # 1. check if the two lines are perpendicular to th z-axis
-    if np.dot(v1, (0,0,1)) != 0 and np.dot(v3, (0,0,1)):
+    if np.dot(v1, (0,0,1)) != 0 and np.dot(v2, (0,0,1)):
         check = False
         print("The lines defining the plane defects defined by the four points "\
             + "{0}, {1}, {2}, {3}".format(P1, P2, P3, P4) +\
@@ -327,7 +153,57 @@ def check_plane(P1, P2, P3, P4):
         print(msg)
         exit(1)
 
-def extra_charges_plane(sys, P1, P2, P3, P4):
+
+def get_line_defects_sites(system, location):
+    # find the sites closest to the straight line defined by
+    # (xa,ya,za) and (xb,yb,zb) 
+
+    xa, ya = location[0]
+    xb, yb = location[1]
+    ia, ja, _ = get_indices(system, (xa, ya, 0))
+    ib, jb, _ = get_indices(system, (xb, yb, 0))
+
+    Dx = abs(ib - ia)    # distance to travel in X
+    Dy = abs(jb - ja)    # distance to travel in Y
+    if ia < ib:
+        incx = 1           # x will increase at each step
+    elif ia > ib:
+        incx = -1          # x will decrease at each step
+    else:
+        incx = 0
+    if ja < jb:
+        incy = 1           # y will increase at each step
+    elif ja > jb:
+        incy = -1          # y will decrease at each step
+    else:
+        incy = 0
+
+    # take the numerator of the distance of a point to the line
+    error = lambda x, y: abs((yb-ya)*x - (xb-xa)*y + xb*ya - yb*xa)
+
+    i, j = ia, ja
+    perp_dl = []
+    sites = [i + j*system.nx]
+    for _ in range(Dx + Dy):
+        e1 = error(system.xpts[i], system.ypts[j+incy])
+        e2 = error(system.xpts[i+incx], system.ypts[j])
+        if incx == 0:
+            condition = e1 <= e2 # for lines x = constant
+        else:
+            condition = e1 < e2
+        if condition:
+            j += incy
+            perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
+        else:
+            i += incx
+            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+        sites.append(i + j*system.nx)
+    perp_dl.append(perp_dl[-1])
+    perp_dl = np.asarray(perp_dl)
+    return sites, perp_dl
+
+
+def plane_defects_sites(sys, location):
     """
     Get sites and coordinates of the locations containing additional charges
     distributed on a plane.
@@ -337,10 +213,10 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
 
     sys: Builder
         The discretized system.
-    P1, P2: array_like (x, y, z)
-        Coordinates of the two points defining one line of the plane defects [m].
-    P3, P4: array_like (x, y, z)
-        Coordinates of the two points defining another line of the plane defects [m].
+    location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)]
+        The coordinates in [m] define a plane of defects in 3D. The first two
+        coordinates define a line that must be parallel to the line defined by
+        the last two points.
 
     Returns
     -------
@@ -351,6 +227,8 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
         Grid of the x-coordinates of the sites [m].
     yccord: numpy array of floats
         Grid of the y-coordinates of the sites [m].
+    perp_dl: numpy array of floats
+        Lattice constants localy orthogonal to the plane.
 
     Notes
     -----
@@ -358,9 +236,8 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
     """
 
     # transform points into numpy arrays if not the case
-    for P in [P1, P2, P3, P4]:
-        if type(P).__module__ != np.__name__:
-            P = np.asarray(P)
+        
+    P1, P2, P3, P4 = [np.asarray(P) for P in location]
 
     # check plane first
     check_plane(P1, P2, P3, P4)
@@ -368,7 +245,7 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
     # points indices on the grid
     i1, j1, k1 = get_indices(sys, P1)
     i2, j2, k2 = get_indices(sys, P2)
-    # check if the two lines are in the same direction, if not, flip the second line
+    # check if the two lines are in the same sense, if not, flip the second line
     if np.dot(P2 - P1, P4 - P3) > 0:
         i3, j3, k3 = get_indices(sys, P3)
     else:
@@ -405,14 +282,15 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
         incz = -1
        
     sites, xcoord, ycoord, zcoord = [], [], [], []
+    perp_dl = np.array([])
 
-    s, ic, jc, kc = Bresenham2d(sys, P1, P2)
+    s, _, ic, jc, kc = Bresenham(sys, P1, P2)
 
     sites.extend(s)
     xcoord.append(sys.xpts[ic])
     ycoord.append(sys.ypts[jc])
     zcoord.append(sys.zpts[kc])
-
+    print(incx, incy, incz)
     for _ in range(travel-1):
         # find the coordinates of the next line
         e1 = error(sys.xpts[i1+incx], sys.ypts[j1], sys.zpts[k1])
@@ -423,42 +301,63 @@ def extra_charges_plane(sys, P1, P2, P3, P4):
             if e1 < e2:
                 i1, j1, k1 = i1 + incx, j1, k1
                 i2, j2, k2 = i2 + incx, j2, k2
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1 + incy, k1
                 i2, j2, k2 = i2, j2 + incy, k2
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incy == 0 and incx != 0:
-            if e1 < e3:
+            if e1 == e3:
+                condition = incz == 0
+            else:
+                condition = e1 < e3
+            if condition:
                 i1, j1, k1 = i1 + incx, j1, k1
                 i2, j2, k2 = i2 + incx, j2, k2
+                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incx == 0 and incy != 0:
-            if e2 < e3:
+            if e2 == e3:
+                condition = incz == 0
+            else:
+                condition = e2 < e3
+            if condition:
                 i1, j1, k1 = i1, j1 + incy, k1
                 i2, j2, k2 = i2, j2 + incy, k2
+                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
             else:
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
 
         if incx == 0 and incy == 0:
             i1, j1, k1 = i1, j1, k1 + incz
             i2, j2, k2 = i2, j2, k2 + incz
+            if j1 == j2:
+                dl = (sys.dy[k1] + sys.dy[k1+1])/2.
+            if i1 == i2:
+                dl = (sys.dx[k1] + sys.dx[k1+1])/2.
 
         x1, x2 = sys.xpts[i1], sys.xpts[i2]
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
         z1, z2 = sys.zpts[k1], sys.zpts[k2]
 
-        s, ic, jc, kc = Bresenham2d(sys, (x1, y1, z1), (x2, y2, z2))
+        s, _, ic, jc, kc = Bresenham(sys, (x1, y1, z1), (x2, y2, z2))
 
         sites.extend(s)
         xcoord.append(sys.xpts[ic])
         ycoord.append(sys.ypts[jc])
         zcoord.append(sys.zpts[kc])
 
+        # replicate perp_dl for all sites on the line
+        perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
+
     xcoord = np.asarray(xcoord)
     ycoord = np.asarray(ycoord)
     zcoord = np.asarray(zcoord)
-    return sites, xcoord, ycoord, zcoord
+    return sites, xcoord, ycoord, zcoord, perp_dl

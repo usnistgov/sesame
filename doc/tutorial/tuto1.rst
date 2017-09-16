@@ -1,8 +1,8 @@
-Tutorial 1: Setting up the system of a one-dimensional pn junction
---------------------------------------------------------------------
+Tutorial 1: IV curve of a one-dimensional pn junction
+------------------------------------------------------
 
-In this tutorial we show how to build a simple system: a one-dimensional pn
-junction.
+In this tutorial we show how to build a one-dimensional pn
+junction and compute a IV curve.
 
 .. seealso:: The example treated here is in the file ``1dpn.py`` in the
    ``examples`` directory in the root directory of the distribution. 
@@ -30,8 +30,8 @@ sense of what makes an appropriate grid. In this example, we create a mesh which
 contains more nodes in the pn junction depletion region::
 
     L = 3e-6 # length of the system in the x-direction [m]
-    x = np.concatenate((np.linspace(0,1.2e-6, 300, endpoint=False), 
-                        np.linspace(1.2e-6, L, 100)))
+    x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False), 
+                        np.linspace(1.2e-6, L, 50)))
 
 To make a system we need to create an instance of the
 :func:`~sesame.builder.Builder`::
@@ -45,11 +45,10 @@ accessible through the top-level `sesame` package. See the :doc:`reference
 documentation <../reference/index>`.
 
 Now we need to add a material to our system. A material is defined using a
-dictionary and add it to the system::
+dictionary that is then added to the system::
 
     CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9, 
-            'RCenergy':0, 'band_offset':0}
+            'mu_e':100*1e-4, 'mu_h':100*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
 
     sys.add_material(CdTe)
 
@@ -57,10 +56,10 @@ where ``Nc`` (``Nv``) is the effective density of states of the conduction
 (valence) band (:math:`\mathrm{m^{-3}}`), ``Eg`` is the material band gap
 (:math:`\mathrm{eV}`), ``epsilon`` is the material's dielectric constant,
 ``mu_e`` (``mu_h``) is the electron (hole) mobility (:math:`\mathrm{m^2/(V\cdot
-s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime
-(:math:`\mathrm{s}`), ``RCenergy`` is the bulk recombination centers energy
-level (:math:`\mathrm{eV}`), and ``band_offset`` is a band offset that sets the
-zero of potential (:math:`\mathrm{eV}`). 
+s)}`), ``tau_e`` (``tau_h``) is the electron (hole) bulk lifetime. For the full list
+of material parameters available, see the documentation of the method
+:func:`~sesame.builder.Builder.add_material` of the :func:`~sesame.builder.Builder`.
+
 
 .. note::
    We assumed that a single material/region makes the entire system.
@@ -71,22 +70,22 @@ zero of potential (:math:`\mathrm{eV}`).
    The code does not handle regions with different band
    structures because we did not implement the equations necessary to treat the
    interfaces between them. However, different regions can have different
-   mobilities or bulk lifetimes for example. More on this in  :doc:`tutorial 2
-   <tuto2>`.
+   mobilities or bulk lifetimes for example. More on this below and  in
+   :doc:`tutorial 2 <tuto2>`.
 
 Let's add the dopants to define a pn junction. To do this, we need to define the
 regions containing each type of dopants. A region is defined by a function::
 
-    junction = 100e-9 # extent of the junction from the left contact [m]
+    junction = 50e-9 # extent of the junction from the left contact [m]
 
     def region(pos):
         x = pos
         return x < junction
 
-The function ``region`` takes a single argument ``pos``, a position in real
-space, and returns ``True`` (``False``) if this  position is on the left (right)
-of the junction. The doping will be n-type for :math:`x<junction` and p-type for
-:math:`x>junction`::
+The function ``region`` takes a single argument ``pos``, a tuple containing
+coordinates in real space, and returns ``True`` (``False``) if this  position is
+on the left (right) of the junction. The doping will be n-type for
+:math:`x<junction` and p-type for :math:`x>junction`::
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -107,7 +106,7 @@ which is parametrized by surface recombination velocities at the contacts::
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
-If we want to make a J(V) curve, we need a generation profile. This is defined
+If we want to make a IV curve, we need a generation profile. This is defined
 as follows::
 
     phi = 1e21 # photon flux [1/(m^2 s)]
@@ -117,11 +116,43 @@ as follows::
     f = lambda x: phi * alpha * np.exp(-alpha * x)
     sys.generation(f)
 
-At the end of the creation of the system, some additional arrays need to be
-created internally. Use this command to do that::
-
-    sys.finalize()
-
 We can now use this system to solve the Poisson equation at thermal equilibrium
-and also compute a J(V) curve. More on these topics in  :doc:`tutorial 3
-<tuto3>`.
+and also compute the IV curve.  First, we set the boundary conditions for the
+electrostatic potential. Because of our geometry the potential on the left and
+right read
+
+.. math::
+   \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
+   \phi(L, y) &= -E_g - \frac{k_BT}{q}\ln\left(N_A/N_V \right)
+
+which is computed as follows::
+
+    sys = system()
+    v_left  = np.log(1e17/8e17)
+    v_right = -sys.Eg[sys.nx-1] - np.log(1e15/1.8e19)
+
+The Poisson equation is solved with an initial guess::
+
+    v = np.linspace(v_left, v_right, sys.nx)
+    solution = sesame.solve(sys, {'v':v})
+
+Note that :func:`~sesame.solve` is the multi-purpose solver of the package. When
+a single dictionary ``{'v': array}`` is passed to this function (the key needs
+to be 'v'), Sesame will understand that only the electrostatic potential of the
+system at thermal equilibrium needs to be solved for.
+
+Finally, the function `~sesame.solvers.IVcurve` loops over the applied voltages
+and saves the results in the designated file::
+
+    voltages = np.linspace(0, 0.95, 40)
+    solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
+    sesame.IVcurve(sys, voltages, solution, '1dpnIV')
+
+On the second line, the guess dictionary is updated with arrays for the
+quasi-Fermi levels. The keys for these entries need to be ``'efn'`` and ``efp``
+so that Sesame understands that the drift diffusion Poisson equations are to be
+solved.
+
+The data files will have names like ``1dpnIV.vapp_0.npz`` where the number 0
+is the index of of the array ``voltages``. We will see how to extract the data
+from these files and compute observables in :doc:`tutorial 5 <analysis>`.

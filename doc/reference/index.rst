@@ -10,7 +10,8 @@ The following modules are used for internal and external use.
 
    sesame
    sesame.builder
-   sesame.solvers
-   sesame.observables
    sesame.plotter
+   sesame.solvers
+   sesame.analyzer
+   sesame.observables
    sesame.utils

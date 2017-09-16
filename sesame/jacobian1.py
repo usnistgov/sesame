@@ -1,10 +1,15 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
-from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import *
 
-def getJ(sys, v, efn, efp, with_mumps):
+def getJ(sys, v, efn, efp, use_mumps):
     ###########################################################################
     #                     organization of the Jacobian matrix                 #
     ###########################################################################
@@ -41,11 +46,11 @@ def getJ(sys, v, efn, efp, with_mumps):
     ###########################################################################
     #                     For all sites in the system                         #
     ###########################################################################
-    sites = [i for i in range(Nx)]
+    sites = range(Nx)
 
     # carrier densities
-    n = get_n(sys, efn, v, sites)
-    p = get_p(sys, efp, v, sites)
+    n = sys.Nc * np.exp(-sys.bl + efn + v)
+    p = sys.Nv * exp(-sys.Eg + sys.bl + efp - v)
 
     # bulk charges
     drho_defn_s = - n
@@ -53,40 +58,12 @@ def getJ(sys, v, efn, efp, with_mumps):
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates
-    dr_defn_s, dr_defp_s, dr_dv_s = \
-    get_rr_derivs(sys, n, p, sys.n1, sys.p1, sys.tau_e, sys.tau_h, sites)\
-
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
-
-            # extra charge density
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            d = (Se*(_n+nextra)+Sh*(_p+pextra))**2
-            drho_defn_s[matches] += - sys.Nextra[idx, matches] *\
-                Se*_n * (Se*nextra + Sh*_p) / d
-            drho_defp_s[matches] += sys.Nextra[idx, matches] *\
-                (Se*_n + Sh*pextra) * Sh*_p / d
-            drho_dv_s[matches] += - sys.Nextra[idx, matches] *\
-                (Se**2*_n*nextra + 2*Sh*Se*_p*_n + Sh**2*_p*pextra) / d
-
-            # extra charge recombination
-            defn, defp, dv =  get_rr_derivs(sys, _n, _p, nextra, pextra, 1/Se, 1/Sh, matches)
-            dr_defn_s[matches] += defn
-            dr_defp_s[matches] += defp
-            dr_dv_s[matches] += dv
-
+    dr_defn_s, dr_defp_s, dr_dv_s = get_bulk_rr_derivs(sys, n, p)
 
     # charge is divided by epsilon
-    drho_defn_s = drho_defn_s / sys.epsilon[sites]
-    drho_defp_s = drho_defp_s / sys.epsilon[sites]
-    drho_dv_s = drho_dv_s / sys.epsilon[sites]
+    drho_defn_s = drho_defn_s / sys.epsilon
+    drho_defp_s = drho_defp_s / sys.epsilon
+    drho_dv_s = drho_dv_s / sys.epsilon
 
     ###########################################################################
     #                  inside the system: 0 < i < Nx-1                        #
@@ -95,8 +72,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.arange(1,Nx-1)
 
     # dxbar
     dx = sys.dx[1:]
@@ -125,7 +101,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     dv_sp1 = djx_s_dv_sp1 / dxbar
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfn_rows = [7*[3*s] for s in sites]
+    dfn_rows = zip(3*sites, 3*sites,  3*sites, 3*sites, 3*sites, 3*sites, 3*sites)
 
     dfn_cols = zip(3*(sites-1), 3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2,\
                 3*(sites+1), 3*(sites+1)+2)
@@ -158,7 +134,8 @@ def getJ(sys, v, efn, efp, with_mumps):
     dv_sp1 = djx_s_dv_sp1 / dxbar
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfp_rows = [7*[3*s+1] for s in sites]
+    dfp_rows = zip(3*sites+1, 3*sites+1,  3*sites+1, 3*sites+1, 3*sites+1,
+                   3*sites+1, 3*sites+1)
 
     dfp_cols = zip(3*(sites-1)+1, 3*(sites-1)+2, 3*sites, 3*sites+1,\
                  3*sites+2, 3*(sites+1)+1, 3*(sites+1)+2)
@@ -180,7 +157,7 @@ def getJ(sys, v, efn, efp, with_mumps):
     dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
-    dfv_rows = [5*[3*s+2] for s in sites]
+    dfv_rows = zip(3*sites+2, 3*sites+2,  3*sites+2, 3*sites+2, 3*sites+2)
 
     dfv_cols = zip(3*(sites-1)+2, 3*sites, 3*sites+1, 3*sites+2, 3*(sites+1)+2)
 
@@ -311,8 +288,8 @@ def getJ(sys, v, efn, efp, with_mumps):
     columns += dbv_cols
     data += dbv_data
 
-    if with_mumps:
+    if use_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)
     else:
-        J = csc_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)
+        J = csr_matrix((data, (rows, columns)), shape=(3*Nx, 3*Nx), dtype=np.float64)
     return J

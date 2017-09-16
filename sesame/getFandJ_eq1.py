@@ -1,13 +1,17 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
-from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import get_n, get_p
 # remember that efn and efp are zero at equilibrium
 
-def getFandJ_eq(sys, v, with_mumps):
+def getFandJ_eq(sys, v, use_mumps):
     Nx = sys.xpts.shape[0]
-    dx = sys.dx
     
     # lists of rows, columns and data that will create the sparse Jacobian
     rows = []
@@ -33,6 +37,23 @@ def getFandJ_eq(sys, v, with_mumps):
     # v_sp1_col = s+1
     # v_sm1_col = s-1
 
+
+    ###########################################################################
+    #                     For all sites in the system                         #
+    ###########################################################################
+    # carrier densities
+    n = sys.Nc * np.exp(-sys.bl + v)
+    p = sys.Nv * np.exp(-sys.Eg + sys.bl - v)
+
+    # bulk charges
+    rho = sys.rho - n + p
+    drho_dv = -n - p
+
+    # charge is divided by epsilon (Poisson equation)
+    rho = rho / sys.epsilon
+    drho_dv = drho_dv / sys.epsilon
+
+
     ###########################################################################
     #                 inside the system: 0 < i < Nx-1                         #
     ###########################################################################
@@ -40,47 +61,18 @@ def getFandJ_eq(sys, v, with_mumps):
     # inner part of the system. All the edges containing boundary conditions.
 
     # list of the sites inside the system
-    sites = [i for i in range(1,Nx-1)]
-    sites = np.asarray(sites)
+    sites = np.array(range(1,Nx-1))
 
     # dxbar
-    dxbar = (dx[sites] + dx[sites-1]) / 2.
-
-    # carrier densities
-    n = get_n(sys, 0*v, v, sites)
-    p = get_p(sys, 0*v, v, sites)
-
-    # bulk charges
-    rho = sys.rho[sites] - n + p
-    drho_dv = -n - p
-
-    # extra charge density
-    if hasattr(sys, 'Nextra'): 
-        # find sites containing extra charges
-        for idx, matches in enumerate(sys.extra_charge_sites):
-            nextra = sys.nextra[idx, matches]
-            pextra = sys.pextra[idx, matches]
-            _n = n[matches]
-            _p = p[matches]
-
-            Se = sys.Seextra[idx, matches]
-            Sh = sys.Shextra[idx, matches]
-            f = (Se*_n + Sh*pextra) / (Se*(_n+nextra) + Sh*(_p+pextra))
-            rho[matches] += sys.Nextra[idx, matches] / 2. * (1 - 2*f)
-
-            drho_dv[matches] += - sys.Nextra[idx, matches] *\
-                (Se**2*_n*nextra + 2*Sh*Se*_p*_n + Sh**2*_p*pextra) /\
-                (Se*(_n+nextra)+Sh*(_p+pextra))**2
-
-    # charge is divided by epsilon (Poisson equation)
-    rho = rho / sys.epsilon[sites]
-    drho_dv = drho_dv / sys.epsilon[sites]
+    dx = sys.dx[1:]
+    dxm1 = sys.dx[:-1]
+    dxbar = (dx + dxm1) / 2.
 
     #--------------------------------------------------------------------------
     #------------------------------ fv ----------------------------------------
     #--------------------------------------------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dx[sites-1] - (v[sites+1]-v[sites]) / dx[sites]) / dxbar\
-       - rho
+    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
+       - rho[sites]
 
     # update the vector rows for the inner part of the system
     vec[sites] = fv
@@ -89,9 +81,9 @@ def getFandJ_eq(sys, v, with_mumps):
     #-------------------------- fv derivatives --------------------------------
     #--------------------------------------------------------------------------
     # compute the derivatives
-    dvm1 = -1./(dx[sites-1] * dxbar)
-    dv = 2./(dx[sites] * dx[sites-1]) - drho_dv
-    dvp1 = -1./(dx[sites] * dxbar)
+    dvm1 = -1./(dxm1 * dxbar)
+    dv = 2./(dx * dxm1) - drho_dv[sites]
+    dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
     dfv_rows = [3*[s] for s in sites]
@@ -108,13 +100,16 @@ def getFandJ_eq(sys, v, with_mumps):
     ###########################################################################
     #                          left boundary: i = 0                           #
     ###########################################################################
-    # update vector
-    vec[0] = 0 # to ensure Dirichlet BCs
+    # update vector with surface charges to zero => dV/dx = 0
+    vec[0] = v[1]-v[0]
 
     # update Jacobian
-    dav_rows = [0]
-    dav_cols = [0]
-    dav_data = [1] # dv_s = 0
+    dv_s = -1
+    dv_sp1 = 1
+
+    dav_rows = [0, 0]
+    dav_cols = [0, 1]
+    dav_data = [dv_s, dv_sp1]
 
     rows += dav_rows
     columns += dav_cols
@@ -124,20 +119,23 @@ def getFandJ_eq(sys, v, with_mumps):
     ###########################################################################
     #                         right boundary: i = Nx-1                        #
     ###########################################################################
-    # update vector
-    vec[Nx-1] = 0 # to ensure Dirichlet BCs
+    # update vector with no surface charges: dV/dx = 0
+    vec[Nx-1] = v[-1] - v[-2]
 
     # update Jacobian
-    dbv_rows = [Nx-1]
-    dbv_cols = [Nx-1]
-    dbv_data = [1] # dv_s = 0
+    dv_s = 1
+    dv_sm1 = -1
+
+    dbv_rows = [Nx-1, Nx-1]
+    dbv_cols = [Nx-2, Nx-1]
+    dbv_data = [dv_sm1, dv_s]
 
     rows += dbv_rows
     columns += dbv_cols
     data += dbv_data
 
-    if with_mumps:
+    if use_mumps:
         J = coo_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
     else:
-        J = csc_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
+        J = csr_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
     return vec, J

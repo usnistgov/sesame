@@ -1,5 +1,9 @@
 :mod:`sesame.utils` -- Miscellaneous routines
 =============================================
 
-.. automodule:: sesame.utils
-   :members:
+.. module:: sesame.utils
+
+.. autosummary::
+   :toctree: generated/
+
+   plane_defects_sites

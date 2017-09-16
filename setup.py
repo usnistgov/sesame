@@ -1,4 +1,9 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
+
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
  
 import sys
 import configparser
@@ -44,20 +49,24 @@ cmdclass = {'build_ext': ve_build_ext}
 
 
 def status_msgs(*msgs):
-    print('=' * 75)
+    print()
     for msg in msgs:
         print(msg)
-    print('=' * 75)
+    print()
 
 
 
-def run_setup(ext_modules):
+def run_setup(packages, ext_modules):
+    # populate the version_info dictionary with values stored in the version file
+    version_info = {}
+    with open('sesame/_version.py', 'r') as f:
+        exec(f.read(), {}, version_info)
     setup(
         name = 'sesame',
-        version = '0.1',
+        version = version_info['__version__'],
         author = 'Benoit H. Gaury',
-        author_email = 'benoit.gaury@nist.gov',
-        packages = ['sesame', 'sesame.mumps'],
+        author_email = 'benoitgaury@gmail.com',
+        packages = packages,
         cmdclass = cmdclass,
         ext_modules = ext_modules,
         classifiers = [
@@ -74,6 +83,7 @@ try:
 except IOError:
     print("Could not open config file.")
 
+
 if 'mumps' in config.sections():
     kwrds = {}
     for name, value in config.items('mumps'):
@@ -86,19 +96,18 @@ if 'mumps' in config.sections():
         library_dirs=[kwrds['library_dirs']],
         include_dirs=[kwrds['include_dirs']])]
 
+    packages = ['sesame', 'sesame.mumps']
+
     try:
-        run_setup(ext_modules)
-        status_msgs(
-            "Build summary: Build successful.")
+        run_setup(packages, ext_modules)
+        status_msgs("Done")
     except BuildFailed as exc:
         status_msgs(
             exc.cause,
             "WARNING: The MUMPS extension could not be compiled. " +
             "Retrying the build without the MUMPS extension now.")
-        run_setup([])
-        status_msgs(
-            "Build summary: The MUMPS extension could not be compiled. " +  
-            "Plain-Python build succeeded.")
+        run_setup(['sesame'], [])
+        status_msgs("Done")
 else:
-    run_setup([])
-    status_msgs( "Build summary: Plain-Python build succeeded.")
+    run_setup(['sesame'], [])
+    status_msgs( "Done")

@@ -1,5 +1,11 @@
-:mod:`sesame.plotter` -- Plotting routines
-===========================================
+:mod:`sesame.plotter` -- Plotting of systems
+============================================
 
-.. automodule:: sesame.plotter
-   :members:
+.. module:: sesame.plotter
+
+.. autosummary::
+   :toctree: generated/
+
+   plot
+   plot_line_defects
+   plot_plane_defects

@@ -3,5 +3,10 @@
 :mod:`sesame.solvers` -- Equilibrium and nonequilibrium solvers
 ===============================================================
 
-.. automodule:: sesame.solvers
-   :members:
+.. module:: sesame.solvers
+
+.. autosummary::
+   :toctree: generated/
+
+   solve
+   IVcurve

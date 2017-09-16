@@ -1,6 +1,12 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import numpy as np
 import importlib
 import warnings
+from scipy.io import savemat
 
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
@@ -14,261 +20,324 @@ except:
     pass
 
 
-
-def refine( dv):
-    # This damping procedure was taken from Solid-State Electronics, vol. 19,
+def damping(dx):
+    # This damping procedure is inspired from Solid-State Electronics, vol. 19,
     # pp. 991-992 (1976).
-    for sdx, s in enumerate(dv):
-        if abs(s) < 1:
-            dv[sdx] /= 2
-        if 1 < abs(s) < 3.7:
-            dv[sdx] = np.sign(s) * abs(s)**(0.2)/2
-        elif abs(s) >= 3.7:
-            dv[sdx] = np.sign(s) * np.log(abs(s))/2
-    return dv
 
-def sparse_solver(J, f, iterative=False, use_mumps=False):
+    b = np.abs(dx) > 1
+    dx[b] = np.log(1+np.abs(dx[b])*1.72)*np.sign(dx[b])
+
+
+def sparse_solver(J, f, iterative, use_mumps, inner_tol):
     if not iterative:
         spsolve = lg.spsolve
         if use_mumps: 
             if mumps_available:
                 spsolve = mumps.spsolve
             else:
-                J = J.tocsc()
-                warnings.warn('Could not import MUMPS. Default back to Scipy.', UserWarning)
+                J = J.tocsr()
+                warnings.warn('Could not import MUMPS. Default back to Scipy.'\
+                              , UserWarning)
         dx = spsolve(J, f)
         return dx
     else:
         n = len(f)
-        # Better than Scipy incomplete LU but not better than 1/diag(J)
-        # import pyamg
-        # ml = pyamg.smoothed_aggregation_solver(J)
-        # M = ml.aspreconditioner()
         M = spdiags(1.0 / J.diagonal(), [0], n, n)
-
-        dx, info = lg.lgmres(J, f, M=M)
-
+        dx, info = lg.lgmres(J, f, M=M, tol=inner_tol)
         if info == 0:
             return dx
         else:
             print("Iterative sparse solver failed with output info: ", info)
             exit(1)
 
-def poisson_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300, 
-                   info=1, use_mumps=False, iterative=False):
+def get_system(x, sys, equilibrium, periodic_bcs, use_mumps):
+    # Compute the right hand side of J * x = f
+    if equilibrium is None:
+        if periodic_bcs == False and sys.dimension != 1:
+            rhs = importlib.import_module('.getFandJ_eq{0}_abrupt'\
+                           .format(sys.dimension), 'sesame')
+        else:
+            rhs = importlib.import_module('.getFandJ_eq{0}'\
+                           .format(sys.dimension), 'sesame')
+
+        f, J = rhs.getFandJ_eq(sys, x, use_mumps)
+    else:
+        if periodic_bcs == False and sys.dimension != 1:
+            rhs = importlib.import_module('.getF{0}_abrupt'\
+                           .format(sys.dimension), 'sesame')
+            lhs = importlib.import_module('.jacobian{0}_abrupt'\
+                           .format(sys.dimension), 'sesame')
+        else:
+            rhs = importlib.import_module('.getF{0}'\
+                           .format(sys.dimension), 'sesame')
+            lhs = importlib.import_module('.jacobian{0}'\
+                           .format(sys.dimension), 'sesame')
+
+        f = rhs.getF(sys, x[2::3], x[0::3], x[1::3], equilibrium)
+        J = lhs.getJ(sys, x[2::3], x[0::3], x[1::3], use_mumps)
+
+    return f, J
+
+
+def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
+           maxiter=300, verbose=True, use_mumps=False,\
+           iterative=False, inner_tol=1e-6, htp=1):
+
+    htpy = np.linspace(1./htp, 1, htp)
+
+    for gdx, gamma in enumerate(htpy):
+        if verbose:
+            print("\nNewton loop {0}/{1}".format(gdx+1, htp))
+
+        if gamma < 1:
+            htol = 1
+        else:
+            htol = tol
+
+        cc = 0
+        converged = False
+        if gamma != 1:
+            f0, _ = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
+
+        while converged != True:
+            cc = cc + 1
+            # break if no solution found after maxiterations
+            if cc > maxiter:
+                print("Maximum number of iterations reached without solution: "\
+                      + "no solution found!\n")
+                break
+
+            # solve linear system
+            f, J = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
+            if gamma != 1:
+                f -= (1-gamma)*f0
+            dx = sparse_solver(J, -f, iterative, use_mumps, inner_tol)
+            dx.transpose()
+
+            # compute error
+            error = max(np.abs(dx))
+
+            # damping and new value of x
+            damping(dx)
+            x += dx
+
+            if error < htol:
+                converged = True
+                break 
+
+            if np.isnan(error):
+                print("The Newton solver diverged.")
+                break
+
+            # outputting status of solution procedure every so often
+            if verbose:
+                print('step {0}, error = {1}'.format(cc, error))
+    if converged:
+        return x
+    else:
+        return None
+
+def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300,\
+          verbose=True, use_mumps=False, iterative=False, inner_tol=1e-6,\
+          htp=1):
     """
-    Poisson solver of the system at thermal equilibrium.
+    Multi-purpose solver of Sesame.  If only the electrostatic potential is
+    given as a guess, then the Poisson solver is used. If quasi-Fermi levels are
+    passed, the Drift Diffusion Poisson solver is used.
 
     Parameters
     ----------
     sys: Builder
         The discretized system.
-    guess: numpy array of floats
-        One-dimensional array of the guess for the electrostatic potential
-        across the system.
-    tolerance: float
+    guess: dictionary of numpy arrays of floats
+        Contains the one-dimensional arrays of the initial guesses for the
+        electron quasi-Fermi level, the hole quasi-Fermi level and the
+        electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
+    equilibrium: numpy array of floats
+        Electrostatic potential of the system at thermal equilibrium. If not
+        provided, the solver will solve for it before doing anything else.
+    tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
         Defines the choice of boundary conditions in the y-direction. True
         (False) corresponds to periodic (abrupt) boundary conditions.
-    max_step: integer
+    maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    info: integer
-        The solver returns the step number and the associated error every info
-        steps.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step if set to True (default).
     use_mumps: boolean
         Defines if the MUMPS library should be used to solve for the Newton
         correction. Default is False.
     iterative: boolean
         Defines if an iterative method should be used to solve for the Newton
         correction instead of a direct method. Default is False.
+    inner_tol: float
+        Error of the inner iterative solver when used.
+    htp: integer
+        Number of homotopic Newton loops to perform.
 
     Returns
     -------
-    v_final: numpy array of floats
-        The final solution of the electrostatic potential in a one-dimensional
-        array.
+
+    solution: dictionary with  numpy arrays of floats or ``None``.
+        Dictionary containing the one-dimensional arrays of the solution. The
+        keys are the same as the ones for the guess. ``None`` is returned if no
+        solution has been found.
+
     """
+    # Solve for potential at equilibrium first no matter what
+    if equilibrium is None:
+        equilibrium = newton(sys, guess['v'], None, tol=tol, periodic_bcs=periodic_bcs,\
+                      maxiter=maxiter, verbose=verbose,\
+                      use_mumps=use_mumps, iterative=iterative,\
+                      inner_tol=inner_tol, htp=htp)
 
-    # import the module that create F and J
-    if periodic_bcs == False and sys.dimension != 1:
-        mod = importlib.import_module('.getFandJ_eq{0}_abrupt'.format(sys.dimension), 'sesame')
+    # If Efn is provided, one wants a nonequilibrium solution 
+    if 'efn' in guess.keys():
+        x = np.zeros((3*sys.nx*sys.ny*sys.nz,), dtype=np.float64)
+        x[0::3] = guess['efn']
+        x[1::3] = guess['efp']
+        x[2::3] = guess['v']
+
+        x = newton(sys, x, equilibrium, tol=tol, periodic_bcs=periodic_bcs,\
+                   maxiter=maxiter, verbose=verbose,\
+                   use_mumps=use_mumps, iterative=iterative,\
+                   inner_tol=inner_tol, htp=htp)
+        if x is not None:
+            x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
+
+        return x
+    # If Efn is not provided, one only wants the equilibrium potential
     else:
-        mod = importlib.import_module('.getFandJ_eq{0}'.format(sys.dimension), 'sesame')
+        return {'v': equilibrium}
 
 
-    # first step of the Newton Raphson solver
-    v = guess
-    f, J = mod.getFandJ_eq(sys, v, use_mumps)
-
-    cc = 0
-    clamp = 5.
-    converged = False
-
-    while converged != True:
-        cc = cc + 1
-        #-------- solve linear system ---------------------
-        dx = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
-        dx = dx.transpose()
-
-        #--------- choose the new step -----------------
-        error = max(np.abs(dx))
-
-        if error < tolerance:
-            converged = True
-            v_final = v
-            break 
-
-        # use the usual clamping once a proper direction has been found
-        elif error < 1:
-            # new correction and trial
-            dv = dx / (1 + np.abs(dx/clamp))
-            v = v + dv
-            f, J = mod.getFandJ_eq(sys, v, use_mumps)
-            
-        # Start slowly this refinement method found in a paper
-        else:
-            dv = refine(dx)
-            v = v + dv
-            f, J = mod.getFandJ_eq(sys, v, use_mumps)
-
-        # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0:
-            print('step = {0}, error = {1}'.format(cc, error))
-
-        # if no solution found after maxiterations, break
-        if cc > max_step:
-            print('Poisson solver: too many iterations\n')
-            break
-
-    if converged:
-        return v_final
-    else:
-        print("No solution found!\n")
-        return None
-
-
-def ddp_solver(sys, guess, tolerance=1e-9, periodic_bcs=True, max_step=300,\
-               info=1, use_mumps=False, iterative=False):
+def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
+            maxiter=300, verbose=True, use_mumps=False,\
+            iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
     """
-    Drift Diffusion Poisson solver of the system at out of equilibrium.
+    Solve the Drift Diffusion Poisson equations for the voltages provided. The
+    results are stored in files with ``.npz`` format by default (See below for
+    saving in Matlab format). Note that the
+    potential is always applied on the right contact.
 
     Parameters
     ----------
     sys: Builder
         The discretized system.
-    guess: list [efn, efp, v] of numpy arrays of floats
-        List of one-dimensional arrays of the initial guesses for the electron
-        quasi-Fermi level (efn), the hole quasi-Fermi level (efp) and the
-        electrostatic potential (v).
-    tolerance: float
+    voltages: array-like
+        List of voltages for which the current should be computed.
+    guess: dictionary of numpy arrays of floats
+        Starting point of the solver. Keys of the dictionary must be 'efn',
+        'efp', 'v' for the electron and quasi-Fermi levels, and the
+        electrostatic potential respectively.
+    file_name: string
+        Name of the file to write the data to. The file name will be appended
+        the index of the voltage list, e.g. ``file_name_0.npz``.
+    tol: float
         Accepted error made by the Newton-Raphson scheme.
     periodic_bcs: boolean
         Defines the choice of boundary conditions in the y-direction. True
         (False) corresponds to periodic (abrupt) boundary conditions.
-    max_step: integer
+    maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
-    info: integer
-        The solver returns the step number and the associated error every info
-        steps.
-    with_mumps: Boolean
-        Flag to decide whether to use MUMPS library or not. Default is False.
+    verbose: boolean
+        The solver returns the step number and the associated error at every
+        step, and this function prints the current applied voltage if set to True (default).
     use_mumps: boolean
         Defines if the MUMPS library should be used to solve for the Newton
         correction. Default is False.
     iterative: boolean
         Defines if an iterative method should be used to solve for the Newton
         correction instead of a direct method. Default is False.
+    inner_tol: float
+        Error of the inner iterative solver when used.
+    htp: integer
+        Number of homotopic Newton loops to perform.
+    fmt: string
+        Format string for the data files. Use ``mat`` to save the data in a
+        Matlab format (version 5 and above).
 
-    Returns
-    -------
-    solution: dictionary
-        Keys are 'efn', 'efp' and 'v'. The values contain one-dimensional numpy
-        arrays of the solution.
+
+    Notes
+    -----
+    The data files can be loaded and used as follows:
+
+    >>> results = np.load('file.npz')
+    >>> efn = results['efn']
+    >>> efp = results['efp']
+    >>> v = results['v']
     """
+    nx = sys.nx
 
-    # import the module that create F and J
-    if periodic_bcs == False and sys.dimension != 1:
+    # determine what the potential on the left and right might be
+    if sys.rho[0] < 0: # p-doped
+        phi_left = -sys.Eg[0] - np.log(abs(sys.rho[0])/sys.Nv[0])
+    else: # n-doped
+        phi_left = np.log(sys.rho[0]/sys.Nc[0])
 
-        modF = importlib.import_module('.getF{0}_abrupt'.format(sys.dimension), 'sesame')
-        modJ = importlib.import_module('.jacobian{0}_abrupt'.format(sys.dimension), 'sesame')
+    if sys.rho[nx-1] < 0:
+        phi_right = -sys.Eg[nx-1] - np.log(abs(sys.rho[nx-1])/sys.Nv[nx-1])
+        q = 1
     else:
-        modF = importlib.import_module('.getF{0}'.format(sys.dimension), 'sesame')
-        modJ = importlib.import_module('.jacobian{0}'.format(sys.dimension), 'sesame')
+        phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
+        q = -1
 
-    efn, efp, v = guess
+    # Make a linear guess and solve for the eqilibrium potential
+    v = np.linspace(phi_left, phi_right, sys.nx)
+    if sys.dimension == 2:
+        v = np.tile(v, sys.ny) # replicate the guess in the y-direction
+    if sys.dimension == 3:
+        v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y and z-direction
 
-    f = modF.getF(sys, v, efn, efp)
-    J = modJ.getJ(sys, v, efn, efp, use_mumps)
-    solution = {'v': v, 'efn': efn, 'efp': efp}
+    if verbose:
+        print("\nSolving for the equilibrium electrostatic potential...")
+    phi_eq = newton(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
+                   maxiter=maxiter, verbose=verbose,\
+                   use_mumps=use_mumps, iterative=iterative,\
+                   inner_tol=inner_tol, htp=htp)
+    if phi_eq is None:
+        print("The solver failed to converge")
+        print("Aborting now.")
+        exit(1)   
+    else:
+        if verbose:
+            print("\ndone")
 
-    cc = 0
-    clamp = 5.
-    converged = False
+    # create a dictionary 'result' with efn and efp
+    result = guess
 
-    while converged != True:
-        cc = cc + 1
-        #-------- solve linear system ---------------------
-        dx = sparse_solver(J, -f, use_mumps=use_mumps, iterative=iterative)
-        dx = dx.transpose()
+    # sites of the right contact
+    s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz)\
+                                   for j in range(sys.ny)]
 
-        #--------- choose the new step -----------------
-        error = max(np.abs(dx))
-       
-        if error < tolerance:
-            converged = True
-            solution['efn'] = efn
-            solution['efp'] = efp
-            solution['v'] = v
-            break 
+    # Loop over the applied potentials made dimensionless
+    Vapp = voltages / sys.scaling.energy
+    for idx, vapp in enumerate(Vapp):
 
-        # use the usual clamping once a proper direction has been found
-        elif error < 1:
-            # you can see how the variables are arranged: (efn, efp, v)
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv = dx[2::3]
+        if verbose:
+            print("\napplied voltage: {0} V".format(voltages[idx]))
 
-            defn = dv + (defn - dv) / (1 + np.abs((defn-dv)/clamp))
-            defp = dv + (defp - dv) / (1 + np.abs((defp-dv)/clamp))
-            dv = dv / (1 + np.abs(dv/clamp))
+        # Apply the voltage on the right contact
 
-            efn = efn + defn
-            efp = efp + defp
-            v = v + dv
+        result['v'][s] = phi_eq[s] + q*vapp
 
-            f = modF.getF(sys, v, efn, efp)
-            J = modJ.getJ(sys, v, efn, efp, use_mumps)
+        # Call the Drift Diffusion Poisson solver
+        result = solve(sys, result, equilibrium=phi_eq, tol=tol, periodic_bcs=periodic_bcs,\
+                       maxiter=maxiter, verbose=verbose,\
+                       use_mumps=use_mumps, iterative=iterative,\
+                       inner_tol=inner_tol, htp=htp)
 
-        # Start slowly with this refinement method found in a paper
+        if result is not None:
+            name = file_name + "_{0}".format(idx)
+            if fmt == 'mat':
+                savemat(name, result)
+            else:
+                np.savez(name, efn=result['efn'], efp=result['efp'],\
+                         v=result['v'])
         else:
-            # you can see how the variables are arranged: (efn, efp, v)
-            defn = dx[0::3]
-            defp = dx[1::3]
-            dv = dx[2::3]
-
-            defn = refine(defn)
-            defp = refine(defp)
-            dv = refine(dv)
-
-            efn = efn + defn
-            efp = efp + defp
-            v = v + dv
-
-            f = modF.getF(sys, v, efn, efp)
-            J = modJ.getJ(sys, v, efn, efp, use_mumps)
-
-        # outputing status of solution procedure every so often
-        if info != 0 and np.mod(cc, info) == 0:
-            print('step = {0}, error = {1}'.format(cc, error))
-
-        # if no solution found after maxiterations, break
-        if cc >= max_step:
-            print('too many iterations\n')
-            break
-
-    if converged:
-        return solution
-    else:
-        print("No solution found!\n")
-        return None
+            print("The solver failed to converge for the applied voltage"\
+                  + " {0} V (index {1}).".format(voltages[idx], idx))
+            print("Aborting now.")
+            exit(1)
