@@ -4,3 +4,4 @@ doc/reference/generated
 build
 sesame.egg-info
 dist
+*.cfg
