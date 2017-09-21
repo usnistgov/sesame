@@ -478,10 +478,10 @@ class Analyzer():
                 tau_e = self.sys.tau_e[s]
                 r = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
             if mec == 'auger':
-                r = self.sys.Cn[sites] * n * (n*p - ni2)\
-                  + self.sys.Cp[sites] * p * (n*p - ni2)
+                r = self.sys.Cn[s] * n * (n*p - ni2)\
+                  + self.sys.Cp[s] * p * (n*p - ni2)
             if mec == 'radiative':
-                r = self.sys.B[sites] * (n*p - ni2)
+                r = self.sys.B[s] * (n*p - ni2)
 
             sp = spline(x, r)
             u.append(sp.integral(x[0], x[-1]))
