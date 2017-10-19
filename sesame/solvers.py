@@ -213,7 +213,7 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
         return {'v': equilibrium}
 
 
-def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
+def IVcurve(sys, voltages, file_name, tol=1e-6, periodic_bcs=True,\
             maxiter=300, verbose=True, use_mumps=False,\
             iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
     """
@@ -228,10 +228,6 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         The discretized system.
     voltages: array-like
         List of voltages for which the current should be computed.
-    guess: dictionary of numpy arrays of floats
-        Starting point of the solver. Keys of the dictionary must be 'efn',
-        'efp', 'v' for the electron and quasi-Fermi levels, and the
-        electrostatic potential respectively.
     file_name: string
         Name of the file to write the data to. The file name will be appended
         the index of the voltage list, e.g. ``file_name_0.npz``.
@@ -284,7 +280,7 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
         q = -1
 
-    # Make a linear guess and solve for the eqilibrium potential
+    # Make a linear guess and solve for the equilibrium potential
     v = np.linspace(phi_left, phi_right, sys.nx)
     if sys.dimension == 2:
         v = np.tile(v, sys.ny) # replicate the guess in the y-direction
@@ -306,7 +302,9 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
             print("\ndone")
 
     # create a dictionary 'result' with efn and efp
-    result = guess
+    efn = np.zeros((sys.nx*sys.ny*sys.nz,))
+    efp = np.zeros((sys.nx*sys.ny*sys.nz,))
+    result = {'v': np.copy(phi_eq), 'efn': efn, 'efp': efp}
 
     # sites of the right contact
     s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz)\

@@ -328,7 +328,7 @@ class Analyzer():
         """
         self.current_map(False, cmap, scale)
 
-    def current_map(self, electron, cmap, scale):
+    def current_map(self, electron, cmap, scale, show=True):
 
         if not mpl_enabled:
             raise RuntimeError("matplotlib was not found, but is required "
@@ -366,14 +366,17 @@ class Analyzer():
         plt.pcolor(x, y, norm, cmap=cmap, rasterized=True)
         cbar=plt.colorbar()
 
-        plt.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
+        p = plt.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
         plt.xlim(xmax=Lx, xmin=0)
         plt.ylim(ymin=0, ymax=Ly)
 
         plt.xlabel('x')
         plt.ylabel('y')
 
-        plt.show()
+        if show:
+            plt.show()
+        else:
+            return p
 
     def map3D(self, data, cmap='gnuplot', scale=1e-6):
         """

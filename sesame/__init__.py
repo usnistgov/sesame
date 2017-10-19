@@ -5,6 +5,12 @@
 
 from ._version import __version__
 
+try:
+    import matplotlib
+    matplotlib.use('Qt5Agg')
+except:
+    pass
+
 __all__ = ['builder', 'analyzer']
 for module in __all__:
     exec('from . import {0}'.format(module))

@@ -96,7 +96,7 @@ if 'mumps' in config.sections():
         library_dirs=[kwrds['library_dirs']],
         include_dirs=[kwrds['include_dirs']])]
 
-    packages = ['sesame', 'sesame.mumps']
+    packages = ['sesame', 'sesame.mumps', 'sesame.ui']
 
     try:
         run_setup(packages, ext_modules)
@@ -109,5 +109,5 @@ if 'mumps' in config.sections():
         run_setup(['sesame'], [])
         status_msgs("Done")
 else:
-    run_setup(['sesame'], [])
+    run_setup(['sesame', 'sesame.ui'], [])
     status_msgs( "Done")
