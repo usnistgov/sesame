@@ -2,12 +2,33 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
  
+from ast import literal_eval as ev
 import numpy as np 
 import logging
 
 from .plotbox import *
 from .makeSystem import parseSettings
 from ..analyzer import Analyzer
+
+class DataError(Exception):
+    pass
+    # def __init__(self):
+    #     super(DataError, self).__init__()
+    #     # Error message
+    #     messageConfiguration = \
+    #         QCoreApplication.translate('Data error',\
+    #                 'An error occurred when processing entered data.')
+    #     # Error message title
+    #     titleConfiguration = \
+    #         QCoreApplication.translate('Data error', 'Data processing')
+
+    #     # Dialog box
+    #     errorConfiguration = QMessageBox()
+    #     errorConfiguration.setWindowTitle(titleConfiguration)
+    #     errorConfiguration.setIcon(QMessageBox.Critical)
+    #     errorConfiguration.setText(messageConfiguration)
+    #     errorConfiguration.exec_()
+
 
 class Analysis(QWidget):
     def __init__(self, parent):
@@ -41,14 +62,12 @@ class Analysis(QWidget):
         hh = QHBoxLayout()
         hh.addWidget(QLabel("Plotted quantity"))
         self.quantity = QComboBox()
-        quantities = ["Choose one", "Shockley-Read-Hall Recombination",\
-                      "Electron current", "Hole current"]
+        quantities = ["Choose one", "Electron current", "Hole current"]
         self.quantity.addItems(quantities)
         self.quantity.currentIndexChanged.connect(self.surfacePlot)
         hh.addWidget(self.quantity)
         hh.addStretch()
         self.vlayout.addLayout(hh)
-
 
         self.surfaceFig = MplWindow()
         self.vlayout.addWidget(self.surfaceFig)
@@ -70,11 +89,9 @@ class Analysis(QWidget):
         quantities = ["Choose one", "Band diagram",\
         "Electron quasi-Fermi level", "Hole quasi-Fermi level",\
         "Electrostatic potential","Electron density",\
-        "Hole density", "Shockley-Read-Hall Recombination",\
+        "Hole density", "Bulk Shockley-Read-Hall recombination",\
         "Electron current along x", "Electron current along y",\
-        "Hole current along x", "Hole current along y",\
-        "Full current along x", "Full current along y",\
-        "Norm of the current"]
+        "Hole current along x", "Hole current along y"]
 
         self.quantity2.addItems(quantities)
         self.quantity2.currentIndexChanged.connect(self.linearPlot)
@@ -87,32 +104,82 @@ class Analysis(QWidget):
 
         ls2 = QHBoxLayout()
         ls2.addWidget(QLabel("First point"))
-        ls2.addWidget(QLineEdit("(x1, y1)"))
+        self.p1 = QLineEdit("x1, y1")
+        ls2.addWidget(self.p1)
         ls2.addWidget(QLabel("Second point"))
-        ls2.addWidget(QLineEdit("(x2, y2)"))
+        self.p2 = QLineEdit("x2, y2")
+        ls2.addWidget(self.p2)
         self.vlayout2.addLayout(ls2)
 
-
-    def surfacePlot(self):
-        # get data from file
-        fileName = self.fileName.text()
-
+    def getAnalyzer(self):
         # get system
         settings = self.table.settingsBox.get_settings()
         system = parseSettings(settings)
 
+        # get data from file
+        fileName = self.fileName.text()
+        data = np.load(fileName)
+
         # make an instance of the Analyzer
-        az = Analyzer(system, fileName)
+        az = Analyzer(system, data)
+        return az, system
+
+    def surfacePlot(self):
+        az, system = self.getAnalyzer()
 
         # plot
         txt = self.quantity.currentText()
-        self.surfaceFig.clear()
+        self.surfaceFig.figure.clear()
         if txt == "Electron current":
-            p = az.current_map(True, 'viridis', 1e6, show=False)
-        if txt == "Hole current":
-            p = az.current_map(False, 'viridis', 1e6, show=False)
+            az.current_map(True, 'viridis', 1e6, fig=self.surfaceFig.figure)
 
+        if txt == "Hole current":
+            az.current_map(False, 'viridis', 1e6, fig=self.surfaceFig.figure)
         self.surfaceFig.canvas.draw()
 
     def linearPlot(self):
-        return
+        az, system = self.getAnalyzer()
+
+        # gather input from user
+        txt = self.quantity2.currentText()
+        p1 = ev(self.p1.text())
+        p2 = ev(self.p2.text())
+
+        # get sites and coordinates of a line
+        X, sites = az.line(system, p1, p2)
+        X = X * system.scaling.length * 1e6 # set length in um
+
+        # scalings
+        vt = system.scaling.energy
+        N  = system.scaling.density
+        G  = system.scaling.generation
+        j  = system.scaling.current
+
+        # get the corresponding data
+        # if txt == "Band diagram":
+        if txt == "Electron quasi-Fermi level":
+            data = vt * az.efn[sites]
+        if txt == "Hole quasi-Fermi level":
+            data = vt * az.efp[sites]
+        if txt == "Electrostatic potential":
+            data = vt * az.v[sites]
+        if txt == "Electron density":
+            data = N * az.electron_density(location=(p1, p2))
+        if txt == "Hole density":
+            data = N * az.hole_density(location=(p1, p2))
+        if txt == "Shockley-Read-Hall recombination":
+            data = G * az.bulk_srh_rr(location=(p1, p2))
+        if txt == "Electron current along x":
+            data = J * az.electron_current(component='x', location=(p1, p2))
+        if txt == "Hole current along x":
+            data = J * az.hole_current(component='x', location=(p1, p2))
+        if txt == "Electron current along y":
+            data = J * az.electron_current(component='y', location=(p1, p2))
+        if txt == "Hole current along x":
+            data = J * az.hole_current(component='y', location=(p1, p2))
+
+        # plot
+        self.linearFig.figure.clear()
+        ax = self.linearFig.figure.add_subplot(111)
+        ax.plot(X, data)
+        self.linearFig.canvas.draw()

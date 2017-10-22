@@ -3,16 +3,22 @@ from ast import literal_eval as ev
 import numpy as np
 
 def parseGrid(grid):
+    # find the number of regions to concatenate
+    regions = 1
+    for i in grid:
+        if isinstance(i, tuple):
+            regions += 1
+
     # parse a one-dimensional grid (either x or y or z)
-    if len(grid) == 1: # only one linspace
-        x = np.linspace(grid[0][0], grid[0][1], grid[0][2])
+    if regions == 1: # only one linspace
+        x = np.linspace(grid[0], grid[1], grid[2])
     else: # several regions were defined
         x = np.linspace(grid[0][0], grid[0][1], grid[0][2], endpoint=False)
         for item in grid[1:-1]:
             xx = np.linspace(item[0], item[1], item[2], endpoint=False)
-            x = np.concatenate(x, xx)
+            x = np.concatenate((x, xx))
         xx = np.linspace(grid[-1][0], grid[-1][1], grid[-1][2])
-        x = np.concatenate(x, xx)
+        x = np.concatenate((x, xx))
     return x
 
 def parseLocation(location, dimension):
@@ -41,15 +47,15 @@ def parseSettings(settings):
     grid = settings['grid']
     dimension = len(grid)
 
-    xgrid = [ev(i) for i in grid[0]]
+    xgrid = ev(grid[0])
     xpts = parseGrid(xgrid)
     ypts = None
     zpts = None
     if dimension == 2 or dimension == 3:
-        ygrid = [ev(i) for i in grid[1]]
+        ygrid = ev(grid[1])
         ypts = parseGrid(ygrid)
     if dimension == 3:
-        zgrid = [ev(i) for i in grid[2]]
+        zgrid = ev(grid[2])
         zpts = parseGrid(zgrid)
     # build a sesame system
     system = Builder(xpts, ypts, zpts)

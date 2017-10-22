@@ -185,7 +185,7 @@ class LogWidget(QWidget):
         logging.getLogger().setLevel(logging.INFO)
 
         # Send stdout to the logger
-        sys.stdout = StreamToLogger(logging.getLogger(), logging.INFO)
+        # sys.stdout = StreamToLogger(logging.getLogger(), logging.INFO)
         # sys.stderr = StreamToLogger(logging.getLogger(), logging.ERROR)
 
         self.layout.addWidget(log_handler.widget)

@@ -84,7 +84,7 @@ class Window(QWidget):
         splitter.addWidget(self.ipython)
 
         self.setWindowTitle('Sesame')
-        # self.setGeometry(0,0, 400,400)
+        # self.setGeometry(0,0, 40,40)
         # self.show()
         self.showMaximized()
 

@@ -328,11 +328,19 @@ class Analyzer():
         """
         self.current_map(False, cmap, scale)
 
-    def current_map(self, electron, cmap, scale, show=True):
+    def current_map(self, electron, cmap, scale, fig=None):
 
         if not mpl_enabled:
             raise RuntimeError("matplotlib was not found, but is required "
                                "for plotting.")
+
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(111)
 
         Lx = self.sys.xpts[-2] * scale
         Ly = self.sys.ypts[-2] * scale
@@ -363,20 +371,18 @@ class Analyzer():
         norm = np.sqrt(jnx**2 + jny**2)
 
         y, x = np.mgrid[0:Ly:100j, 0:Lx:100j]
-        plt.pcolor(x, y, norm, cmap=cmap, rasterized=True)
-        cbar=plt.colorbar()
+        p = ax.pcolor(x, y, norm, cmap=cmap, rasterized=True)
+        cbar = fig.colorbar(p, ax=ax)
 
-        p = plt.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
-        plt.xlim(xmax=Lx, xmin=0)
-        plt.ylim(ymin=0, ymax=Ly)
+        ax.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
+        ax.set_xlim(xmax=Lx, xmin=0)
+        ax.set_ylim(ymin=0, ymax=Ly)
 
-        plt.xlabel('x')
-        plt.ylabel('y')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
 
         if show:
             plt.show()
-        else:
-            return p
 
     def map3D(self, data, cmap='gnuplot', scale=1e-6):
         """

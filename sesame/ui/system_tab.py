@@ -124,11 +124,11 @@ class SettingsGrid(QWidget):
 
     def get_data(self):
         if self.dimension == 1:
-            return [[self.g1.text()]]
+            return self.g1.text(),
         elif self.dimension == 2:
-            return [[self.g1.text()], [self.g2.text()]]
+            return self.g1.text(), self.g2.text()
         elif self.dimension == 3:
-            return [[self.g1.text()], [self.g2.text()], [self.g3.text()]]
+            return self.g1.text(), self.g2.text(), self.g3.text()
 
 class SettingsContacts(QWidget):
     def __init__(self, parent):
@@ -535,18 +535,28 @@ class ViewBox(QWidget):
         super(ViewBox, self).__init__()
 
         self.setMinimumWidth(400)
-        layout = QVBoxLayout()
+        self.layout = QVBoxLayout()
 
         self.formGroupBox = QGroupBox("View")
  
         self.mpl = MplWindow()
-        layout.addWidget(self.mpl)
+        self.layout.addWidget(self.mpl)
  
-        self.formGroupBox.setLayout(layout)
+        self.formGroupBox.setLayout(self.layout)
 
         mainLayout = QVBoxLayout()
         mainLayout.addWidget(self.formGroupBox)
         self.setLayout(mainLayout)
 
     def plotData(self, system, data):
-        self.mpl.plot(system=system, data=data)
+        self.mpl.figure.clear()
+        if system and isinstance(data, np.ndarray):
+            plotter.plot(system, data, fig=self.mpl.figure)
+
+        elif data == 'line':
+            plotter.plot_line_defects(system, fig=self.mpl.figure)
+
+        elif data == 'plane':
+            plotter.plot_plane_defects(system, fig=self.mpl.figure)
+
+        self.mpl.canvas.draw()

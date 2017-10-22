@@ -10,18 +10,17 @@ matplotlib.use('Qt5Agg')
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
 FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
 from matplotlib.figure import Figure
-import matplotlib.pyplot as plt
 
 import logging
 
 from sesame import plotter
 
-class MplWindow(QDialog):
-    def __init__(self, parent=None):
-        super(MplWindow, self).__init__(parent)
+class MplWindow(QWidget):
+    def __init__(self):
+        super(MplWindow, self).__init__()
 
         # a figure instance to plot on
-        self.figure = plt.figure()
+        self.figure = Figure()
 
         # this is the Canvas Widget that displays the `figure`
         # it takes the `figure` instance as a parameter to __init__
@@ -31,27 +30,11 @@ class MplWindow(QDialog):
         # it takes the Canvas widget and a parent
         self.toolbar = NavigationToolbar(self.canvas, self)
 
-        self.plot()
+        # create an axis to have an empty graph
+        ax = self.figure.add_subplot(111)
 
         # set the layout
         layout = QVBoxLayout()
         layout.addWidget(self.toolbar)
         layout.addWidget(self.canvas)
         self.setLayout(layout)
-
-    def plot(self, system=None, data=None):
-        self.figure.clear()
-
-        # create an axis
-        ax = self.figure.add_subplot(111)
-        if system and isinstance(data, np.ndarray):
-            p = plotter.plot(system, data, show=False)
-
-        elif data == 'line':
-            p = plotter.plot_line_defects(system, show=False)
-
-        elif data == 'plane':
-            p = plotter.plot_plane_defects(system, show=False)
-
-        self.canvas.draw()
-

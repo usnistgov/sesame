@@ -30,12 +30,19 @@ def plot_line_defects(sys, scale=1e-6, ls='-o', show=True):
         Relevant scaling to apply to the axes.
     ls: string
         Line style of the plotted paths.
-    show: Boolean
-        Plot a figure if True, return the Matplotlib instance if False.
+    ax: Maplotlib axis
+        A plot is added to it if given. If not given, a new one is created and a
+        figure is displayed.
     """
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
                            "for plotting.")
+
+    if fig is None:
+        fig = plt.figure()
+        show = True
+    # add axis to figure
+    ax = fig.add_subplot(111)
 
     for c in sys.defects_list:
         xa, ya = c.location[0]
@@ -44,20 +51,18 @@ def plot_line_defects(sys, scale=1e-6, ls='-o', show=True):
         _, _, xcoord, ycoord, _ = utils.Bresenham(sys, (xa, ya,0), (xb,yb,0))
 
         # plot the path of added charges
-        p = plt.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
+        ax.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
 
-    plt.xlabel('x')
-    plt.ylabel('y')
-
-    plt.xlim(xmin=0, xmax=sys.xpts[-1]/scale)
-    plt.ylim(ymin=0, ymax=sys.ypts[-1]/scale)
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+       
+    ax.set_xlim(xmin=0, xmax=sys.xpts[-1]/scale)
+    ax.set_ylim(ymin=0, ymax=sys.ypts[-1]/scale)
 
     if show:
         plt.show()
-    else:
-        return p
 
-def plot_plane_defects(sys, scale=1e-6, show=True):
+def plot_plane_defects(sys, scale=1e-6, fig=None):
     """
     Plot the sites containing additional charges located on planes in 3D. The
     length scale of the graph is 1 micrometer by default.
@@ -68,12 +73,20 @@ def plot_plane_defects(sys, scale=1e-6, show=True):
         The discretized system.
     scale: float
         Relevant scaling to apply to the axes.
-    show: Boolean
-        Plot a figure if True, return the Matplotlib instance if False.
+    fig: Maplotlib figure
+        A plot is added to it if given. If not given, a new one is created and 
+        displayed.
     """
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
                            "for plotting")
+
+    show = False
+    if fig is None:
+        fig = plt.figure()
+        show = True
+    # add axis to figure
+    ax = fig.add_subplot(1,1,1, projection='3d')
 
     for c in sys.defects_list:
 
@@ -83,9 +96,7 @@ def plot_plane_defects(sys, scale=1e-6, show=True):
         Y = Y / scale
         Z = Z / scale
 
-        fig = plt.figure(figsize=(8,6))
-        ax = fig.add_subplot(1,1,1, projection='3d')
-        p = ax.plot_surface(X, Y, Z)
+        ax.plot_surface(X, Y, Z)
 
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
 
@@ -99,10 +110,8 @@ def plot_plane_defects(sys, scale=1e-6, show=True):
 
     if show:
         plt.show()
-    else:
-        return p
 
-def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, show=True):
+def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None):
     """
     Plot a 2D map of a parameter (like mobility) across the system.
 
@@ -119,8 +128,9 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, show=True):
         Name of the colormap used by Matplolib.
     alpha: float
         Transparency of the colormap.
-    show: Boolean
-        Plot a figure if True, return the Matplotlib instance if False.
+    fig: Maplotlib figure
+        A plot is added to it if given. If not given, a new one is created and 
+        displayed.
     """
 
     if not mpl_enabled:
@@ -129,15 +139,18 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, show=True):
 
     xpts, ypts = sys.xpts / scale, sys.ypts / scale
     data = data.reshape(sys.ny, sys.nx)
-    p = plt.pcolor(xpts, ypts, data)
-    plt.xlim(xmin=0, xmax=xpts[-1])
-    plt.ylim(ymin=0, ymax=ypts[-1])
-    plt.xlabel('x')
-    plt.ylabel('y')
+
+    show = False
+    if fig is None:
+        fig = plt.figure()
+        show = True
+
+    ax = fig.add_subplot(111)
+    ax.pcolor(xpts, ypts, data)
+    ax.set_xlim(xmin=0, xmax=xpts[-1])
+    ax.set_ylim(ymin=0, ymax=ypts[-1])
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
 
     if show:
         plt.show()
-    else:
-        return p
-
-
