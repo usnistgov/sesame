@@ -8,7 +8,7 @@ import logging
 from ast import literal_eval as ev
 
 from ..solvers import IVcurve
-from .makeSystem import parseSettings
+from .common import parseSettings, slotError
 
 
 class Simulation(QWidget):
@@ -125,7 +125,8 @@ class Simulation(QWidget):
                     useMumps, iterative]
         return settings
 
-    def run(self):
+    @slotError("bool")
+    def run(self, checked):
         # get solver settings
         voltages, simName, fmt, tol, steps,\
                     useMumps, iterative = self.getSolverSettings()
@@ -139,6 +140,7 @@ class Simulation(QWidget):
             BCs = False
 
         # run simulation
+        ## TODO much better to handle failure
         try:
             IVcurve(system, voltages, simName, tol=tol, periodic_bcs=BCs,\
                 maxiter=steps, verbose=True, use_mumps=useMumps,\
@@ -185,7 +187,7 @@ class LogWidget(QWidget):
         logging.getLogger().setLevel(logging.INFO)
 
         # Send stdout to the logger
-        # sys.stdout = StreamToLogger(logging.getLogger(), logging.INFO)
+        sys.stdout = StreamToLogger(logging.getLogger(), logging.INFO)
         # sys.stderr = StreamToLogger(logging.getLogger(), logging.ERROR)
 
         self.layout.addWidget(log_handler.widget)

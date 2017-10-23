@@ -7,27 +7,8 @@ import numpy as np
 import logging
 
 from .plotbox import *
-from .makeSystem import parseSettings
+from .common import parseSettings, slotError
 from ..analyzer import Analyzer
-
-class DataError(Exception):
-    pass
-    # def __init__(self):
-    #     super(DataError, self).__init__()
-    #     # Error message
-    #     messageConfiguration = \
-    #         QCoreApplication.translate('Data error',\
-    #                 'An error occurred when processing entered data.')
-    #     # Error message title
-    #     titleConfiguration = \
-    #         QCoreApplication.translate('Data error', 'Data processing')
-
-    #     # Dialog box
-    #     errorConfiguration = QMessageBox()
-    #     errorConfiguration.setWindowTitle(titleConfiguration)
-    #     errorConfiguration.setIcon(QMessageBox.Critical)
-    #     errorConfiguration.setText(messageConfiguration)
-    #     errorConfiguration.exec_()
 
 
 class Analysis(QWidget):
@@ -124,7 +105,8 @@ class Analysis(QWidget):
         az = Analyzer(system, data)
         return az, system
 
-    def surfacePlot(self):
+    @slotError("bool")
+    def surfacePlot(self, checked):
         az, system = self.getAnalyzer()
 
         # plot
@@ -137,7 +119,8 @@ class Analysis(QWidget):
             az.current_map(False, 'viridis', 1e6, fig=self.surfaceFig.figure)
         self.surfaceFig.canvas.draw()
 
-    def linearPlot(self):
+    @slotError("bool")
+    def linearPlot(self, checked):
         az, system = self.getAnalyzer()
 
         # gather input from user

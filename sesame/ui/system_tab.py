@@ -6,9 +6,7 @@ from PyQt5.QtCore import *
 import numpy as np 
 
 from .plotbox import *
-from .makeSystem import parseSettings
-
-import logging
+from .common import parseSettings, slotError
 
 
 class BuilderBox(QWidget):
@@ -509,8 +507,9 @@ class SettingsPlot(QWidget):
         stack = QWidget()
         stack.setLayout(layout)
         parent.Stack.addWidget(stack)
-
-    def displayPlot(self):
+    
+    @slotError("bool")
+    def displayPlot(self, checked):
         prop = self.propertyBox.currentText()
         settings = self.parent.get_settings()
         system = parseSettings(settings)

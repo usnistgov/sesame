@@ -1,6 +1,34 @@
 from .. import Builder
 from ast import literal_eval as ev
 import numpy as np
+import traceback
+import types
+from functools import wraps
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QMessageBox
+
+def slotError(*args):
+    if len(args) == 0 or isinstance(args[0], types.FunctionType):
+        args = []
+    @QtCore.pyqtSlot(*args)
+    def slotdecorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            try:
+                func(*args)
+            except:
+                p = traceback.format_exc()
+                # Dialog box
+                msg = QMessageBox()
+                msg.setWindowTitle("Processing error")
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("An error occurred when processing your settings.")
+                msg.setDetailedText(p)
+                msg.exec_()
+        return wrapper
+
+    return slotdecorator
+
 
 def parseGrid(grid):
     # find the number of regions to concatenate
@@ -121,3 +149,4 @@ def parseSettings(settings):
         system.generation(f)
 
     return system
+
