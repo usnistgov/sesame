@@ -47,6 +47,11 @@ class Analysis(QWidget):
         self.quantity.addItems(quantities)
         self.quantity.currentIndexChanged.connect(self.surfacePlot)
         hh.addWidget(self.quantity)
+
+        self.plotBtnS = QPushButton("Plot")
+        self.plotBtnS.clicked.connect(self.surfacePlot)
+        hh.addWidget(self.plotBtnS)
+
         hh.addStretch()
         self.vlayout.addLayout(hh)
 
@@ -75,13 +80,13 @@ class Analysis(QWidget):
         "Hole current along x", "Hole current along y"]
 
         self.quantity2.addItems(quantities)
-        self.quantity2.currentIndexChanged.connect(self.linearPlot)
         h.addWidget(self.quantity2)
+        self.plotBtn = QPushButton("Plot")
+        self.plotBtn.clicked.connect(self.linearPlot)
+        h.addWidget(self.plotBtn)
+
         h.addStretch()
         self.vlayout2.addLayout(h)
-
-        self.linearFig = MplWindow()
-        self.vlayout2.addWidget(self.linearFig)
 
         ls2 = QHBoxLayout()
         ls2.addWidget(QLabel("First point"))
@@ -91,6 +96,11 @@ class Analysis(QWidget):
         self.p2 = QLineEdit("x2, y2")
         ls2.addWidget(self.p2)
         self.vlayout2.addLayout(ls2)
+
+
+        self.linearFig = MplWindow()
+        self.vlayout2.addWidget(self.linearFig)
+
 
     def getAnalyzer(self):
         # get system
@@ -139,7 +149,6 @@ class Analysis(QWidget):
         j  = system.scaling.current
 
         # get the corresponding data
-        # if txt == "Band diagram":
         if txt == "Electron quasi-Fermi level":
             data = vt * az.efn[sites]
         if txt == "Hole quasi-Fermi level":
@@ -163,6 +172,10 @@ class Analysis(QWidget):
 
         # plot
         self.linearFig.figure.clear()
-        ax = self.linearFig.figure.add_subplot(111)
-        ax.plot(X, data)
+        if txt != "Band diagram": # everything except band diagram
+            ax = self.linearFig.figure.add_subplot(111)
+            ax.plot(X, data)
+        else:
+            az.band_diagram((p1, p2), fig=self.linearFig.figure)
+            
         self.linearFig.canvas.draw()

@@ -24,6 +24,7 @@ def slotError(*args):
                 msg.setIcon(QMessageBox.Critical)
                 msg.setText("An error occurred when processing your settings.")
                 msg.setDetailedText(p)
+                msg.setEscapeButton(QMessageBox.Ok)
                 msg.exec_()
         return wrapper
 

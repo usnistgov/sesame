@@ -89,6 +89,48 @@ class Analyzer():
         s, x, _, _, _ = Bresenham(system, p1, p2)
         return x, s
 
+    def band_diagram(self, location, fig=None):
+        """
+        Compute the band diagram between two points defining a line. Display a
+        plot if fig is None.
+
+        Parameters
+        ----------
+        location: array-like ((x1,y1), (x2,y2))
+            Tuple of two points defining a line over which to compute a band
+            diagram.
+
+        fig: Maplotlib figure
+            A plot is added to it if given. If not given, a new one is created and 
+            displayed.
+
+        """
+        p1, p2 = location
+        X, sites = self.line(self.sys, p1, p2)
+
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(111)
+
+        vt = self.sys.scaling.energy
+        X = X*self.sys.scaling.length * 1e6 # in um
+
+        l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
+        l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
+
+        fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
+                              r'$\mathregular{-E_{F_p}}$'])
+
+        ax.set_xlabel('position (µm)')
+        ax.set_ylabel('Energy (eV)')
+
+        if show:
+            plt.show()
+
     def electron_density(self, location=None):
         """
         Compute the electron density across the system or on a line defined by two points.
