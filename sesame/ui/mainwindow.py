@@ -88,19 +88,26 @@ class Window(QWidget):
         # self.show()
         self.showMaximized()
 
-        self.entry.exec_()
-        dimension = self.entry.get_dimension()
-        BCs = self.entry.get_bcs()
-        if not dimension in [1, 2, 3]:
-            print("Choose a dimensionality value")
+        noEntry = True
+        while(noEntry):
             self.entry.exec_()
-        if not BCs in ['Periodic', 'Hardwall']:
-            print("Choose boundary conditions ")
-            self.entry.exec_()
-        if dimension == 1 and BCs == "Periodic":
-            print("Periodic boundary conditions cannot be applied in 1D")
-            self.entry.exec_()
+            dimension = self.entry.get_dimension()
+            BCs = self.entry.get_bcs()
+            if (dimension in [1, 2, 3]) and\
+               (BCs in ['Periodic', 'Hardwall']):
+               noEntry = False
+            if dimension == 1 and BCs == "Periodic":
+                # alert user
+                msg = QMessageBox()
+                msg.setWindowTitle("Processing error")
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("Periodic boundary conditions cannot be applied in 1D.")
+                msg.setEscapeButton(QMessageBox.Ok)
+                msg.exec_()
+                # flag to false
+                noEntry = True
 
+        dimension = self.entry.get_dimension()
         self.table.settingsBox.make_stack(dimension)
 
     def get_data(self):

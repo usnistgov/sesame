@@ -13,6 +13,7 @@ class BuilderBox(QWidget):
     def __init__(self, parent):
         super(BuilderBox, self).__init__(parent)
 
+        # define widget
         self.setMaximumWidth(200)
         self.setMinimumWidth(200)
         layout = QVBoxLayout()
@@ -107,14 +108,14 @@ class SettingsGrid(QWidget):
         self.g3 = QLineEdit("(z1, z2, number of nodes), (z2, z3, number of nodes), ...")
 
         if self.dimension == 1:
-            layout.addRow("Grid x-axis", self.g1)
+            layout.addRow("Grid x-axis [m]", self.g1)
         elif self.dimension == 2:
-            layout.addRow("Grid x-axis", self.g1)
-            layout.addRow("Grid y-axis", self.g2)
+            layout.addRow("Grid x-axis [m]", self.g1)
+            layout.addRow("Grid y-axis [m]", self.g2)
         elif self.dimension == 3:
-            layout.addRow("Grid x-axis", self.g1)
-            layout.addRow("Grid y-axis", self.g2)
-            layout.addRow("Grid z-axis", self.g3)
+            layout.addRow("Grid x-axis [m]", self.g1)
+            layout.addRow("Grid y-axis [m]", self.g2)
+            layout.addRow("Grid z-axis [m]", self.g3)
 
         stack = QWidget()
         stack.setLayout(layout)
@@ -140,10 +141,10 @@ class SettingsContacts(QWidget):
         self.g5 = QLineEdit("", self)
         self.g6 = QLineEdit("", self)
         self.g7 = QLineEdit("", self)
-        layout.addRow("Electron surface recombination velocity in x=0", self.g4)
-        layout.addRow("Hole surface recombination velocity in x=0", self.g5)
-        layout.addRow("Electron surface recombination velocity in x=L", self.g6)
-        layout.addRow("Hole surface recombination velocity in x=L", self.g7)
+        layout.addRow("Electron surface recombination velocity in x=0 [m/s]", self.g4)
+        layout.addRow("Hole surface recombination velocity in x=0 [m/s]", self.g5)
+        layout.addRow("Electron surface recombination velocity in x=L [m/s]", self.g6)
+        layout.addRow("Hole surface recombination velocity in x=L [m/s]", self.g7)
 
         stack = QWidget()
         stack.setLayout(layout)
@@ -161,7 +162,8 @@ class SettingsGen(QWidget):
 
     def stackUI(self, parent):
         layout = QVBoxLayout()
-        lbl = QLabel("Provide a number for uniform illumation, or a space-dependent, or simply nothing for dark conditions.")
+        lbl = QLabel("Provide a number for uniform illumation, or a
+        space-dependent function, or simply nothing for dark conditions.")
         lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
         lbl.setWordWrap(True)
 
@@ -208,13 +210,23 @@ class SettingsMaterials(QWidget):
 
         # Location
         locLayout = QHBoxLayout()
-        self.loc = QLineEdit("(y < 1.5e-6) | (y > 2.5e-6)", self)
+        self.loc = QLineEdit("", self)
         self.lbl = QLabel("Location")
         locLayout.addWidget(self.lbl)
         locLayout.addWidget(self.loc)
         self.loc.hide()
         self.lbl.hide()
         vlayout.addLayout(locLayout)
+
+        # Label explaining how to write location
+        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with\
+        (y < 1.5e-6) | (y > 2.5e-6). Use the bitwise operators | for `or`, and\
+        & for `and`.")
+        self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
+        self.ex.setWordWrap(True)
+        self.ex.hide()
+        vlayout.addWidget(self.ex)
+
 
         # Table for material parameters
         self.table = QTableWidget()
@@ -236,10 +248,12 @@ class SettingsMaterials(QWidget):
         self.table.setVerticalHeaderLabels(self.rows)
         self.table.setHorizontalHeaderLabels(columns)
 
-        units = ["1/m^3", "1/m^3", "eV", "NA", "NA", "NA", "m^2/(V s)",
-                 "m^2/(V s)", "eV", "s", "s", "eV", "m^3/s", "m^6/s", "m^6/s"]
+        self.units = [u"m\u207B\u00B3", u"m\u207B\u00B3", "eV", "NA", "NA", "NA",
+                 u"m\u00B2/(V s)",\
+                 u"m\u00B2/(V s)", "eV", "s", "s", "eV", u"m\u00B3/s",\
+                 u"m\u2076/s", u"m\u2076/s"]
 
-        for idx, unit in enumerate(units):
+        for idx, unit in enumerate(self.units):
             item = QTableWidgetItem(unit)
             item.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(idx,1, item)
@@ -259,9 +273,7 @@ class SettingsMaterials(QWidget):
         mat = self.materials_list[idx]
         values = [mat[i] for i in self.rows]
 
-        units = ["1/m^3", "1/m^3", "eV", "NA", "NA", "NA", "m^2/(V s)",
-         "m^2/(V s)", "eV", "s", "s", "eV", "m^3/s", "m^6/s", "m^6/s"]
-        for idx, (val, unit) in enumerate(zip(values, units)):
+        for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
 
     # add new material 
@@ -274,15 +286,13 @@ class SettingsMaterials(QWidget):
 
         # 1. reinitialize location
         self.loc.clear()
-        self.loc.insert("(y < 2e-6) | (y > 2e-6)")
         self.loc.show()
         self.lbl.show()
+        self.ex.show()
 
         # 2. reinitialize table
         values = [mt[i] for i in self.rows]
-        units = ["1/m^3", "1/m^3", "eV", "NA", "NA", "NA", "m^2/(V s)",
-                 "m^2/(V s)", "eV", "s", "s", "eV", "m^3/s", "m^6/s", "m^6/s"]
-        for idx, (val, unit) in enumerate(zip(values, units)):
+        for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
         self.table.show()
 
@@ -318,8 +328,8 @@ class SettingsDoping(QWidget):
         self.loc1 = QLineEdit("x > 1e-6")
         self.N1 = QLineEdit()
         layout1.addRow("Acceptor doping", QLabel())
-        layout1.addRow("Location", self.loc1)
-        layout1.addRow("Concentration", self.N1)
+        layout1.addRow("Location [m]", self.loc1)
+        layout1.addRow("Concentration [m\u207B\u00B3]", self.N1)
         layout.addLayout(layout1)
 
         layout.addSpacing(40)
@@ -329,8 +339,8 @@ class SettingsDoping(QWidget):
         self.loc2 = QLineEdit("x <= 1e-6")
         self.N2 = QLineEdit()
         layout2.addRow("Donor doping", QLabel())
-        layout2.addRow("Location", self.loc2)
-        layout2.addRow("Concentration", self.N2)
+        layout2.addRow("Location [m]", self.loc2)
+        layout2.addRow("Concentration [m\u207B\u00B3]", self.N2)
         layout.addLayout(layout2)
 
         layout.addStretch()
@@ -403,7 +413,7 @@ class SettingsDefects(QWidget):
         self.ctable.setHorizontalHeaderLabels(columns)
 
         self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
-        self.units = ["eV", "1/cm^2", "cm^2", "cm^2", "NA"]
+        self.units = ["eV", u"cm\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
 
         for idx, (val, unit) in enumerate(zip(self.defectValues, self.units)):
             self.ctable.setItem(idx,0, QTableWidgetItem(val))
