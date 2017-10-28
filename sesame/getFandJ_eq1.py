@@ -4,13 +4,12 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import get_n, get_p
 # remember that efn and efp are zero at equilibrium
 
-def getFandJ_eq(sys, v, use_mumps):
+def getFandJ_eq(sys, v, contacts_bcs):
     Nx = sys.xpts.shape[0]
     
     # lists of rows, columns and data that will create the sparse Jacobian
@@ -100,42 +99,51 @@ def getFandJ_eq(sys, v, use_mumps):
     ###########################################################################
     #                          left boundary: i = 0                           #
     ###########################################################################
-    # update vector with surface charges to zero => dV/dx = 0
-    vec[0] = v[1]-v[0]
+    if contacts_bcs == "Neumann":
+        # update vector with surface charges to zero => dV/dx = 0
+        vec[0] = v[1]-v[0]
+        # update Jacobian
+        dv_s = -1
+        dv_sp1 = 1
+        dav_rows = [0, 0]
+        dav_cols = [0, 1]
+        dav_data = [dv_s, dv_sp1]
 
-    # update Jacobian
-    dv_s = -1
-    dv_sp1 = 1
-
-    dav_rows = [0, 0]
-    dav_cols = [0, 1]
-    dav_data = [dv_s, dv_sp1]
+    if contacts_bcs == "Dirichlet":
+        # update vector with zeros
+        vec[0] = 0
+        # update Jacobian
+        dav_rows = [0]
+        dav_cols = [0]
+        dav_data = [1]
 
     rows += dav_rows
     columns += dav_cols
     data += dav_data
 
-
     ###########################################################################
     #                         right boundary: i = Nx-1                        #
     ###########################################################################
-    # update vector with no surface charges: dV/dx = 0
-    vec[Nx-1] = v[-1] - v[-2]
+    if contacts_bcs == "Neumann":
+        # update vector with surface charges to zero => dV/dx = 0
+        vec[Nx-1] = v[-1] - v[-2]
+        # update Jacobian
+        dv_s = 1
+        dv_sm1 = -1
+        dbv_rows = [Nx-1, Nx-1]
+        dbv_cols = [Nx-2, Nx-1]
+        dbv_data = [dv_sm1, dv_s]
 
-    # update Jacobian
-    dv_s = 1
-    dv_sm1 = -1
-
-    dbv_rows = [Nx-1, Nx-1]
-    dbv_cols = [Nx-2, Nx-1]
-    dbv_data = [dv_sm1, dv_s]
+    if contacts_bcs == "Dirichlet":
+        # update vector with zeros
+        vec[Nx-1] = 0
+        # update Jacobian
+        dbv_rows = [Nx-1]
+        dbv_cols = [Nx-1]
+        dbv_data = [1]
 
     rows += dbv_rows
     columns += dbv_cols
     data += dbv_data
 
-    if use_mumps:
-        J = coo_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
-    else:
-        J = csr_matrix((data, (rows, columns)), shape=(Nx, Nx), dtype=np.float64)
-    return vec, J
+    return vec, rows, columns, data

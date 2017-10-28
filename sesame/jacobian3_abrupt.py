@@ -4,13 +4,12 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
-from scipy.sparse import coo_matrix, csr_matrix
 from itertools import chain
 
 from .observables import *
 from .defects  import defectsJ
 
-def getJ(sys, v, efn, efp, use_mumps):
+def getJ(sys, v, efn, efp):
     ###########################################################################
     #                     organization of the Jacobian matrix                 #
     ###########################################################################
@@ -18,6 +17,10 @@ def getJ(sys, v, efn, efp, use_mumps):
     # k = s//(Nx*Ny)
     # j = s - s//Nx
     # i = s - j*Nx - k*Nx*Ny
+    # 
+    # Note that the boundary conditions on the contacts out of equilibrium are
+    # Dirichlet, whatever the equilibrium boundary conditions were (so the
+    # equilibrium values are conserved).
 
     #
     # Rows for (efn_s, efp_s, v_s)
@@ -743,8 +746,4 @@ def getJ(sys, v, efn, efp, use_mumps):
     data = [i for idx, i in enumerate(data) if 0 <= columns[idx] < 3*Nx*Ny*Nz]
     columns = [i for i in columns if 0 <= i < 3*Nx*Ny*Nz]
 
-    if use_mumps:
-        J = coo_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
-    else:
-        J = csr_matrix((data, (rows, columns)), shape=(3*Nx*Ny*Nz, 3*Nx*Ny*Nz), dtype=np.float64)
-    return J
+    return rows, columns, data

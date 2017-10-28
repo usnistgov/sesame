@@ -49,6 +49,7 @@ v = np.linspace(v_left, v_right, sys.nx)
 solution = sesame.solve(sys, {'v':v})
 
 # IV curve
+veq = np.copy(solution['v'])
 voltages = np.linspace(0, 0.95, 40)
 solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
-sesame.IVcurve(sys, voltages, solution, '1dpnIV')
+sesame.IVcurve(sys, voltages, solution, veq, '1dpnIV')

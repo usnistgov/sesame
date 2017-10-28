@@ -102,4 +102,4 @@ if __name__ == '__main__':
 
     # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')
+    sesame.IVcurve(sys, voltages, solution, veq, '2dpnIV.vapp')

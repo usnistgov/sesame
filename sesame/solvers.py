@@ -3,6 +3,7 @@
 # This file is part of Sesame. It is subject to the license terms in the file
 # LICENSE.rst found in the top-level directory of this distribution.
 
+import sys as osys
 import numpy as np
 import importlib
 import warnings
@@ -10,6 +11,7 @@ from scipy.io import savemat
 
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
+from scipy.sparse import coo_matrix, csr_matrix
 
 # check if MUMPS is available
 mumps_available = False
@@ -18,6 +20,28 @@ try:
     mumps_available = True
 except:
     pass
+
+
+class NewtonError(Exception):
+    pass
+
+class SparseSolverError(Exception):
+    pass
+
+class BCsError(Exception):
+    def __init__(self, BCs):
+        print("*********************************************")
+        print("*  Unknown contacts boundary conditions     *")
+        print("*********************************************")
+        print("")
+        print("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
+
+class SolverError(Exception):
+    def __init__(self):
+        print("*********************************************")
+        print("*       No solution could be found          *")
+        print("*********************************************")
+        osys.exit(1)
 
 
 def damping(dx):
@@ -31,13 +55,12 @@ def damping(dx):
 def sparse_solver(J, f, iterative, use_mumps, inner_tol):
     if not iterative:
         spsolve = lg.spsolve
-        if use_mumps: 
-            if mumps_available:
-                spsolve = mumps.spsolve
-            else:
-                J = J.tocsr()
-                warnings.warn('Could not import MUMPS. Default back to Scipy.'\
-                              , UserWarning)
+        if use_mumps and mumps_available: 
+            spsolve = mumps.spsolve
+        else:
+            J = J.tocsr()
+            warnings.warn('Could not import MUMPS. Default back to Scipy.'\
+                          , UserWarning)
         dx = spsolve(J, f)
         return dx
     else:
@@ -48,20 +71,22 @@ def sparse_solver(J, f, iterative, use_mumps, inner_tol):
             return dx
         else:
             print("Iterative sparse solver failed with output info: ", info)
-            exit(1)
 
-def get_system(x, sys, equilibrium, periodic_bcs, use_mumps):
+def get_system(x, sys, equilibrium, periodic_bcs, contacts_bcs, use_mumps):
     # Compute the right hand side of J * x = f
     if equilibrium is None:
-        if periodic_bcs == False and sys.dimension != 1:
-            rhs = importlib.import_module('.getFandJ_eq{0}_abrupt'\
-                           .format(sys.dimension), 'sesame')
-        else:
+        size = sys.nx * sys.ny * sys.nz
+        if sys.dimension != 1:
             rhs = importlib.import_module('.getFandJ_eq{0}'\
                            .format(sys.dimension), 'sesame')
+            f, rows, columns, data = rhs.getFandJ_eq(sys, x, periodic_bcs, contacts_bcs)
+        else:
+            rhs = importlib.import_module('.getFandJ_eq1'\
+                           .format(sys.dimension), 'sesame')
+            f, rows, columns, data = rhs.getFandJ_eq(sys, x, contacts_bcs)
 
-        f, J = rhs.getFandJ_eq(sys, x, use_mumps)
     else:
+        size = 3 * sys.nx * sys.ny * sys.nz
         if periodic_bcs == False and sys.dimension != 1:
             rhs = importlib.import_module('.getF{0}_abrupt'\
                            .format(sys.dimension), 'sesame')
@@ -74,12 +99,19 @@ def get_system(x, sys, equilibrium, periodic_bcs, use_mumps):
                            .format(sys.dimension), 'sesame')
 
         f = rhs.getF(sys, x[2::3], x[0::3], x[1::3], equilibrium)
-        J = lhs.getJ(sys, x[2::3], x[0::3], x[1::3], use_mumps)
+        rows, columns, data = lhs.getJ(sys, x[2::3], x[0::3], x[1::3])
+
+    # form the Jacobian
+    if use_mumps:
+        J = coo_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
+    else:
+        J = csr_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
 
     return f, J
 
 
 def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
+           contacts_bcs='Dirichlet',
            maxiter=300, verbose=True, use_mumps=False,\
            iterative=False, inner_tol=1e-6, htp=1):
 
@@ -97,7 +129,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
         cc = 0
         converged = False
         if gamma != 1:
-            f0, _ = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
+            f0, _ = get_system(x, sys, equilibrium, periodic_bcs, contacts_bcs, use_mumps)
 
         while converged != True:
             cc = cc + 1
@@ -108,38 +140,54 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                 break
 
             # solve linear system
-            f, J = get_system(x, sys, equilibrium, periodic_bcs, use_mumps)
+            f, J = get_system(x, sys, equilibrium, periodic_bcs,\
+                              contacts_bcs, use_mumps)
             if gamma != 1:
                 f -= (1-gamma)*f0
-            dx = sparse_solver(J, -f, iterative, use_mumps, inner_tol)
-            dx.transpose()
 
-            # compute error
-            error = max(np.abs(dx))
+            try:
+                dx = sparse_solver(J, -f, iterative, use_mumps, inner_tol)
+                if dx is None:
+                    raise SparseSolverError
+                    break
+                else:
+                    dx.transpose()
+                    # compute error
+                    error = max(np.abs(dx))
+                    if np.isnan(error) or error > 1e30:
+                        raise NewtonError
+                        break
+                    if error < htol:
+                        converged = True
+                    else: 
+                        # damping and new value of x
+                        damping(dx)
+                        x += dx
+                        # print status of solution procedure every so often
+                        if verbose:
+                            print('step {0}, error = {1}'.format(cc, error))
+            except SparseSolverError:
+                print("********************************************")
+                print("*   The linear system could not be solved  *")
+                print("********************************************")
+                return None
 
-            # damping and new value of x
-            damping(dx)
-            x += dx
-
-            if error < htol:
-                converged = True
-                break 
-
-            if np.isnan(error):
-                print("The Newton solver diverged.")
-                break
-
-            # outputting status of solution procedure every so often
-            if verbose:
-                print('step {0}, error = {1}'.format(cc, error))
+            except NewtonError:
+                print("*********************************************")
+                print("*   The Newton-Raphson algorithm diverged.  *")
+                print("*********************************************")
+                return None
+                    
     if converged:
         return x
     else:
         return None
 
-def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300,\
-          verbose=True, use_mumps=False, iterative=False, inner_tol=1e-6,\
-          htp=1):
+
+
+def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
+          contacts_bcs='Dirichlet', maxiter=300, verbose=True, use_mumps=False,\
+          iterative=False, inner_tol=1e-6, htp=1):
     """
     Multi-purpose solver of Sesame.  If only the electrostatic potential is
     given as a guess, then the Poisson solver is used. If quasi-Fermi levels are
@@ -161,6 +209,10 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
     periodic_bcs: boolean
         Defines the choice of boundary conditions in the y-direction. True
         (False) corresponds to periodic (abrupt) boundary conditions.
+    contacts_bcs: string
+        Defines the choice of boundary conditions for the equilibrium electrostatic
+        potential at the contact. 'Dirichlet' imposes the value of the potential
+        given is the guess, 'Neumann' imposes a zero potential derivative.
     maxiter: integer
         Maximum number of steps taken by the Newton-Raphson scheme.
     verbose: boolean
@@ -186,12 +238,19 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
         solution has been found.
 
     """
-    # Solve for potential at equilibrium first no matter what
+    # Solve for potential at equilibrium first if not provided
     if equilibrium is None:
-        equilibrium = newton(sys, guess['v'], None, tol=tol, periodic_bcs=periodic_bcs,\
-                      maxiter=maxiter, verbose=verbose,\
-                      use_mumps=use_mumps, iterative=iterative,\
-                      inner_tol=inner_tol, htp=htp)
+        if not contacts_bcs in ['Dirichlet', 'Neumann']:
+            raise BCsError(contacts_bcs)
+
+        equilibrium = newton(sys, guess['v'], None, tol=tol,\
+                              periodic_bcs=periodic_bcs,\
+                              contacts_bcs=contacts_bcs,\
+                              maxiter=maxiter, verbose=verbose,\
+                              use_mumps=use_mumps, iterative=iterative,\
+                              inner_tol=inner_tol, htp=htp)
+        if equilibrium is None:
+            raise SolverError
 
     # If Efn is provided, one wants a nonequilibrium solution 
     if 'efn' in guess.keys():
@@ -206,15 +265,18 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True, maxiter=300
                    inner_tol=inner_tol, htp=htp)
         if x is not None:
             x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
+        else:
+            raise SolverError
 
-        return x
     # If Efn is not provided, one only wants the equilibrium potential
     else:
-        return {'v': equilibrium}
+        if equilibrium is not None:
+            x = {'v': equilibrium}
+    return x
 
 
-def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
-            maxiter=300, verbose=True, use_mumps=False,\
+def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
+            periodic_bcs=True, maxiter=300, verbose=True, use_mumps=False,\
             iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
     """
     Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -232,6 +294,9 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         Starting point of the solver. Keys of the dictionary must be 'efn',
         'efp', 'v' for the electron and quasi-Fermi levels, and the
         electrostatic potential respectively.
+    equilibrium: numpy array of floats
+        Electrostatic potential of the system at thermal equilibrium. If not
+        provided, the solver will solve for it before doing anything else.
     file_name: string
         Name of the file to write the data to. The file name will be appended
         the index of the voltage list, e.g. ``file_name_0.npz``.
@@ -269,62 +334,32 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
     >>> efp = results['efp']
     >>> v = results['v']
     """
-    nx = sys.nx
-
-    # determine what the potential on the left and right might be
-    if sys.rho[0] < 0: # p-doped
-        phi_left = -sys.Eg[0] - np.log(abs(sys.rho[0])/sys.Nv[0])
-    else: # n-doped
-        phi_left = np.log(sys.rho[0]/sys.Nc[0])
-
-    if sys.rho[nx-1] < 0:
-        phi_right = -sys.Eg[nx-1] - np.log(abs(sys.rho[nx-1])/sys.Nv[nx-1])
-        q = 1
-    else:
-        phi_right = np.log(sys.rho[nx-1]/sys.Nc[nx-1])
-        q = -1
-
-    # Make a linear guess and solve for the eqilibrium potential
-    v = np.linspace(phi_left, phi_right, sys.nx)
-    if sys.dimension == 2:
-        v = np.tile(v, sys.ny) # replicate the guess in the y-direction
-    if sys.dimension == 3:
-        v = np.tile(v, sys.ny*sys.nz) # replicate the guess in the y and z-direction
-
-    if verbose:
-        print("\nSolving for the equilibrium electrostatic potential...")
-    phi_eq = newton(sys, v, tol=tol, periodic_bcs=periodic_bcs,\
-                   maxiter=maxiter, verbose=verbose,\
-                   use_mumps=use_mumps, iterative=iterative,\
-                   inner_tol=inner_tol, htp=htp)
-    if phi_eq is None:
-        print("The solver failed to converge")
-        print("Aborting now.")
-        exit(1)   
-    else:
-        if verbose:
-            print("\ndone")
-
     # create a dictionary 'result' with efn and efp
     result = guess
 
     # sites of the right contact
+    nx = sys.nx
     s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz)\
                                    for j in range(sys.ny)]
+
+    # sign of the voltage to apply
+    if sys.rho[nx-1] < 0:
+        q = 1
+    else:
+        q = -1
 
     # Loop over the applied potentials made dimensionless
     Vapp = voltages / sys.scaling.energy
     for idx, vapp in enumerate(Vapp):
 
         if verbose:
-            print("\napplied voltage: {0} V".format(voltages[idx]))
+            print("\nApplied voltage: {0} V".format(voltages[idx]))
 
         # Apply the voltage on the right contact
-
-        result['v'][s] = phi_eq[s] + q*vapp
+        result['v'][s] = equilibrium[s] + q*vapp
 
         # Call the Drift Diffusion Poisson solver
-        result = solve(sys, result, equilibrium=phi_eq, tol=tol, periodic_bcs=periodic_bcs,\
+        result = solve(sys, result, equilibrium, tol=tol, periodic_bcs=periodic_bcs,\
                        maxiter=maxiter, verbose=verbose,\
                        use_mumps=use_mumps, iterative=iterative,\
                        inner_tol=inner_tol, htp=htp)
@@ -339,5 +374,4 @@ def IVcurve(sys, voltages, guess, file_name, tol=1e-6, periodic_bcs=True,\
         else:
             print("The solver failed to converge for the applied voltage"\
                   + " {0} V (index {1}).".format(voltages[idx], idx))
-            print("Aborting now.")
-            exit(1)
+            break
