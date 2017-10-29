@@ -162,14 +162,18 @@ class SettingsGen(QWidget):
 
     def stackUI(self, parent):
         layout = QVBoxLayout()
-        lbl = QLabel("Provide a number for uniform illumation, or a
-        space-dependent function, or simply nothing for dark conditions.")
+        lbl = QLabel("Provide a number for uniform illumation, or a space-dependent function, or simply nothing for dark conditions. \nA single variable parameter is allowed and will be looped over during the simulation.")
         lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
         lbl.setWordWrap(True)
-
-        self.gen = QLineEdit("", self)
         layout.addWidget(lbl)
-        layout.addWidget(self.gen)
+
+        hlayout = QFormLayout()
+        self.gen = QLineEdit("", self)
+        hlayout.addRow("Expression", self.gen)
+        self.paramName = QLineEdit("", self)
+        hlayout.addRow("Paramater name", self.paramName)
+
+        layout.addLayout(hlayout)
         layout.addStretch()
 
         stack = QWidget()
@@ -177,7 +181,7 @@ class SettingsGen(QWidget):
         parent.Stack.addWidget(stack)
 
     def get_data(self):
-        return self.gen.text()
+        return self.gen.text(), self.paramName.text()
 
 class SettingsMaterials(QWidget):
     def __init__(self, parent):
@@ -219,9 +223,7 @@ class SettingsMaterials(QWidget):
         vlayout.addLayout(locLayout)
 
         # Label explaining how to write location
-        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with\
-        (y < 1.5e-6) | (y > 2.5e-6). Use the bitwise operators | for `or`, and\
-        & for `and`.")
+        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with \n(y < 1.5e-6) | (y > 2.5e-6) \nUse the bitwise operators | for `or`, and & for `and`.")
         self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
         self.ex.setWordWrap(True)
         self.ex.hide()

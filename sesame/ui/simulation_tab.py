@@ -9,6 +9,7 @@ from ast import literal_eval as ev
 
 from ..solvers import IVcurve
 from .common import parseSettings, slotError
+from .sim import run_sim
 
 
 class Simulation(QWidget):
@@ -24,13 +25,25 @@ class Simulation(QWidget):
         #===============================================
         self.vlayout = QVBoxLayout()
 
-        # Voltages and files
-        self.outputBox = QGroupBox("Voltages and output files")
+        #######  Basics
+        self.outputBox = QGroupBox("Basic settings")
 
         self.form1 = QFormLayout()
-        self.voltages = QLineEdit("(0, 0.05, 0.1)", self)
+
+        # loop over
+        loopLayout = QHBoxLayout()
+        loop = QButtonGroup(loopLayout)
+        self.voltage = QRadioButton("Voltages")
+        self.other = QRadioButton("Generation rates")
+        loop.addButton(self.voltage)
+        loop.addButton(self.other)
+        loopLayout.addWidget(self.voltage)
+        loopLayout.addWidget(self.other)
+        self.form1.addRow("Loop over", loopLayout)
+        # loop values, file name, extension
+        self.loopValues = QLineEdit("", self)
         self.fileName = QLineEdit()
-        self.form1.addRow("Applied voltages", self.voltages)
+        self.form1.addRow("Loop values", self.loopValues)
         self.form1.addRow("Output file name", self.fileName)
         self.fbox = QComboBox()
         self.fbox.addItem(".npz")
@@ -40,15 +53,30 @@ class Simulation(QWidget):
         self.outputBox.setLayout(self.form1)
         self.vlayout.addWidget(self.outputBox)
 
-        # Advanced settings
+        ######  Advanced settings
         self.algoBox = QGroupBox("Algorithm settings")
 
         self.form2 = QFormLayout()
+
+        # contacts BCs
+        contactLayout = QHBoxLayout()
+        contact = QButtonGroup(contactLayout)
+        self.dirichlet = QRadioButton("Dirichlet")
+        self.dirichlet.setChecked(True)
+        self.neumann = QRadioButton("Neumann")
+        contact.addButton(self.dirichlet)
+        contact.addButton(self.neumann)
+        contactLayout.addWidget(self.dirichlet)
+        contactLayout.addWidget(self.neumann)
+        self.form1.addRow("Contacts boundary conditions", contactLayout)
+
+        # algo tol, maxiter, 
         self.algoPrecision = QLineEdit("1e-6", self)
         self.algoSteps = QLineEdit("100", self)
         self.form2.addRow("Algorithm precision", self.algoPrecision)
         self.form2.addRow("Maximum steps", self.algoSteps)
 
+        # mumps yes or no
         self.radioLayout = QHBoxLayout()
         mumps_choice = QButtonGroup(self.radioLayout)
         self.yesMumps = QRadioButton("Yes")
@@ -60,6 +88,7 @@ class Simulation(QWidget):
         self.radioLayout.addWidget(self.noMumps)
         self.form2.addRow("Mumps library", self.radioLayout)
 
+        # iterative solver yes or no
         self.radioLayout2 = QHBoxLayout()
         iterative_choice = QButtonGroup(self.radioLayout2)
         self.yesIterative = QRadioButton("Yes")
@@ -105,13 +134,18 @@ class Simulation(QWidget):
         self.setLayout(self.tabLayout)
 
     def getSolverSettings(self):
-        # voltages
-        vapp = ev(self.voltages.text())
-        appliedVoltages = np.asarray(vapp)
+        # loopValues
+        loopValues = ev(self.loopValues.text())
+        loopValues = np.asarray(loopValues)
         # simulation name
         simName = self.fileName.text()
         # extension
         extension = self.fbox.currentText()
+        # contacts BCs
+        if self.dirichlet.isChecked():
+            contacts = "Dirichlet"
+        else:
+            contacts = "Neumann"
         # precision
         precision = float(self.algoPrecision.text())
         # max steps
@@ -120,35 +154,35 @@ class Simulation(QWidget):
         useMumps = self.yesMumps.isChecked()
         # internal iterative solver
         iterative = self.yesIterative.isChecked()
-
-        settings = [appliedVoltages, simName, extension, precision, steps,\
-                    useMumps, iterative]
-        return settings
-
-    @slotError("bool")
-    def run(self, checked):
-        # get solver settings
-        voltages, simName, fmt, tol, steps,\
-                    useMumps, iterative = self.getSolverSettings()
-        # get system and boundary conditions
-        settings = self.mainWindow.table.settingsBox.get_settings()
-        system = parseSettings(settings)
+        # transverse BCs
         BCs = self.mainWindow.entry.get_bcs()
         if BCs == 'Periodic':
             BCs = True
         else:
             BCs = False
 
-        # run simulation
-        ## TODO much better to handle failure
-        try:
-            IVcurve(system, voltages, simName, tol=tol, periodic_bcs=BCs,\
-                maxiter=steps, verbose=True, use_mumps=useMumps,\
-                iterative=iterative, inner_tol=1e-6, htp=1, fmt=fmt)
-            print("Calculation done")
-        except:
-            pass
+        settings = [loopValues, simName, extension, BCs, contacts, precision, steps,\
+                    useMumps, iterative]
+        return settings
 
+    @slotError("bool")
+    def run(self, checked):
+        # get system settings and build system without generation
+        settings = self.mainWindow.table.settingsBox.get_settings()
+        system = parseSettings(settings)
+        generation, paramName = settings['gen']
+
+        # get solver settings
+        solverSettings = self.getSolverSettings()
+
+        # loop over voltages
+        if self.voltage.isChecked():
+            run_sim("voltage",system, solverSettings, generation, paramName)
+
+        # loop over generation rates
+        elif self.other.isChecked():
+            run_sim("generation",system, solverSettings, generation, paramName)
+            
 
 class StreamToLogger():
     def __init__(self, logger, log_level=logging.INFO):

@@ -134,20 +134,5 @@ def parseSettings(settings):
         elif len(loc) == 4:
             system.add_plane_defects(loc, N, se, sigma_h=sh, E=E,\
                                      transition=transition)
-
-    # 6. set the generation
-    generation = settings['gen']
-    if generation != '': # not dark condition
-        try:
-            f = float(generation) #uniform generation
-        except: # then a function has been passed (hopefully)
-            if dimension == 1:
-                f = lambda x: eval(generation)
-            elif dimension == 2:
-                f = lambda x, y: eval(generation)
-            elif dimension == 3:
-                f = lambda x, y, z: eval(generation)
-        system.generation(f)
-
     return system
 
