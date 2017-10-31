@@ -6,10 +6,25 @@ import sys
 import numpy as np 
 import logging
 from ast import literal_eval as ev
+from io import StringIO
 
 from ..solvers import IVcurve
 from .common import parseSettings, slotError
-from .sim import run_sim
+from .sim import SimulationWorker
+
+
+class PrimitiveSignals(QObject):
+    signal_str = pyqtSignal(str)
+    def __init__(self):
+        QObject.__init__(self)
+
+
+class logBuffer(StringIO):
+    def __init__(self):
+        self.output = PrimitiveSignals()
+
+    def write(self, message):
+        self.output.signal_str.emit(message)
 
 
 class Simulation(QWidget):
@@ -19,6 +34,16 @@ class Simulation(QWidget):
         self.mainWindow = parent
 
         self.tabLayout = QHBoxLayout()
+
+        self.logBuffer = logBuffer()
+        self.logBuffer.output.signal_str.connect(self.displayMessage)
+        logFormatter = logging.Formatter('%(levelname)s: %(message)s')
+        logHandler = logging.StreamHandler(self.logBuffer)
+        logHandler.setFormatter(logFormatter)
+        self.logger = logging.getLogger()
+        self.logger.setLevel(logging.INFO)
+        self.logger.addHandler(logHandler)
+
 
         #===============================================
         #  Settings boxes
@@ -118,6 +143,7 @@ class Simulation(QWidget):
         self.brun = QPushButton("Run simulation")
         self.bstop = QPushButton("Stop simulation")
         self.brun.clicked.connect(self.run)
+        # self.bstop.clicked.connect(self.stop)
         # self.brun.adjustSize()
         # self.bstop.adjustSize()
         self.buttons.addWidget(self.brun)
@@ -125,8 +151,9 @@ class Simulation(QWidget):
         self.logLayout.addLayout(self.buttons)
 
         # log
-        self.log = LogWidget()
-        self.logLayout.addWidget(self.log)
+        self.logWidget = QPlainTextEdit(self)
+        self.logWidget.setReadOnly(True)
+        self.logLayout.addWidget(self.logWidget)
 
         self.vlayout2.addWidget(self.simBox)
 
@@ -165,8 +192,27 @@ class Simulation(QWidget):
                     useMumps, iterative]
         return settings
 
+
     @slotError("bool")
     def run(self, checked):
+
+        loop = ""
+        while(loop == ""):
+            # loop over voltages
+            if self.voltage.isChecked():
+                loop = "voltage"
+            # loop over generation rates
+            elif self.other.isChecked():
+                loop = "generation"
+            else:
+                msg = QMessageBox()
+                msg.setWindowTitle("Processing error")
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("Choose what to loop over: voltages or generation rates.")
+                msg.setEscapeButton(QMessageBox.Ok)
+                msg.exec_()
+                return
+
         # get system settings and build system without generation
         settings = self.mainWindow.table.settingsBox.get_settings()
         system = parseSettings(settings)
@@ -175,53 +221,22 @@ class Simulation(QWidget):
         # get solver settings
         solverSettings = self.getSolverSettings()
 
-        # loop over voltages
-        if self.voltage.isChecked():
-            run_sim("voltage",system, solverSettings, generation, paramName)
+        # define a thread in which to run the simulation
+        self.thread = QThread(self)
+        self.thread.start()
 
-        # loop over generation rates
-        elif self.other.isChecked():
-            run_sim("generation",system, solverSettings, generation, paramName)
-            
+        # add worker to thread and run simulation
+        self.simulation = SimulationWorker(loop, system, solverSettings, generation, paramName)
+        self.simulation.moveToThread(self.thread)
+        self.simulation.start.connect(self.simulation.run)
+        self.simulation.start.emit("hello")
 
-class StreamToLogger():
-    def __init__(self, logger, log_level=logging.INFO):
-        self.logger = logger
-        self.log_level = log_level
-        self.linebuf = ''
+    @pyqtSlot(str)
+    def displayMessage(self, message):
+        if message != "\n":        
+            self.logWidget.appendPlainText(message)
 
-    def write(self, buf):
-        for line in buf.rstrip().splitlines():
-            self.logger.log(self.log_level, line.rstrip())
-
-    def flush(self):
-        pass
-
-class QPlainTextEditLogger(logging.Handler):
-    def __init__(self, parent):
-        super().__init__()
-
-        self.widget = QPlainTextEdit(parent)
-        self.widget.setReadOnly(True)
-
-    def emit(self, record):
-        msg = self.format(record)
-        self.widget.appendPlainText(msg)
- 
-class LogWidget(QWidget):
-    def __init__(self):
-        super(LogWidget, self).__init__()
-
-        self.layout = QHBoxLayout(self)
-
-        log_handler = QPlainTextEditLogger(self)
-        log_handler.setFormatter(\
-            logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
-        logging.getLogger().addHandler(log_handler)
-        logging.getLogger().setLevel(logging.INFO)
-
-        # Send stdout to the logger
-        sys.stdout = StreamToLogger(logging.getLogger(), logging.INFO)
-        # sys.stderr = StreamToLogger(logging.getLogger(), logging.ERROR)
-
-        self.layout.addWidget(log_handler.widget)
+    # "run" not working when stop button uncommented
+    # def stop(self):
+    #     if self.thread:
+    #         self.thread.quit()

@@ -6,6 +6,8 @@ import types
 from functools import wraps
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMessageBox
+import logging
+
 
 def slotError(*args):
     if len(args) == 0 or isinstance(args[0], types.FunctionType):
