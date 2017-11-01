@@ -143,11 +143,9 @@ class Simulation(QWidget):
         self.brun = QPushButton("Run simulation")
         self.bstop = QPushButton("Stop simulation")
         self.brun.clicked.connect(self.run)
-        # self.bstop.clicked.connect(self.stop)
-        # self.brun.adjustSize()
-        # self.bstop.adjustSize()
+        self.bstop.clicked.connect(self.stop)
         self.buttons.addWidget(self.brun)
-        # self.buttons.addWidget(self.bstop)
+        self.buttons.addWidget(self.bstop)
         self.logLayout.addLayout(self.buttons)
 
         # log
@@ -236,7 +234,8 @@ class Simulation(QWidget):
         if message != "\n":        
             self.logWidget.appendPlainText(message)
 
-    # "run" not working when stop button uncommented
-    # def stop(self):
-    #     if self.thread:
-    #         self.thread.quit()
+    def stop(self):
+        if self.thread.isRunning():
+            self.thread.terminate()
+            self.thread.wait()
+            self.logger.critical("****** Calculation interrupted manually ******")

@@ -33,7 +33,7 @@ class SparseSolverError(Exception):
 
 class BCsError(Exception):
     def __init__(self, BCs):
-        msg = "*********************************************" +\
+        msg = "\n*********************************************" +\
               "\n*  Unknown contacts boundary conditions     *" +\
               "\n*********************************************"
         logging.error(msg)
@@ -41,7 +41,7 @@ class BCsError(Exception):
 
 class SolverError(Exception):
     def __init__(self):
-        msg = "*********************************************" +\
+        msg = "\n*********************************************" +\
               "\n*       No solution could be found          *" +\
               "\n*********************************************"
         logging.error(msg)
@@ -168,14 +168,14 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                         if verbose:
                             logging.info('step {0}, error = {1}'.format(cc, error))
             except SparseSolverError:
-                msg = "********************************************"+\
+                msg = "\n********************************************"+\
                       "\n*   The linear system could not be solved  *"+\
                       "\n********************************************"
                 logging.error(msg)
                 return None
 
             except NewtonError:
-                msg = "********************************************"+\
+                msg = "\n********************************************"+\
                       "\n*  The Newton-Raphson algorithm diverged   *"+\
                       "\n********************************************"
                 logging.error(msg)
