@@ -65,23 +65,36 @@ class Simulation(QWidget):
         loopLayout.addWidget(self.voltage)
         loopLayout.addWidget(self.other)
         self.form1.addRow("Loop over", loopLayout)
+
         # loop values, file name, extension
         self.loopValues = QLineEdit("", self)
+
+        self.workDir = QHBoxLayout()
+        self.workDirName = QLineEdit()
+        self.browseBtn = QPushButton("Browse...")
+        self.browseBtn.clicked.connect(self.browse)
+        self.workDir.addWidget(self.workDirName)
+        self.workDir.addWidget(self.browseBtn)
+
+        self.fileLayout = QHBoxLayout()
         self.fileName = QLineEdit()
-        self.form1.addRow("Loop values", self.loopValues)
-        self.form1.addRow("Output file name", self.fileName)
         self.fbox = QComboBox()
-        self.fbox.addItem(".npz")
-        self.fbox.addItem(".mat")
-        self.form1.addRow("File extension", self.fbox)
+        self.fbox.addItems([".npz", ".mat"])
+        self.fileLayout.addWidget(self.fileName)
+        self.fileLayout.addWidget(self.fbox)
+
+        self.form1.addRow("Loop values", self.loopValues)
+        self.form1.addRow("Working directory", self.workDir)
+        self.form1.addRow("Output file name", self.fileLayout)
 
         self.outputBox.setLayout(self.form1)
         self.vlayout.addWidget(self.outputBox)
 
-        ######  Advanced settings
-        self.algoBox = QGroupBox("Algorithm settings")
-
-        self.form2 = QFormLayout()
+        ######  Boundary conditions
+        self.BCbox = QGroupBox("Boundary conditions")
+        BCform = QFormLayout()
+        self.BCbox.setLayout(BCform)
+        self.vlayout.addWidget(self.BCbox)
 
         # contacts BCs
         contactLayout = QHBoxLayout()
@@ -93,7 +106,32 @@ class Simulation(QWidget):
         contact.addButton(self.neumann)
         contactLayout.addWidget(self.dirichlet)
         contactLayout.addWidget(self.neumann)
-        self.form1.addRow("Contacts boundary conditions", contactLayout)
+        BCform.addRow("Contacts boundary conditions", contactLayout)
+
+        # contacts surface recombination velocities
+        self.g4 = QLineEdit("", self)
+        self.g5 = QLineEdit("", self)
+        self.g6 = QLineEdit("", self)
+        self.g7 = QLineEdit("", self)
+        BCform.addRow("Electron recombination velocity in x=0 [m/s]", self.g4)
+        BCform.addRow("Hole recombination velocity in x=0 [m/s]", self.g5)
+        BCform.addRow("Electron recombination velocity in x=L [m/s]", self.g6)
+        BCform.addRow("Hole recombination velocity in x=L [m/s]", self.g7)
+
+        # transverse BC
+        tbcLayout = QHBoxLayout()
+        tbc = QButtonGroup(contactLayout)
+        self.periodic = QRadioButton("Periodic")
+        self.hardwall = QRadioButton("Hardwall")
+        tbc.addButton(self.periodic)
+        tbc.addButton(self.hardwall)
+        tbcLayout.addWidget(self.periodic)
+        tbcLayout.addWidget(self.hardwall)
+        BCform.addRow("Transverse boundary conditions", tbcLayout)
+
+        ######  Advanced settings
+        self.algoBox = QGroupBox("Algorithm settings")
+        self.form2 = QFormLayout()
 
         # algo tol, maxiter, 
         self.algoPrecision = QLineEdit("1e-6", self)
@@ -157,20 +195,34 @@ class Simulation(QWidget):
 
         self.tabLayout.addLayout(self.vlayout2)
         self.setLayout(self.tabLayout)
+    
+    def browse(self):
+        dialog = QFileDialog()
+        folder_path = dialog.getExistingDirectory(None, "Select Folder")
+        self.workDirName.setText(folder_path)
 
     def getSolverSettings(self):
         # loopValues
         loopValues = ev(self.loopValues.text())
         loopValues = np.asarray(loopValues)
         # simulation name
-        simName = self.fileName.text()
+        simName = self.workDirName.text() + self.fileName.text()
         # extension
         extension = self.fbox.currentText()
+
         # contacts BCs
         if self.dirichlet.isChecked():
             contacts = "Dirichlet"
         else:
             contacts = "Neumann"
+        # transverse BCs
+        if self.periodic.isChecked():
+            BCs = True
+        else:
+            BCs = False
+        ScnL, ScpL = float(self.g4.text()), float(self.g5.text())
+        ScnR, ScpR = float(self.g6.text()), float(self.g7.text())
+
         # precision
         precision = float(self.algoPrecision.text())
         # max steps
@@ -179,14 +231,9 @@ class Simulation(QWidget):
         useMumps = self.yesMumps.isChecked()
         # internal iterative solver
         iterative = self.yesIterative.isChecked()
-        # transverse BCs
-        BCs = self.mainWindow.entry.get_bcs()
-        if BCs == 'Periodic':
-            BCs = True
-        else:
-            BCs = False
 
-        settings = [loopValues, simName, extension, BCs, contacts, precision, steps,\
+        settings = [loopValues, simName, extension, BCs, contacts, \
+                    [ScnL, ScpL, ScnR, ScpR], precision, steps,\
                     useMumps, iterative]
         return settings
 
@@ -212,7 +259,7 @@ class Simulation(QWidget):
                 return
 
         # get system settings and build system without generation
-        settings = self.mainWindow.table.settingsBox.get_settings()
+        settings = self.mainWindow.table.build.getSystemSettings()
         system = parseSettings(settings)
         generation, paramName = settings['gen']
 

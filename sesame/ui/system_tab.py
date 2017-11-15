@@ -10,187 +10,92 @@ from .common import parseSettings, slotError
 
 
 class BuilderBox(QWidget):
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(BuilderBox, self).__init__(parent)
 
-        # define widget
-        self.setMaximumWidth(200)
-        self.setMinimumWidth(200)
+        self.tabLayout = QHBoxLayout()
+        self.setLayout(self.tabLayout)
+
+        self.builder1()
+        self.builder2() 
+        self.builder3() 
+
+
+    def builder1(self):
         layout = QVBoxLayout()
+        self.tabLayout.addLayout(layout)
 
-        self.formGroupBox = QGroupBox("Builder")
- 
-        self.list = QListWidget()
-        self.list.insertItem (0, 'Grid' )
-        self.list.insertItem (1, 'Contacts' )
-        self.list.insertItem (2, 'Materials' )
-        self.list.insertItem (3, 'Doping' )
-        self.list.insertItem (4, 'Defects' )
-        self.list.insertItem (5, 'Generation' )
-        self.list.insertItem (6, 'Plot system' )
-        layout.addWidget(self.list)
-        self.list.currentRowChanged.connect(self.display)
+        #==============================
+        # Grid settings
+        #==============================
+        gridBox = QGroupBox("Grid")
+        gridBox.setMaximumWidth(400)
+        gridLayout = QFormLayout()
 
-        layout.setContentsMargins(0, 0, 0, 0)
-        self.formGroupBox.setLayout(layout)
+        tip = QLabel("Each axis of the grid is a concatenation of sets of evenly spaced nodes. Edit the form with (x1, x2, number of nodes), (x2, x3, number of nodes),...")
+        gridLayout.addRow(tip)
+        tip.setStyleSheet("qproperty-alignment: AlignJustify;")
+        tip.setWordWrap(True)
 
-        mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.formGroupBox)
+        self.g1 = QLineEdit()
+        self.g2 = QLineEdit()
+        self.g3 = QLineEdit()
+        h1 = QHBoxLayout()
+        h1.addWidget(self.g1)
+        h1.addWidget(QLabel("m"))
+        h2 = QHBoxLayout()
+        h2.addWidget(self.g2)
+        h2.addWidget(QLabel("m"))
+        h3 = QHBoxLayout()
+        h3.addWidget(self.g3)
+        h3.addWidget(QLabel("m"))
 
-        self.setLayout(mainLayout)
+        gridLayout.addRow("Grid x-axis", h1)
+        gridLayout.addRow("Grid y-axis", h2)
+        gridLayout.addRow("Grid z-axis", h3)
 
-        self.stack = parent.Stack
+        gridBox.setLayout(gridLayout)
+        layout.addWidget(gridBox)
 
-    def display(self, i):
-        self.stack.setCurrentIndex(i+1)
-    
+        #==============================
+        # Doping
+        #==============================
+        dopingBox = QGroupBox("Doping")
+        dopingBox.setMaximumWidth(400)
+        layoutD = QVBoxLayout()
 
-class SettingsBox(QWidget):
-    def __init__(self, parent):
-        super(SettingsBox, self).__init__(parent)
+        # Accceptor doping
+        layout1 = QFormLayout()
+        self.loc1 = QLineEdit("x > 1e-6")
+        self.N1 = QLineEdit()
+        layout1.addRow("Acceptor doping", QLabel())
+        layout1.addRow("Location [m]", self.loc1)
+        layout1.addRow("Concentration [m\u207B\u00B3]", self.N1)
+        layoutD.addLayout(layout1)
 
-        self.parentViewBox = parent
+        layoutD.addSpacing(40)
 
-        self.setMinimumWidth(500)
-        self.layout = QVBoxLayout()
+        # Donor doping
+        layout2 = QFormLayout()
+        self.loc2 = QLineEdit("x <= 1e-6")
+        self.N2 = QLineEdit()
+        layout2.addRow("Donor doping", QLabel())
+        layout2.addRow("Location [m]", self.loc2)
+        layout2.addRow("Concentration [m\u207B\u00B3]", self.N2)
+        layoutD.addLayout(layout2)
 
-        self.formGroupBox = QGroupBox("Settings")
+        dopingBox.setLayout(layoutD)
+        layout.addWidget(dopingBox)
 
-        # empty page
-        self.stack0 = QWidget()
-        layout = QHBoxLayout()
-        self.stack0.setLayout(layout)
 
-        # create stacked widget
-        self.Stack = QStackedWidget(self)
-        self.Stack.addWidget (self.stack0)
 
-        self.layout.addWidget(self.Stack)
-
-        self.formGroupBox.setLayout(self.layout)
-
-        mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.formGroupBox)
-
-        self.setLayout(mainLayout)
-
-    def make_stack(self, dimension):
-        self.grid = SettingsGrid(self, dimension)
-        self.contacts = SettingsContacts(self)
-        self.materials = SettingsMaterials(self)
-        self.doping = SettingsDoping(self)
-        self.defects = SettingsDefects(self)
-        self.gen = SettingsGen(self)
-        self.plot = SettingsPlot(self, self.parentViewBox)
-
-    def get_settings(self):
-        settings = {}
-        settings['grid'] = self.grid.get_data()
-        settings['contacts'] = self.contacts.get_data()
-        settings['materials'] = self.materials.get_data()
-        settings['doping'] = self.doping.get_data()
-        settings['defects'] = self.defects.get_data()
-        settings['gen'] = self.gen.get_data()
-        return settings
-        
-        
-class SettingsGrid(QWidget):
-    def __init__(self, parent, dimension):
-        super(SettingsGrid, self).__init__(parent)
-
-        self.dimension = dimension
-        self.stackUI(parent)
-
-    def stackUI(self, parent):
-        layout = QFormLayout()
-        self.g1 = QLineEdit("(x1, x2, number of nodes), (x2, x3, number of nodes), ...")
-        self.g2 = QLineEdit("(y1, y2, number of nodes), (y2, y3, number of nodes), ...")
-        self.g3 = QLineEdit("(z1, z2, number of nodes), (z2, z3, number of nodes), ...")
-
-        if self.dimension == 1:
-            layout.addRow("Grid x-axis [m]", self.g1)
-        elif self.dimension == 2:
-            layout.addRow("Grid x-axis [m]", self.g1)
-            layout.addRow("Grid y-axis [m]", self.g2)
-        elif self.dimension == 3:
-            layout.addRow("Grid x-axis [m]", self.g1)
-            layout.addRow("Grid y-axis [m]", self.g2)
-            layout.addRow("Grid z-axis [m]", self.g3)
-
-        stack = QWidget()
-        stack.setLayout(layout)
-        parent.Stack.addWidget(stack)
-
-    def get_data(self):
-        if self.dimension == 1:
-            return self.g1.text(),
-        elif self.dimension == 2:
-            return self.g1.text(), self.g2.text()
-        elif self.dimension == 3:
-            return self.g1.text(), self.g2.text(), self.g3.text()
-
-class SettingsContacts(QWidget):
-    def __init__(self, parent):
-        super(SettingsContacts, self).__init__(parent)
-
-        self.stackUI(parent)
-
-    def stackUI(self, parent):
-        layout = QFormLayout()
-        self.g4 = QLineEdit("", self)
-        self.g5 = QLineEdit("", self)
-        self.g6 = QLineEdit("", self)
-        self.g7 = QLineEdit("", self)
-        layout.addRow("Electron surface recombination velocity in x=0 [m/s]", self.g4)
-        layout.addRow("Hole surface recombination velocity in x=0 [m/s]", self.g5)
-        layout.addRow("Electron surface recombination velocity in x=L [m/s]", self.g6)
-        layout.addRow("Hole surface recombination velocity in x=L [m/s]", self.g7)
-
-        stack = QWidget()
-        stack.setLayout(layout)
-        parent.Stack.addWidget(stack)
-
-    def get_data(self):
-        return [self.g4.text(), self.g5.text(), self.g6.text(), self.g7.text()]
-        
-
-class SettingsGen(QWidget):
-    def __init__(self, parent):
-        super(SettingsGen, self).__init__(parent)
-
-        self.stackUI(parent)
-
-    def stackUI(self, parent):
-        layout = QVBoxLayout()
-        lbl = QLabel("Provide a number for uniform illumation, or a space-dependent function, or simply nothing for dark conditions. \nA single variable parameter is allowed and will be looped over during the simulation.")
-        lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
-        lbl.setWordWrap(True)
-        layout.addWidget(lbl)
-
-        hlayout = QFormLayout()
-        self.gen = QLineEdit("", self)
-        hlayout.addRow("Expression", self.gen)
-        self.paramName = QLineEdit("", self)
-        hlayout.addRow("Paramater name", self.paramName)
-
-        layout.addLayout(hlayout)
-        layout.addStretch()
-
-        stack = QWidget()
-        stack.setLayout(layout)
-        parent.Stack.addWidget(stack)
-
-    def get_data(self):
-        return self.gen.text(), self.paramName.text()
-
-class SettingsMaterials(QWidget):
-    def __init__(self, parent):
-        super(SettingsMaterials, self).__init__(parent)
-
-        self.stackUI(parent)
-
-    def stackUI(self, parent):
+    def builder2(self):
+        matBox = QGroupBox("Materials")
+        matBox.setMaximumWidth(400)
         vlayout = QVBoxLayout()
+        matBox.setLayout(vlayout)
+        self.tabLayout.addWidget(matBox)
+
 
         # Combo box to keep track of materials
         matLayout = QHBoxLayout()
@@ -210,7 +115,7 @@ class SettingsMaterials(QWidget):
 
         # Reminder to save
         vlayout.addWidget(QLabel("Save a material before adding a new one."))
-        # vlayout.addStretch()
+        vlayout.addStretch()
 
         # Location
         locLayout = QHBoxLayout()
@@ -261,19 +166,14 @@ class SettingsMaterials(QWidget):
             self.table.setItem(idx,1, item)
 
 
-        stack = QWidget()
-        stack.setLayout(vlayout)
-        parent.Stack.addWidget(stack)
-
-    # returns the materials list outside the class
-    def get_data(self):
-        return self.materials_list
 
     # display params of selected material
     def comboSelect(self):
         idx = self.box.currentIndex()
         mat = self.materials_list[idx]
         values = [mat[i] for i in self.rows]
+
+        self.loc.setText(mat['location'])
 
         for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
@@ -319,57 +219,24 @@ class SettingsMaterials(QWidget):
             key = self.rows[row]
             self.materials_list[idx][key] = float(txt)
 
-class SettingsDoping(QWidget):
-    def __init__(self, parent):
-        super(SettingsDoping, self).__init__(parent)
 
-        layout = QVBoxLayout()
-
-        # Accceptor doping
-        layout1 = QFormLayout()
-        self.loc1 = QLineEdit("x > 1e-6")
-        self.N1 = QLineEdit()
-        layout1.addRow("Acceptor doping", QLabel())
-        layout1.addRow("Location [m]", self.loc1)
-        layout1.addRow("Concentration [m\u207B\u00B3]", self.N1)
-        layout.addLayout(layout1)
-
-        layout.addSpacing(40)
-
-        # Donor doping
-        layout2 = QFormLayout()
-        self.loc2 = QLineEdit("x <= 1e-6")
-        self.N2 = QLineEdit()
-        layout2.addRow("Donor doping", QLabel())
-        layout2.addRow("Location [m]", self.loc2)
-        layout2.addRow("Concentration [m\u207B\u00B3]", self.N2)
-        layout.addLayout(layout2)
-
-        layout.addStretch()
-
-        stack = QWidget()
-        stack.setLayout(layout)
-        parent.Stack.addWidget(stack)
-
-
-    def get_data(self):
-        d = [{'location': self.loc1.text(), 'concentration': self.N1.text()},
-             {'location': self.loc2.text(), 'concentration': self.N2.text()}]
-        return d
-
-class SettingsDefects(QWidget):
-    def __init__(self, parent):
-        super(SettingsDefects, self).__init__(parent)
-
-        self.stackUI(parent)
-
-    def stackUI(self, parent):
+    def builder3(self):
+        layout3 = QVBoxLayout()
+        self.tabLayout.addLayout(layout3)
+       
+        #=====================================================
+        # Line and plane defects
+        #=====================================================
+        defectBox = QGroupBox("Defects")
+        defectBox.setMaximumWidth(400)
         vlayout = QVBoxLayout()
+        defectBox.setLayout(vlayout)
+        layout3.addWidget(defectBox)
 
         # Add local charges
         self.hbox = QHBoxLayout()
         self.defectBox = QComboBox()
-        self.defectBox.currentIndexChanged.connect(self.comboSelect)
+        self.defectBox.currentIndexChanged.connect(self.comboSelect2)
         self.defectButton = QPushButton("Add defects")
         saveButton = QPushButton("Save")
         saveButton.clicked.connect(self.saveDefect)
@@ -386,7 +253,7 @@ class SettingsDefects(QWidget):
         vlayout.addStretch()
 
         self.clocLayout = QHBoxLayout()
-        self.cloc = QLineEdit("(x1, y1), (x2, y2)", self)
+        self.cloc = QLineEdit("(x1, y1), (x2, y2)")
         self.clbl = QLabel("Location")
         self.clocLayout.addWidget(self.clbl)
         self.clocLayout.addWidget(self.cloc)
@@ -408,36 +275,52 @@ class SettingsDefects(QWidget):
         # set table
         self.defects_list = []
 
-        self.rows = ("Energy", "Density", "sigma_e", "sigma_h", "Transition")
+        self.rows2 = ("Energy", "Density", "sigma_e", "sigma_h", "Transition")
         self.ctable.setVerticalHeaderLabels(self.rows)
 
         columns = ("Value", "Unit")
         self.ctable.setHorizontalHeaderLabels(columns)
 
         self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
-        self.units = ["eV", u"cm\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
+        self.units2 = ["eV", u"cm\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
 
-        for idx, (val, unit) in enumerate(zip(self.defectValues, self.units)):
+        for idx, (val, unit) in enumerate(zip(self.defectValues, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(val))
             item = QTableWidgetItem(unit)
             item.setFlags(Qt.ItemIsEnabled)
             self.ctable.setItem(idx,1, item)
 
-        stack = QWidget()
-        stack.setLayout(vlayout)
-        parent.Stack.addWidget(stack)
+        
+        #=====================================================
+        # Generation
+        #=====================================================
+        genBox = QGroupBox("Generation rate")
+        genBox.setMaximumWidth(400)
+        genLayout = QVBoxLayout()
+        genBox.setLayout(genLayout)
+        layout3.addWidget(genBox)
 
-    # returns the defects list outside the class
-    def get_data(self):
-        return self.defects_list
+        lbl = QLabel("Provide a number for uniform illumation, or a space-dependent function, or simply nothing for dark conditions. \nA single variable parameter is allowed and will be looped over during the simulation.")
+        lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
+        lbl.setWordWrap(True)
+        genLayout.addWidget(lbl)
+
+        hlayout = QFormLayout()
+        self.gen = QLineEdit("", self)
+        hlayout.addRow("Expression", self.gen)
+        self.paramName = QLineEdit("", self)
+        hlayout.addRow("Paramater name", self.paramName)
+        genLayout.addLayout(hlayout)
 
     # display params of selected defect
-    def comboSelect(self):
+    def comboSelect2(self):
         idx = self.defectBox.currentIndex()
-        mat = self.defects_list[idx]
-        values = [mat[i] for i in self.rows]
+        defect = self.defects_list[idx]
+        values = [defect[i] for i in self.rows2]
 
-        for idx, (val, unit) in enumerate(zip(values, self.units)):
+        self.cloc.setText(defect['location'])
+
+        for idx, (val, unit) in enumerate(zip(values, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
             item = QTableWidgetItem(unit)
 
@@ -455,8 +338,8 @@ class SettingsDefects(QWidget):
         self.clbl.show()
 
         # 3. reinitialize table
-        values = [mt[i] for i in self.rows]
-        for idx, (val, unit) in enumerate(zip(values, self.units)):
+        values = [mt[i] for i in self.rows2]
+        for idx, (val, unit) in enumerate(zip(values, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
         self.ctable.show()
 
@@ -478,96 +361,37 @@ class SettingsDefects(QWidget):
         for row in range(4):
             item = self.ctable.item(row, 0)
             txt = item.text()
-            key = self.rows[row]
+            key = self.rows2[row]
             try:
                 self.defects_list[idx][key] = float(txt)
             except:
                 self.defects_list[idx][key] = txt
-                
-class SettingsPlot(QWidget):
-    def __init__(self, parent, parentViewBox):
-        super(SettingsPlot, self).__init__(parent)
-
-        self.stackUI(parent)
-        self.parent = parent
-        self.parentViewBox = parentViewBox
-
-    def stackUI(self, parent):
-        layout = QVBoxLayout()
-        lbl = QLabel("Choose a property of the system to visualize in the plotting area on the right.")
-        lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
-        lbl.setWordWrap(True)
-
-        self.propertyBox = QComboBox()
-        self.propertyBox.addItem("Choose one")
-        self.propertyBox.addItem("Lines defects")
-        self.propertyBox.addItem("Planes defects")
-        self.propertyBox.addItem("Electron mobility")
-        self.propertyBox.addItem("Hole mobility")
-        self.propertyBox.addItem("Electron lifetime")
-        self.propertyBox.addItem("Hole lifetime")
-
-        self.plotButton = QPushButton("Plot")
-        self.plotButton.clicked.connect(self.displayPlot)
-
-        layout.addWidget(lbl)
-        layout.addWidget(self.propertyBox)
-        layout.addWidget(self.plotButton)
-
-        layout.addStretch()
-
-        stack = QWidget()
-        stack.setLayout(layout)
-        parent.Stack.addWidget(stack)
     
-    @slotError("bool")
-    def displayPlot(self, checked):
-        prop = self.propertyBox.currentText()
-        settings = self.parent.get_settings()
-        system = parseSettings(settings)
-        if prop == "Electron mobility":
-            data = system.mu_e
-        elif prop == "Hole mobility":
-            data = system.mu_h
-        elif prop == "Electron lifetime":
-            data = system.tau_e
-        elif prop == "Hole lifetime":
-            data = system.tau_h
-        elif prop == "Lines defects":
-            data = 'line'
-        elif prop == "Planes defects":
-            data = 'plane'
+    @slotError()
+    def getSystemSettings(self):
+        settings = {}
 
-        self.parentViewBox.plotData(system, data)
+        g1, g2, g3 = self.g1.text(), self.g2.text(), self.g3.text()
+        if g1 != '' and g2 == '' and g3 == '':
+            settings['grid'] = self.g1.text(),
+        elif g1 != '' and g2 != '' and g3 == '':
+            settings['grid'] = self.g1.text(), self.g2.text()
+        elif g1 != '' and g2 != '' and g3 != '':
+            settings['grid'] = self.g1.text(), self.g2.text(), self.g3.text()
+        else:
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("The grid settings cannot be processed.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            return
 
- 
-class ViewBox(QWidget):
-    def __init__(self):
-        super(ViewBox, self).__init__()
+        d = [{'location': self.loc1.text(), 'concentration': self.N1.text()},
+             {'location': self.loc2.text(), 'concentration': self.N2.text()}]
 
-        self.setMinimumWidth(400)
-        self.layout = QVBoxLayout()
-
-        self.formGroupBox = QGroupBox("View")
- 
-        self.mpl = MplWindow()
-        self.layout.addWidget(self.mpl)
- 
-        self.formGroupBox.setLayout(self.layout)
-
-        mainLayout = QVBoxLayout()
-        mainLayout.addWidget(self.formGroupBox)
-        self.setLayout(mainLayout)
-
-    def plotData(self, system, data):
-        self.mpl.figure.clear()
-        if system and isinstance(data, np.ndarray):
-            plotter.plot(system, data, fig=self.mpl.figure)
-
-        elif data == 'line':
-            plotter.plot_line_defects(system, fig=self.mpl.figure)
-
-        elif data == 'plane':
-            plotter.plot_plane_defects(system, fig=self.mpl.figure)
-
-        self.mpl.canvas.draw()
+        settings['doping'] = d
+        settings['materials'] = self.materials_list
+        settings['defects'] = self.defects_list
+        settings['gen'] = self.gen.text(), self.paramName.text()
+        return settings

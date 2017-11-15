@@ -545,12 +545,12 @@ class Analyzer():
      
     def full_current(self):
         """
-        Compute the steady state current.
+        Compute the steady state current in 1D and 2D.
 
         Returns
         -------
-        JR: float
-            The integrated bulk recombination.
+        J: float
+            The integrated full steady state current.
 
         Warnings
         --------

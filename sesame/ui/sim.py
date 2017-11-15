@@ -38,8 +38,11 @@ class SimulationWorker(QObject):
         paramName = self.paramName
 
         # Solver settings
-        loopValues, simName, fmt, BCs, contacts, tol, maxiter,\
+        loopValues, simName, fmt, BCs, contacts, Sc, tol, maxiter,\
                         useMumps, iterative = solverSettings
+
+        # Add contacts surface recombination velocities
+        system.contacts(*Sc)
 
         #===========================================================
         # Equilibrium potential

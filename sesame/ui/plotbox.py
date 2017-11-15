@@ -13,7 +13,7 @@ from matplotlib.figure import Figure
 
 import logging
 
-from sesame import plotter
+from .. import plotter
 
 class MplWindow(QWidget):
     def __init__(self):

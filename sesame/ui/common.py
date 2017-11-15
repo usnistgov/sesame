@@ -6,7 +6,6 @@ import types
 from functools import wraps
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMessageBox
-import logging
 
 
 def slotError(*args):
@@ -91,12 +90,7 @@ def parseSettings(settings):
     # build a sesame system
     system = Builder(xpts, ypts, zpts)
         
-    # 2. set contacts boundary conditions
-    contacts = settings['contacts']
-    Sn_left, Sp_left, Sn_right, Sp_right = [float(i) for i in contacts]
-    system.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
-
-    # 3. set materials
+    # 2. set materials
     materials = settings['materials']
     for mat in materials:
         location = mat['location']
@@ -104,7 +98,7 @@ def parseSettings(settings):
         f = parseLocation(location, dimension)
         system.add_material(mat, f)
 
-    # 4. set the doping
+    # 3. set the doping
     doping = settings['doping']
     acceptor, donor = doping
 
@@ -118,7 +112,7 @@ def parseSettings(settings):
     N = float(donor['concentration'])
     system.add_donor(N, f)
 
-    # 5. set the defects if present
+    # 4. set the defects if present
     defects = settings['defects']
     defects = defects
     for defect in defects:
