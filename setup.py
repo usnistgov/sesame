@@ -61,6 +61,11 @@ def run_setup(packages, ext_modules):
     version_info = {}
     with open('sesame/_version.py', 'r') as f:
         exec(f.read(), {}, version_info)
+    
+    scripts = []
+    if sys.platform == 'win32':
+        scripts = ['postinstall.py']
+
     setup(
         name = 'sesame',
         version = version_info['__version__'],
@@ -69,6 +74,7 @@ def run_setup(packages, ext_modules):
         packages = packages,
         cmdclass = cmdclass,
         ext_modules = ext_modules,
+        scripts = scripts,
         classifiers = [
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',
