@@ -99,7 +99,7 @@ class Window(QMainWindow):
 
         self.setWindowTitle('Sesame')
         # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
-        self.setGeometry(0,0, 1200,800)
+        self.setGeometry(0,0, 1200,400)
         self.show()
         # self.showMaximized()
 
@@ -108,8 +108,8 @@ class Window(QMainWindow):
         
         # edit QLineEdit widgets
         build.g1.setText(grid[0])
-        build.g1.setText(grid[1])
-        build.g1.setText(grid[2])
+        build.g2.setText(grid[1])
+        build.g3.setText(grid[2])
         build.loc1.setText(doping[0]['location'])
         build.N1.setText(doping[0]['concentration'])
         build.loc2.setText(doping[1]['location'])
@@ -137,7 +137,7 @@ class Window(QMainWindow):
                       mat['Et'], mat['tau_e'], mat['tau_h'], mat['band_offset'],\
                       mat['B'], mat['Cn'], mat['Cp']]
             for idx, (val, unit) in enumerate(zip(values, build.units)):
-                build.table.setItem(idx,0, QTableWidgetItem(val))
+                build.table.setItem(idx,0, QTableWidgetItem(str(val)))
                 item = QTableWidgetItem(unit)
                 item.setFlags(Qt.ItemIsEnabled)
                 build.table.setItem(idx,1, item)
@@ -162,7 +162,7 @@ class Window(QMainWindow):
                             defect['sigma_e'], defect['sigma_h'],\
                             defect['Transition']]
             for idx, (val, unit) in enumerate(zip(defectValues, build.units2)):
-                build.ctable.setItem(idx,0, QTableWidgetItem(val))
+                build.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
                 item = QTableWidgetItem(unit)
                 item.setFlags(Qt.ItemIsEnabled)
                 self.ctable.setItem(idx,1, item)
