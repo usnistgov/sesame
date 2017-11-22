@@ -367,7 +367,6 @@ class BuilderBox(QWidget):
             except:
                 self.defects_list[idx][key] = txt
     
-    @slotError()
     def getSystemSettings(self):
         settings = {}
 

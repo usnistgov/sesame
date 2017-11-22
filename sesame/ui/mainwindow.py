@@ -397,7 +397,7 @@ class TableWidget(QWidget):
         #  tab2: run the simulation
         #============================================
         self.tab2Layout = QHBoxLayout(self.tab2)
-        self.simulation = Simulation(self.parent)
+        self.simulation = Simulation(self)
         self.tab2Layout.addWidget(self.simulation)
 
         #============================================

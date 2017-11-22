@@ -31,7 +31,7 @@ class Simulation(QWidget):
     def __init__(self, parent):
         super(Simulation, self).__init__(parent)
 
-        self.mainWindow = parent
+        self.tabsTable = parent
 
         self.tabLayout = QHBoxLayout()
 
@@ -203,7 +203,7 @@ class Simulation(QWidget):
 
     def getSolverSettings(self):
         # loopValues
-        loopValues = ev(self.loopValues.text())
+        loopValues = ev(self.loopValues.text() + ',')
         loopValues = np.asarray(loopValues)
         # simulation name
         simName = self.workDirName.text() + self.fileName.text()
@@ -259,7 +259,7 @@ class Simulation(QWidget):
                 return
 
         # get system settings and build system without generation
-        settings = self.mainWindow.table.build.getSystemSettings()
+        settings = self.tabsTable.build.getSystemSettings()
         system = parseSettings(settings)
         generation, paramName = settings['gen']
 
