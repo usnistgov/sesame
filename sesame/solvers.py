@@ -13,6 +13,9 @@ import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
 
+import logging
+logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
+
 # check if MUMPS is available
 mumps_available = False
 try:
@@ -30,17 +33,18 @@ class SparseSolverError(Exception):
 
 class BCsError(Exception):
     def __init__(self, BCs):
-        print("*********************************************")
-        print("*  Unknown contacts boundary conditions     *")
-        print("*********************************************")
-        print("")
-        print("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
+        msg = "\n*********************************************" +\
+              "\n*  Unknown contacts boundary conditions     *" +\
+              "\n*********************************************"
+        logging.error(msg)
+        logging.error("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
 
 class SolverError(Exception):
     def __init__(self):
-        print("*********************************************")
-        print("*       No solution could be found          *")
-        print("*********************************************")
+        msg = "\n*********************************************" +\
+              "\n*       No solution could be found          *" +\
+              "\n*********************************************"
+        logging.error(msg)
         osys.exit(1)
 
 
@@ -59,8 +63,6 @@ def sparse_solver(J, f, iterative, use_mumps, inner_tol):
             spsolve = mumps.spsolve
         else:
             J = J.tocsr()
-            warnings.warn('Could not import MUMPS. Default back to Scipy.'\
-                          , UserWarning)
         dx = spsolve(J, f)
         return dx
     else:
@@ -70,7 +72,7 @@ def sparse_solver(J, f, iterative, use_mumps, inner_tol):
         if info == 0:
             return dx
         else:
-            print("Iterative sparse solver failed with output info: ", info)
+            logging.info("Iterative sparse solver failed with output info: ".format(info))
 
 def get_system(x, sys, equilibrium, periodic_bcs, contacts_bcs, use_mumps):
     # Compute the right hand side of J * x = f
@@ -119,7 +121,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
 
     for gdx, gamma in enumerate(htpy):
         if verbose:
-            print("\nNewton loop {0}/{1}".format(gdx+1, htp))
+            logging.info("Newton loop {0}/{1}".format(gdx+1, htp))
 
         if gamma < 1:
             htol = 1
@@ -135,8 +137,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
             cc = cc + 1
             # break if no solution found after maxiterations
             if cc > maxiter:
-                print("Maximum number of iterations reached without solution: "\
-                      + "no solution found!\n")
+                logging.error("Maximum number of iterations reached without solution: no solution found!")
                 break
 
             # solve linear system
@@ -165,17 +166,19 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                         x += dx
                         # print status of solution procedure every so often
                         if verbose:
-                            print('step {0}, error = {1}'.format(cc, error))
+                            logging.info('step {0}, error = {1}'.format(cc, error))
             except SparseSolverError:
-                print("********************************************")
-                print("*   The linear system could not be solved  *")
-                print("********************************************")
+                msg = "\n********************************************"+\
+                      "\n*   The linear system could not be solved  *"+\
+                      "\n********************************************"
+                logging.error(msg)
                 return None
 
             except NewtonError:
-                print("*********************************************")
-                print("*   The Newton-Raphson algorithm diverged.  *")
-                print("*********************************************")
+                msg = "\n********************************************"+\
+                      "\n*  The Newton-Raphson algorithm diverged   *"+\
+                      "\n********************************************"
+                logging.error(msg)
                 return None
                     
     if converged:
@@ -353,7 +356,7 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
     for idx, vapp in enumerate(Vapp):
 
         if verbose:
-            print("\nApplied voltage: {0} V".format(voltages[idx]))
+            logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
         # Apply the voltage on the right contact
         result['v'][s] = equilibrium[s] + q*vapp
@@ -372,6 +375,6 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
                 np.savez(name, efn=result['efn'], efp=result['efp'],\
                          v=result['v'])
         else:
-            print("The solver failed to converge for the applied voltage"\
+            logging.error("The solver failed to converge for the applied voltage"\
                   + " {0} V (index {1}).".format(voltages[idx], idx))
             break

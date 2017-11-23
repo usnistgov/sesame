@@ -89,6 +89,48 @@ class Analyzer():
         s, x, _, _, _ = Bresenham(system, p1, p2)
         return x, s
 
+    def band_diagram(self, location, fig=None):
+        """
+        Compute the band diagram between two points defining a line. Display a
+        plot if fig is None.
+
+        Parameters
+        ----------
+        location: array-like ((x1,y1), (x2,y2))
+            Tuple of two points defining a line over which to compute a band
+            diagram.
+
+        fig: Maplotlib figure
+            A plot is added to it if given. If not given, a new one is created and 
+            displayed.
+
+        """
+        p1, p2 = location
+        X, sites = self.line(self.sys, p1, p2)
+
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(111)
+
+        vt = self.sys.scaling.energy
+        X = X*self.sys.scaling.length * 1e6 # in um
+
+        l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
+        l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
+
+        fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
+                              r'$\mathregular{-E_{F_p}}$'])
+
+        ax.set_xlabel('position (µm)')
+        ax.set_ylabel('Energy (eV)')
+
+        if show:
+            plt.show()
+
     def electron_density(self, location=None):
         """
         Compute the electron density across the system or on a line defined by two points.
@@ -328,11 +370,19 @@ class Analyzer():
         """
         self.current_map(False, cmap, scale)
 
-    def current_map(self, electron, cmap, scale):
+    def current_map(self, electron, cmap, scale, fig=None):
 
         if not mpl_enabled:
             raise RuntimeError("matplotlib was not found, but is required "
                                "for plotting.")
+
+        show = False
+        if fig is None:
+            fig = plt.figure()
+            show = True
+
+        # add axis to figure
+        ax = fig.add_subplot(111)
 
         Lx = self.sys.xpts[-2] * scale
         Ly = self.sys.ypts[-2] * scale
@@ -363,17 +413,18 @@ class Analyzer():
         norm = np.sqrt(jnx**2 + jny**2)
 
         y, x = np.mgrid[0:Ly:100j, 0:Lx:100j]
-        plt.pcolor(x, y, norm, cmap=cmap, rasterized=True)
-        cbar=plt.colorbar()
+        p = ax.pcolor(x, y, norm, cmap=cmap, rasterized=True)
+        cbar = fig.colorbar(p, ax=ax)
 
-        plt.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
-        plt.xlim(xmax=Lx, xmin=0)
-        plt.ylim(ymin=0, ymax=Ly)
+        ax.streamplot(x, y, jnx, jny, linewidth=1, color='#a9a9a9', density=2)
+        ax.set_xlim(xmax=Lx, xmin=0)
+        ax.set_ylim(ymin=0, ymax=Ly)
 
-        plt.xlabel('x')
-        plt.ylabel('y')
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
 
-        plt.show()
+        if show:
+            plt.show()
 
     def map3D(self, data, cmap='gnuplot', scale=1e-6):
         """
@@ -494,12 +545,12 @@ class Analyzer():
      
     def full_current(self):
         """
-        Compute the steady state current.
+        Compute the steady state current in 1D and 2D.
 
         Returns
         -------
-        JR: float
-            The integrated bulk recombination.
+        J: float
+            The integrated full steady state current.
 
         Warnings
         --------
