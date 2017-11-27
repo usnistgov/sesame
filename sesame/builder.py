@@ -376,7 +376,7 @@ class Builder():
         """
         self.doping_profile(-density, location)
 
-    def generation(self, f):
+    def generation(self, f, args=[]):
         """
         Distribution of generated carriers.
 
@@ -384,13 +384,15 @@ class Builder():
         ----------
         f: function 
             Generation rate [m\ :sup:`-3`].
+        args: tuple
+            Additional arguments to be passed to the function.
         """
         if self.dimension == 1:
-            g = [f(x) for x in self.xpts]
+            g = [f(x, *args) for x in self.xpts]
         elif self.dimension == 2:
-            g = [f(x, y) for y in self.ypts for x in self.xpts]
+            g = [f(x, y, *args) for y in self.ypts for x in self.xpts]
         elif self.dimension == 3:
-            g = [f(x, y, z) for z in self.zpts for y in self.ypts for x in self.xpts]
+            g = [f(x, y, z, *args) for z in self.zpts for y in self.ypts for x in self.xpts]
         self.g = np.asarray(g) / self.scaling.generation
         
         # compute the integral of the generation

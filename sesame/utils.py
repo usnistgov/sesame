@@ -361,3 +361,4 @@ def plane_defects_sites(sys, location):
     ycoord = np.asarray(ycoord)
     zcoord = np.asarray(zcoord)
     return sites, xcoord, ycoord, zcoord, perp_dl
+

@@ -1,0 +1,408 @@
+from .system_tab import *
+from .simulation_tab import Simulation
+from .analysis_tab import Analysis
+
+import os
+os.environ['QT_API'] = 'pyqt5'
+import sip
+sip.setapi("QString", 2)
+sip.setapi("QVariant", 2)
+from PyQt5.QtGui  import *
+from PyQt5.QtWidgets import *
+# Import the console machinery from ipython
+from qtconsole.rich_ipython_widget import RichJupyterWidget
+from qtconsole.inprocess import QtInProcessKernelManager
+from IPython.lib import guisupport
+
+from .. import plotter
+from .common import parseSettings, slotError
+
+from configparser import ConfigParser
+config = ConfigParser()
+config.optionxform = str
+config.add_section('System')
+config.add_section('Simulation')
+
+from ast import literal_eval as ev
+
+class Window(QMainWindow): 
+    def __init__(self):
+        super(Window, self).__init__()
+
+        self.init_ui()
+
+    def init_ui(self):
+        'init the UI'
+
+        # Split the window: top with tabs, bottom with console
+        splitter = QSplitter(Qt.Vertical)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(splitter)
+
+        self.setCentralWidget(QWidget(self))
+        self.centralWidget().setLayout(self.layout)
+
+        # menu bar
+        menuBar = self.menuBar()
+        menuBar.setNativeMenuBar(False)
+
+
+        fileMenu = menuBar.addMenu("&File")
+        openAction = QAction('Open...', self)
+        saveAction = QAction('Save', self)
+        saveAsAction = QAction('Save as...', self)
+        exitAction = QAction('Exit', self)
+        fileMenu.addAction(openAction)
+        fileMenu.addAction(saveAction)
+        fileMenu.addAction(saveAsAction)
+        fileMenu.addAction(exitAction)
+
+        viewMenu = menuBar.addMenu("&View")
+        view1 = QAction('Lines defects', self)
+        view2 = QAction('Planes defects', self)
+        viewMenu.addAction(view1)
+        viewMenu.addAction(view2)
+        viewMenu.addSeparator()
+
+        view3 = viewMenu.addMenu('Mobility')
+        view31 = QAction('Electron', self)
+        view32 = QAction('Hole', self)
+        view3.addAction(view31)
+        view3.addAction(view32)
+
+        view4 = viewMenu.addMenu('Lifetime')
+        view41 = QAction('Electron', self)
+        view42 = QAction('Hole', self)
+        view4.addAction(view41)
+        view4.addAction(view42)
+
+        # actions
+        openAction.triggered.connect(self.openConfig)
+        saveAction.triggered.connect(self.saveConfig)
+        saveAsAction.triggered.connect(self.saveAsConfig)
+        exitAction.triggered.connect(self.close)
+        view1.triggered.connect(lambda: self.displayPlot("lines",1))
+        view2.triggered.connect(lambda: self.displayPlot("planes",1))
+        view31.triggered.connect(lambda: self.displayPlot("mu_e",1))
+        view32.triggered.connect(lambda: self.displayPlot("mu_h",1))
+        view41.triggered.connect(lambda: self.displayPlot("tau_e",1))
+        view42.triggered.connect(lambda: self.displayPlot("tau_h",1))
+
+
+        # Top with tabs
+        self.table = TableWidget(self)
+        splitter.addWidget(self.table)
+
+        # Bottom window: Set up logging to use your widget as a handler
+        self.ipython = IPythonWidget(self)
+        splitter.addWidget(self.ipython)
+
+        self.setWindowTitle('Sesame')
+        # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
+        self.setGeometry(0,0, 1200,400)
+        self.show()
+        # self.showMaximized()
+
+    def setSystem(self, grid, doping, materials, defects, gen, param):
+        build = self.table.build
+        
+        # edit QLineEdit widgets
+        build.g1.setText(grid[0])
+        build.g2.setText(grid[1])
+        build.g3.setText(grid[2])
+        build.loc1.setText(doping[0]['location'])
+        build.N1.setText(doping[0]['concentration'])
+        build.loc2.setText(doping[1]['location'])
+        build.N2.setText(doping[1]['concentration'])
+        build.gen.setText(gen)
+        build.paramName.setText(param)
+
+        # set materials
+        build.materials_list = materials
+        build.matNumber = -1
+        build.box.clear()
+        for mat in materials:
+            # location
+            build.loc.clear()
+            build.loc.setText(mat['location'])
+            build.loc.show()
+            build.lbl.show()
+            # add "material number" to combo box
+            build.matNumber += 1
+            build.box.addItem("Material " + str(build.matNumber+1))
+            build.box.setCurrentIndex(build.matNumber)
+            # fill in table with material values
+            values = [mat['Nc'], mat['Nv'], mat['Eg'], mat['epsilon'],\
+                      mat['mass_e'], mat['mass_h'], mat['mu_e'], mat['mu_h'],\
+                      mat['Et'], mat['tau_e'], mat['tau_h'], mat['band_offset'],\
+                      mat['B'], mat['Cn'], mat['Cp']]
+            for idx, (val, unit) in enumerate(zip(values, build.units)):
+                build.table.setItem(idx,0, QTableWidgetItem(str(val)))
+                item = QTableWidgetItem(unit)
+                item.setFlags(Qt.ItemIsEnabled)
+                build.table.setItem(idx,1, item)
+            build.table.show()
+
+        # set defects properties 
+        build.defects_list = defects
+        build.defectNumber = -1
+        build.defectBox.clear()
+        for defect in defects:
+            # location
+            build.cloc.clear()
+            build.cloc.setText(defect['location'])
+            build.cloc.show()
+            build.clbl.show()
+            # add "defect number" to combo box
+            build.defectNumber += 1
+            build.defectBox.addItem("Defect " + str(build.defectNumber+1))
+            build.defectBox.setCurrentIndex(build.defectNumber)
+            # fill in table with defect values
+            defectValues = [defect['Energy'], defect['Density'],\
+                            defect['sigma_e'], defect['sigma_h'],\
+                            defect['Transition']]
+            for idx, (val, unit) in enumerate(zip(defectValues, build.units2)):
+                build.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
+                item = QTableWidgetItem(unit)
+                item.setFlags(Qt.ItemIsEnabled)
+                self.ctable.setItem(idx,1, item)
+            build.ctable.show()
+
+
+    def setSimulation(self, loopValues, workDir, fileName, ext, BCs,\
+                            ScnL, ScpL, ScnR, ScpR, precision,\
+                             maxSteps, useMumps, iterative):
+        self.table.simulation.loopValues.setText(loopValues)
+        self.table.simulation.workDirName.setText(workDir)
+        self.table.simulation.fileName.setText(fileName)
+        if ext == '.npz':
+            self.table.simulation.fbox.setCurrentIndex(0)
+        elif ext == '.mat':
+            self.table.simulation.fbox.setCurrentIndex(1)
+        if BCs:
+            self.table.simulation.periodic.setChecked(True)
+        else:
+            self.table.simulation.hardwall.setChecked(True)
+        self.table.simulation.g4.setText(ScnL)
+        self.table.simulation.g5.setText(ScpL)
+        self.table.simulation.g6.setText(ScnR)
+        self.table.simulation.g7.setText(ScpR)
+        self.table.simulation.algoPrecision.setText(precision)
+        self.table.simulation.algoSteps.setText(maxSteps)
+        if useMumps:
+            self.table.simulation.yesMumps.setChecked(True)
+        else:
+            self.table.simulation.noMumps.setChecked(True)
+        if iterative:
+            self.table.simulation.yesIterative.setChecked(True)
+        else:
+            self.table.simulation.noIterative.setChecked(True)
+        
+    def openConfig(self):
+        self.cfgFile = QFileDialog.getOpenFileName(self, 'Open File')[0]
+        if self.cfgFile == '':
+            return
+
+        with open(self.cfgFile, 'r') as f:
+            config.read(self.cfgFile)
+
+            grid = config.get('System', 'Grid')
+            doping = config.get('System', 'Doping')
+            materials = config.get('System', 'Materials')
+            defects = config.get('System', 'Defects')
+            gen, param = config.get('System', 'Generation rate'),\
+                         config.get('System', 'Generation parameter')
+            self.setSystem(ev(grid), ev(doping), ev(materials), ev(defects),\
+                           gen, param)
+
+            loopValues = config.get('Simulation', 'Loop values')
+            workDir = config.get('Simulation', 'Working directory')
+            fileName = config.get('Simulation', 'Simulation name')
+            ext = config.get('Simulation', 'Extension')
+            BCs = config.getboolean('Simulation', 'Transverse boundary conditions')
+            ScnL = config.get('Simulation', 'Electron recombination velocity in 0')
+            ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
+            ScnR = config.get('Simulation', 'Electron recombination velocity in L')
+            ScpR = config.get('Simulation', 'Hole recombination velocity in L')
+            precision = config.get('Simulation', 'Newton precision')
+            maxSteps = config.get('Simulation', 'Maximum steps')
+            useMumps = config.getboolean('Simulation', 'Use Mumps')
+            iterative = config.get('Simulation', 'Iterative solver')
+            self.setSimulation(loopValues, workDir, fileName, ext, BCs,\
+                                ScnL, ScpL, ScnR, ScpR, precision,\
+                                maxSteps, useMumps, iterative)
+
+            f.close()
+
+    def saveAsConfig(self):
+        self.cfgFile = QFileDialog.getSaveFileName(self, 'Save File')[0]
+        if self.cfgFile != '':
+            self.saveConfig()
+
+    @slotError()
+    def saveConfig(self):
+
+        if not hasattr(self, 'cfgFile'):
+            self.saveAsConfig()
+        elif self.cfgFile == '':
+            return
+        else:
+            build = self.table.build
+            simu = self.table.simulation
+
+            grid = [build.g1.text(), build.g2.text(), build.g3.text()]
+            d = [{'location': build.loc1.text(), 'concentration': build.N1.text()},
+                 {'location': build.loc2.text(), 'concentration': build.N2.text()}]
+            mat = build.materials_list
+            defects = build.defects_list
+            gen, param = build.gen.text(), build.paramName.text()
+
+            with open(self.cfgFile, 'w') as f:
+                config.set('System', 'Grid', str(grid))
+                config.set('System', 'Doping', str(d))
+                config.set('System', 'Materials', str(mat))
+                config.set('System', 'Defects', str(defects))
+                config.set('System', 'Generation rate', gen)
+                config.set('System', 'Generation parameter', param)
+
+                config.set('Simulation', 'Loop values', simu.loopValues.text())
+                config.set('Simulation', 'Working directory', simu.workDirName.text())
+                config.set('Simulation', 'Simulation name', simu.fileName.text())
+                config.set('Simulation', 'Extension', simu.fbox.currentText())
+                config.set('Simulation', 'Transverse boundary conditions',\
+                                                str(simu.periodic.isChecked()))
+                config.set('Simulation', 'Electron recombination velocity in 0',\
+                                            simu.g4.text())
+                config.set('Simulation', 'Hole recombination velocity in 0',\
+                                            simu.g5.text())
+                config.set('Simulation', 'Electron recombination velocity in L',\
+                                            simu.g6.text())
+                config.set('Simulation', 'Hole recombination velocity in L',\
+                                            simu.g7.text())
+                config.set('Simulation', 'Newton precision', simu.algoPrecision.text())
+                config.set('Simulation', 'Maximum steps', simu.algoSteps.text())
+                config.set('Simulation', 'Use Mumps', str(simu.yesMumps.isChecked()))
+                config.set('Simulation', 'Iterative solver',\
+                                            str(simu.yesIterative.isChecked()))
+
+                config.write(f)
+                f.close()
+
+    @slotError()
+    def displayPlot(self, prop, checked):
+        settings = self.table.get_system_settings()
+        system = parseSettings(settings)
+        if prop == "mu_e":
+            plotter.plot(system, system.mu_e)
+        elif prop == "mu_h":
+            plotter.plot(system, system.mu_h)
+        elif prop == "tau_e":
+            plotter.plot(system, system.tau_e)
+        elif prop == "tau_h":
+            plotter.plot(system, system.tau_h)
+        elif prop == "lines":
+            plotter.plot_line_defects(system)
+        elif prop == "planes":
+            plotter.plot_plane_defects(system)
+
+
+        
+class QIPythonWidget(RichJupyterWidget):
+    """ Convenience class for a live IPython console widget. We can replace the
+    standard banner using the customBanner argument
+    """ 
+    
+    def __init__(self,customBanner=None,*args,**kwargs):
+        if not customBanner is None: self.banner=customBanner
+        super(QIPythonWidget, self).__init__(*args,**kwargs)
+        self.kernel_manager = kernel_manager = QtInProcessKernelManager()
+        kernel_manager.start_kernel()
+        kernel_manager.kernel.gui = 'qt'
+        self.kernel_client = kernel_client = self._kernel_manager.client()
+        kernel_client.start_channels()
+
+        def stop():
+            kernel_client.stop_channels()
+            kernel_manager.shutdown_kernel()
+            guisupport.get_app_qt5().exit()            
+        self.exit_requested.connect(stop)
+
+    def pushVariables(self,variableDict):
+        """ Given a dictionary containing name / value pairs, push those
+        variables to the IPython console widget 
+        """
+        self.kernel_manager.kernel.shell.push(variableDict)
+    def clearTerminal(self):
+        """ Clears the terminal """
+        self._control.clear()    
+    def printText(self,text):
+        """ Prints some plain text to the console """
+        self._append_plain_text(text)        
+    def executeCommand(self,command):
+        """ Execute a command in the frame of the console widget """
+        self._execute(command,False)
+
+
+class IPythonWidget(QWidget):
+    """ Main GUI Widget including an IPython Console widget inside vertical
+    layout 
+    """ 
+    
+    def __init__(self, parent=None):
+        super(IPythonWidget, self).__init__(parent)
+        layout = QVBoxLayout(self)
+        ipyConsole = QIPythonWidget(customBanner="Welcome to Sesame IPython console\n")
+        layout.addWidget(ipyConsole)        
+        # This allows the variable foo and method print_process_id to be accessed from the ipython console
+        # ipyConsole.pushVariables({"foo":43,"print_process_id":print_process_id})
+        # ipyConsole.printText("The variable 'foo' and the method 'print_process_id()' are available. Use the 'whos' command for information.")                           
+
+def print_process_id():
+    print('Process ID is:', os.getpid())
+
+
+
+
+class TableWidget(QWidget):
+    def __init__(self, parent):
+        super(TableWidget, self).__init__(parent)
+
+        self.parent = parent
+
+        self.layout = QHBoxLayout(self)
+
+        # Initialize tab screen
+        self.tabs = QTabWidget()
+        self.tab1 = QWidget()
+        self.tab2 = QWidget()
+        self.tab3 = QWidget()
+        self.tabs.resize(300,200) 
+
+        # Add tabs
+        self.tabs.addTab(self.tab1,"System")
+        self.tabs.addTab(self.tab2,"Simulation")
+        self.tabs.addTab(self.tab3,"Analysis")
+        # Add tabs to widget        
+        self.layout.addWidget(self.tabs)
+        self.setLayout(self.layout)
+
+        #============================================
+        #  tab1: system parameters
+        #============================================
+        self.tab1Layout = QHBoxLayout(self.tab1)
+        self.build = BuilderBox(self)
+        self.tab1Layout.addWidget(self.build)
+
+        #============================================
+        #  tab2: run the simulation
+        #============================================
+        self.tab2Layout = QHBoxLayout(self.tab2)
+        self.simulation = Simulation(self)
+        self.tab2Layout.addWidget(self.simulation)
+
+        #============================================
+        #  tab3: analyze simulation results
+        #============================================
+        self.tab3Layout = QHBoxLayout(self.tab3)
+        self.analysis = Analysis(self)
+        self.tab3Layout.addWidget(self.analysis)
