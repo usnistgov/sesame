@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
 
 from sesame.ui import mainwindow
 from PyQt5.QtWidgets import QApplication
