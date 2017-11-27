@@ -134,7 +134,7 @@ class Window(QMainWindow):
             # fill in table with material values
             values = [mat['Nc'], mat['Nv'], mat['Eg'], mat['epsilon'],\
                       mat['mass_e'], mat['mass_h'], mat['mu_e'], mat['mu_h'],\
-                      mat['Et'], mat['tau_e'], mat['tau_h'], mat['band_offset'],\
+                      mat['Et'], mat['tau_e'], mat['tau_h'], mat['affinity'],\
                       mat['B'], mat['Cn'], mat['Cp']]
             for idx, (val, unit) in enumerate(zip(values, build.units)):
                 build.table.setItem(idx,0, QTableWidgetItem(str(val)))

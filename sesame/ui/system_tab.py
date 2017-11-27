@@ -149,7 +149,7 @@ class BuilderBox(QWidget):
         self.materials_list = []
 
         self.rows = ("Nc", "Nv", "Eg", "epsilon", "mass_e", "mass_h",\
-                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "band_offset",\
+                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "affinity",\
                      "B", "Cn", "Cp")
         columns = ("Value", "Unit")
         self.table.setVerticalHeaderLabels(self.rows)
@@ -182,7 +182,7 @@ class BuilderBox(QWidget):
     def addMat(self):
         mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
                     'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0,\
-                    'tau_e': 1e-6, 'tau_h': 1e-6, 'band_offset': 0,\
+                    'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0,\
                     'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
         self.materials_list.append(mt)
 

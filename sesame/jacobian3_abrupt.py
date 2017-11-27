@@ -63,8 +63,8 @@ def getJ(sys, v, efn, efp):
     _sites = np.arange(Nx*Ny*Nz, dtype=int)
 
     # carrier densities
-    n = sys.Nc * np.exp(-sys.bl + efn + v)
-    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
+    n = sys.Nc * np.exp(+sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl + efp - v)
 
     # bulk charges
     drho_defn_s = - n

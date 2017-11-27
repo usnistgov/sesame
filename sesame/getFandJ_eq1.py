@@ -41,8 +41,8 @@ def getFandJ_eq(sys, v, contacts_bcs):
     #                     For all sites in the system                         #
     ###########################################################################
     # carrier densities
-    n = sys.Nc * np.exp(-sys.bl + v)
-    p = sys.Nv * np.exp(-sys.Eg + sys.bl - v)
+    n = sys.Nc * np.exp(+sys.bl + v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl - v)
 
     # bulk charges
     rho = sys.rho - n + p

@@ -31,12 +31,12 @@ def getF(sys, v, efn, efp, veq):
     #                     For all sites in the system                         #
     ###########################################################################
     # carrier densities
-    n = sys.Nc * np.exp(-sys.bl + efn + v)
-    p = sys.Nv * np.exp(-Eg + bl + efp - v)
+    n = sys.Nc * np.exp(+sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl + efp - v)
 
     # equilibrium carrier densities
-    n_eq = sys.Nc * np.exp(-sys.bl + veq)
-    p_eq = sys.Nv * np.exp(-sys.Eg + sys.bl - veq)
+    n_eq = sys.Nc * np.exp(+sys.bl + veq)
+    p_eq = sys.Nv * np.exp(-sys.Eg - sys.bl - veq)
 
     # bulk charges
     rho = sys.rho - n + p

@@ -29,8 +29,8 @@ def getF(sys, v, efn, efp, veq):
     #                     For all sites in the system                         #
     ###########################################################################
     # carrier densities
-    n = sys.Nc * np.exp(-sys.bl + efn + v)
-    p = sys.Nv * np.exp(-sys.Eg + sys.bl + efp - v)
+    n = sys.Nc * np.exp(+sys.bl + efn + v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl + efp - v)
 
     # bulk charges
     rho = sys.rho - n + p
@@ -86,8 +86,8 @@ def getF(sys, v, efn, efp, veq):
     jpx = get_jp(sys, efp, v, 0, 1, sys.dx[0])
 
     # compute an, ap, av
-    n_eq = sys.Nc[0] * np.exp(-sys.bl[0] + veq[0])
-    p_eq = sys.Nv[0] * np.exp(-sys.Eg[0] + sys.bl[0] - veq[0])
+    n_eq = sys.Nc[0] * np.exp(+sys.bl[0] + veq[0])
+    p_eq = sys.Nv[0] * np.exp(-sys.Eg[0] - sys.bl[0] - veq[0])
         
     an = jnx - sys.Scn[0] * (n[0] - n_eq)
     ap = jpx + sys.Scp[0] * (p[0] - p_eq)
@@ -112,8 +112,8 @@ def getF(sys, v, efn, efp, veq):
     jpx_s = jpx_sm1 + dxbar * (sys.g[sites] - r[sites])
 
     # b_n, b_p and b_v values
-    n_eq = sys.Nc[-1] * np.exp(-sys.bl[-1] + veq[-1])
-    p_eq = sys.Nv[-1] * np.exp(-sys.Eg[-1] + sys.bl[-1] - veq[-1])
+    n_eq = sys.Nc[-1] * np.exp(+sys.bl[-1] + veq[-1])
+    p_eq = sys.Nv[-1] * np.exp(-sys.Eg[-1] - sys.bl[-1] - veq[-1])
         
     bn = jnx_s + sys.Scn[1] * (n[-1] - n_eq)
     bp = jpx_s - sys.Scp[1] * (p[-1] - p_eq)
