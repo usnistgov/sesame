@@ -369,12 +369,16 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
 
         if result is not None:
             name = file_name + "_{0}".format(idx)
-            print(name)
+
+            # add some system settings to the saved results
+            result.update({'x': sys.xpts, 'y': sys.ypts, 'z': sys.zpts,\
+            'affinity': sys.bl, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv,\
+            'epsilon': sys.epsilon})
+
             if fmt == 'mat':
                 savemat(name, result)
             else:
-                np.savez(name, efn=result['efn'], efp=result['efp'],\
-                         v=result['v'])
+                np.savez_compressed(name, **result)
         else:
             logging.error("The solver failed to converge for the applied voltage"\
                   + " {0} V (index {1}).".format(voltages[idx], idx))
