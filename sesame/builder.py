@@ -275,8 +275,8 @@ class Builder():
         sigma_h: float
             Hole capture cross section [m\ :sup:`2`].
         E: float 
-            Energy level of a single state defined with respect to E\ :sub:`g`/2
-            [eV]. Set to `None` for a continuum of states.
+            Energy level of a single state defined with respect to the intrinsic
+            Fermi level [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level
@@ -316,8 +316,8 @@ class Builder():
         sigma_h: float
             Hole capture cross section [m\ :sup:`2`].
         E: float 
-            Energy level of a single state defined with respect to E\ :sub:`g`/2
-            [eV]. Set to `None` for a continuum of states.
+            Energy level of a single state defined with respect to the intrinsic
+            Fermi level [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level
