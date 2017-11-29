@@ -204,7 +204,7 @@ class Simulation(QWidget):
     def browse(self):
         dialog = QFileDialog()
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
-        self.workDirName.setText(folder_path)
+        self.workDirName.setText(folder_path + '/')
 
     def getSolverSettings(self):
         # loopValues

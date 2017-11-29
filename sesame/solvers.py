@@ -14,7 +14,7 @@ from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
 
 import logging
-logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
 # check if MUMPS is available
 mumps_available = False
@@ -369,6 +369,7 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
 
         if result is not None:
             name = file_name + "_{0}".format(idx)
+            print(name)
             if fmt == 'mat':
                 savemat(name, result)
             else:
