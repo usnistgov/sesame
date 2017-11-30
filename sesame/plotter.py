@@ -146,7 +146,9 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None):
         show = True
 
     ax = fig.add_subplot(111)
-    ax.pcolor(xpts, ypts, data)
+    p = ax.pcolor(xpts, ypts, data)
+    cbar = fig.colorbar(p, ax=ax)
+
     ax.set_xlim(xmin=0, xmax=xpts[-1])
     ax.set_ylim(ymin=0, ymax=ypts[-1])
     ax.set_xlabel('x')

@@ -14,6 +14,7 @@ import logging
 from .plotbox import *
 from .common import parseSettings, slotError
 from ..analyzer import Analyzer
+from ..plotter import plot
 
 
 class Analysis(QWidget):
@@ -49,7 +50,10 @@ class Analysis(QWidget):
         twoDBox = QGroupBox("Surface plot")
         twoDLayout = QVBoxLayout()
         self.quantity = QComboBox()
-        quantities = ["Choose one", "Electron current", "Hole current"]
+        quantities = ["Choose one", "Electron quasi-Fermi level",\
+        "Hole quasi-Fermi level", "Electrostatic potential",\
+        "Electron density", "Hole density", "Bulk SRH recombination",\
+        "Electron current", "Hole current"]
         self.quantity.addItems(quantities)
         twoDLayout.addWidget(self.quantity)
         self.plotBtnS = QPushButton("Plot")
@@ -140,9 +144,33 @@ class Analysis(QWidget):
             # make an instance of the Analyzer
             az = Analyzer(system, data)
 
+            # scalings
+            vt = system.scaling.energy
+            N  = system.scaling.density
+            G  = system.scaling.generation
+            j  = system.scaling.current
+
             # plot
             txt = self.quantity.currentText()
             self.surfaceFig.figure.clear()
+            dmap = None
+            if txt == "Electron quasi-Fermi level":
+                dmap = vt * az.efn
+            if txt == "Hole quasi-Fermi level":
+                dmap = vt * az.efp
+            if txt == "Electrostatic potential":
+                dmap = vt * az.v
+            if txt == "Electron density":
+                dmap = N * az.electron_density()
+            if txt == "Hole density":
+                dmap = N * az.hole_density()
+            if txt == "Shockley-Read-Hall recombination":
+                dmap = G * az.bulk_srh_rr()
+            
+            if dmap != None:
+                plot(system, dmap, scale=1e-6, cmap='viridis',\
+                     fig=self.surfaceFig.figure)
+ 
             if txt == "Electron current":
                 az.current_map(True, 'viridis', 1e6, fig=self.surfaceFig.figure)
 
