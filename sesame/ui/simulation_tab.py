@@ -130,6 +130,7 @@ class Simulation(QWidget):
         self.hardwall = QRadioButton("Hardwall")
         tbc.addButton(self.periodic)
         tbc.addButton(self.hardwall)
+        self.periodic.setChecked(True)
         tbcLayout.addWidget(self.periodic)
         tbcLayout.addWidget(self.hardwall)
         BCform.addRow("Transverse boundary conditions", tbcLayout)
@@ -204,7 +205,7 @@ class Simulation(QWidget):
     def browse(self):
         dialog = QFileDialog()
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
-        self.workDirName.setText(folder_path)
+        self.workDirName.setText(folder_path + '/')
 
     def getSolverSettings(self):
         # loopValues
@@ -225,6 +226,7 @@ class Simulation(QWidget):
             BCs = True
         else:
             BCs = False
+        # contacts recombination velocities
         ScnL, ScpL = float(self.g4.text()), float(self.g5.text())
         ScnR, ScpR = float(self.g6.text()), float(self.g7.text())
 

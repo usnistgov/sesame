@@ -14,7 +14,7 @@ from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
 
 import logging
-logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
 # check if MUMPS is available
 mumps_available = False
@@ -38,14 +38,6 @@ class BCsError(Exception):
               "\n*********************************************"
         logging.error(msg)
         logging.error("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
-
-class SolverError(Exception):
-    def __init__(self):
-        msg = "\n*********************************************" +\
-              "\n*       No solution could be found          *" +\
-              "\n*********************************************"
-        logging.error(msg)
-        osys.exit(1)
 
 
 def damping(dx):
@@ -137,7 +129,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
             cc = cc + 1
             # break if no solution found after maxiterations
             if cc > maxiter:
-                logging.error("Maximum number of iterations reached without solution: no solution found!")
+                logging.info("Maximum number of iterations reached without solution: no solution found!")
                 break
 
             # solve linear system
@@ -167,7 +159,6 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                         # print status of solution procedure every so often
                         if verbose:
                             logging.info('step {0}, error = {1}'.format(cc, error))
-                            print('step {0}, error = {1}'.format(cc, error))
             except SparseSolverError:
                 msg = "\n********************************************"+\
                       "\n*   The linear system could not be solved  *"+\
@@ -242,6 +233,11 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
         solution has been found.
 
     """
+
+    noSolutionMsg = "\n*********************************************" +\
+                    "\n*       No solution could be found          *" +\
+                    "\n*********************************************"
+
     # Solve for potential at equilibrium first if not provided
     if equilibrium is None:
         if not contacts_bcs in ['Dirichlet', 'Neumann']:
@@ -254,7 +250,8 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                               use_mumps=use_mumps, iterative=iterative,\
                               inner_tol=inner_tol, htp=htp)
         if equilibrium is None:
-            raise SolverError
+            logging.error(noSolutionMsg)
+            return None
 
     # If Efn is provided, one wants a nonequilibrium solution 
     if 'efn' in guess.keys():
@@ -270,7 +267,8 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
         if x is not None:
             x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
         else:
-            raise SolverError
+            logging.error(noSolutionMsg)
+            return None
 
     # If Efn is not provided, one only wants the equilibrium potential
     else:
@@ -370,17 +368,17 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
 
         if result is not None:
             name = file_name + "_{0}".format(idx)
+
+            # add some system settings to the saved results
+            result.update({'x': sys.xpts, 'y': sys.ypts, 'z': sys.zpts,\
+            'affinity': sys.bl, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv,\
+            'epsilon': sys.epsilon})
+
             if fmt == 'mat':
-                if (sys.ny > 1):
-                    result.update(
-                        {'x': sys.xpts, 'y': sys.ypts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
-                else:
-                    result.update({'x': sys.xpts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
                 savemat(name, result)
             else:
-                np.savez(name, efn=result['efn'], efp=result['efp'],\
-                         v=result['v'])
+                np.savez_compressed(name, **result)
         else:
-            logging.error("The solver failed to converge for the applied voltage"\
+            logging.info("The solver failed to converge for the applied voltage"\
                   + " {0} V (index {1}).".format(voltages[idx], idx))
             break

@@ -202,8 +202,8 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
 
     defp_i = exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv)))
     defp_ip1 = -exp(efpp1 - vp0) * dv / (dl * (1 - exp(-dv)))
-    dv_i = -(ep0 - ep1) * exp(vp0)*(exp(-dv) + (-1 + dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
-    dv_ip1 = -(ep0 - ep1) * exp(vp0)*(1 + exp(-dv)*(-1 - dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
+    dv_i = -(ep0 - ep1) * ev0*(exp(-dv) + (-1 + dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
+    dv_ip1 = -(ep0 - ep1) * ev0*(1 + exp(-dv)*(-1 - dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
 
     return mu*defp_i, mu*defp_ip1, mu*dv_i, mu*dv_ip1
 
