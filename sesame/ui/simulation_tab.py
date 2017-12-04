@@ -130,6 +130,7 @@ class Simulation(QWidget):
         self.hardwall = QRadioButton("Hardwall")
         tbc.addButton(self.periodic)
         tbc.addButton(self.hardwall)
+        self.periodic.setChecked(True)
         tbcLayout.addWidget(self.periodic)
         tbcLayout.addWidget(self.hardwall)
         BCform.addRow("Transverse boundary conditions", tbcLayout)
@@ -225,6 +226,7 @@ class Simulation(QWidget):
             BCs = True
         else:
             BCs = False
+        # contacts recombination velocities
         ScnL, ScpL = float(self.g4.text()), float(self.g5.text())
         ScnR, ScpR = float(self.g6.text()), float(self.g7.text())
 

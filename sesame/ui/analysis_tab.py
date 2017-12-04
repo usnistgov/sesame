@@ -212,6 +212,7 @@ class Analysis(QWidget):
             if isinstance(Xdata[0], tuple):
                 X, sites = az.line(system, Xdata[0], Xdata[1])
                 X = X * system.scaling.length * 1e6 # set length in um
+                p1, p2 = Xdata
             else:
                 X = Xdata
 
