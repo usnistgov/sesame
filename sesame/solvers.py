@@ -39,14 +39,6 @@ class BCsError(Exception):
         logging.error(msg)
         logging.error("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
 
-class SolverError(Exception):
-    def __init__(self):
-        msg = "\n*********************************************" +\
-              "\n*       No solution could be found          *" +\
-              "\n*********************************************"
-        logging.error(msg)
-        osys.exit(1)
-
 
 def damping(dx):
     # This damping procedure is inspired from Solid-State Electronics, vol. 19,
@@ -137,7 +129,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
             cc = cc + 1
             # break if no solution found after maxiterations
             if cc > maxiter:
-                logging.error("Maximum number of iterations reached without solution: no solution found!")
+                logging.info("Maximum number of iterations reached without solution: no solution found!")
                 break
 
             # solve linear system
@@ -241,6 +233,11 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
         solution has been found.
 
     """
+
+    noSolutionMsg = "\n*********************************************" +\
+                    "\n*       No solution could be found          *" +\
+                    "\n*********************************************"
+
     # Solve for potential at equilibrium first if not provided
     if equilibrium is None:
         if not contacts_bcs in ['Dirichlet', 'Neumann']:
@@ -253,7 +250,8 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                               use_mumps=use_mumps, iterative=iterative,\
                               inner_tol=inner_tol, htp=htp)
         if equilibrium is None:
-            raise SolverError
+            logging.error(noSolutionMsg)
+            return None
 
     # If Efn is provided, one wants a nonequilibrium solution 
     if 'efn' in guess.keys():
@@ -269,7 +267,8 @@ def solve(sys, guess, equilibrium=None, tol=1e-6, periodic_bcs=True,\
         if x is not None:
             x = {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
         else:
-            raise SolverError
+            logging.error(noSolutionMsg)
+            return None
 
     # If Efn is not provided, one only wants the equilibrium potential
     else:
@@ -380,6 +379,6 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
             else:
                 np.savez_compressed(name, **result)
         else:
-            logging.error("The solver failed to converge for the applied voltage"\
+            logging.info("The solver failed to converge for the applied voltage"\
                   + " {0} V (index {1}).".format(voltages[idx], idx))
             break

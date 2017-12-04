@@ -82,12 +82,15 @@ class SimulationWorker(QObject):
 
         if solution is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
-        # Make a copy of the equilibrium potential
-        veq = np.copy(solution['v'])
-        # Initial arrays for the quasi-Fermi levels
-        efn = np.zeros((system.nx*system.ny*system.nz,))
-        efp = np.zeros((system.nx*system.ny*system.nz,))
-        solution.update({'efn': efn, 'efp': efp})
+            # Make a copy of the equilibrium potential
+            veq = np.copy(solution['v'])
+            # Initial arrays for the quasi-Fermi levels
+            efn = np.zeros((system.nx*system.ny*system.nz,))
+            efp = np.zeros((system.nx*system.ny*system.nz,))
+            solution.update({'efn': efn, 'efp': efp})
+        else:
+            self.logger.info("The solver failed to converge for the electrostatic potential")
+            return
 
         #===========================================================
         # Loop over voltages
