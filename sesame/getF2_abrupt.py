@@ -48,9 +48,6 @@ def getF(sys, v, efn, efp, veq):
     if len(sys.defects_list) != 0:
         defectsF(sys, n, p, rho, r)
 
-    # charge devided by epsilon
-    rho = rho / sys.epsilon
-
     # reshape the array as array[y-indices, x-indices]
     _sites = np.arange(Nx*Ny, dtype=int).reshape(Ny, Nx)
 
@@ -96,9 +93,16 @@ def getF(sys, v, efn, efp, veq):
     vec[3*sites+1] = fp
 
     #------------------------------ fv ----------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-       + ((v[sites]-v[sites-Nx]) / dym1 - (v[sites+Nx]-v[sites]) / dy) / dybar\
-       - rho[sites]
+    eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+    eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+    eps_m1y = .5 * (sys.epsilon[sites - Nx] + sys.epsilon[sites])
+    eps_p1y = .5 * (sys.epsilon[sites + Nx] + sys.epsilon[sites])
+
+    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+         + (eps_m1y * (v[sites] - v[sites - Nx]) / dym1 - eps_p1y * (v[sites + Nx] - v[sites]) / dy) / dybar \
+         - rho[sites]
+
+    vec[3 * sites + 2] = fv
 
     vec[3*sites+2] = fv
 
@@ -264,9 +268,14 @@ def getF(sys, v, efn, efp, veq):
     vec[3*sites+1] = fp
 
     #------------------------------ fv ----------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-       + (-(v[sites+Nx]-v[sites]) / dy) / dybar\
-       - rho[sites]
+
+    eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+    eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+    eps_p1y = .5 * (sys.epsilon[sites + Nx] + sys.epsilon[sites])
+
+    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+         + (- eps_p1y * (v[sites + Nx] - v[sites]) / dy) / dybar \
+         - rho[sites]
 
     vec[3*sites+2] = fv
 
@@ -310,10 +319,14 @@ def getF(sys, v, efn, efp, veq):
     vec[3*sites+1] = fp
 
     #------------------------------ fv ----------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-       + ((v[sites]-v[sites-Nx]) / dym1) / dybar\
-       - rho[sites]
+    eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+    eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+    eps_m1y = .5 * (sys.epsilon[sites - Nx] + sys.epsilon[sites])
 
-    vec[3*sites+2] = fv
+    fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+         + (eps_m1y * (v[sites] - v[sites - Nx]) / dym1) / dybar \
+         - rho[sites]
+
+    vec[3 * sites + 2] = fv
 
     return vec

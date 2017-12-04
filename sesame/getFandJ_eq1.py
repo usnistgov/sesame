@@ -48,11 +48,6 @@ def getFandJ_eq(sys, v, contacts_bcs):
     rho = sys.rho - n + p
     drho_dv = -n - p
 
-    # charge is divided by epsilon (Poisson equation)
-    rho = rho / sys.epsilon
-    drho_dv = drho_dv / sys.epsilon
-
-
     ###########################################################################
     #                 inside the system: 0 < i < Nx-1                         #
     ###########################################################################
@@ -67,11 +62,14 @@ def getFandJ_eq(sys, v, contacts_bcs):
     dxm1 = sys.dx[:-1]
     dxbar = (dx + dxm1) / 2.
 
+    eps_av_p = 1 / 2. * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+    eps_av_m = 1 / 2. * (sys.epsilon[sites] + sys.epsilon[sites - 1])
+
     #--------------------------------------------------------------------------
     #------------------------------ fv ----------------------------------------
     #--------------------------------------------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-       - rho[sites]
+    fv = (eps_av_m * (v[sites] - v[sites - 1]) / dxm1 - eps_av_p * (v[sites + 1] - v[sites]) / dx) / dxbar \
+         - rho[sites]
 
     # update the vector rows for the inner part of the system
     vec[sites] = fv
@@ -80,9 +78,9 @@ def getFandJ_eq(sys, v, contacts_bcs):
     #-------------------------- fv derivatives --------------------------------
     #--------------------------------------------------------------------------
     # compute the derivatives
-    dvm1 = -1./(dxm1 * dxbar)
-    dv = 2./(dx * dxm1) - drho_dv[sites]
-    dvp1 = -1./(dx * dxbar)
+    dvm1 = -eps_av_m * 1. / (dxm1 * dxbar)
+    dv = eps_av_m / (dxm1 * dxbar) + eps_av_p / (dx * dxbar) - drho_dv[sites]
+    dvp1 = -eps_av_p * 1. / (dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
     dfv_rows = [3*[s] for s in sites]

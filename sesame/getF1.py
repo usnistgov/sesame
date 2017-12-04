@@ -38,9 +38,6 @@ def getF(sys, v, efn, efp, veq):
     # recombination rates
     r = get_bulk_rr(sys, n, p)
 
-    # charge devided by epsilon
-    rho = rho / sys.epsilon
-
     ###########################################################################
     #                   inside the system: 0 < i < Nx-1                       #
     ###########################################################################
@@ -73,8 +70,11 @@ def getF(sys, v, efn, efp, veq):
     vec[3*sites+1] = fp
 
     #------------------------------ fv ----------------------------------------
-    fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-       - rho[sites]
+    eps_av_p = 1 / 2. * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+    eps_av_m = 1 / 2. * (sys.epsilon[sites] + sys.epsilon[sites - 1])
+
+    fv = (eps_av_m * (v[sites] - v[sites - 1]) / dxm1 - eps_av_p * (v[sites + 1] - v[sites]) / dx) / dxbar \
+         - rho[sites]
 
     vec[3*sites+2] = fv
 

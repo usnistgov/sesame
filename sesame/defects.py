@@ -42,8 +42,8 @@ def defectsF(sys, n, p, rho, r=None):
         dl = defect.perp_dl 
 
         if E is not None: # no integration, vectorize as much as possible
-            _n1 = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E)
-            _p1 = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E)
+            _n1 = np.sqrt(sys.Nc[sites]*sys.Nv[sites]) * np.exp(-sys.Eg[sites]/2 + E)
+            _p1 = np.sqrt(sys.Nc[sites]*sys.Nv[sites]) * np.exp(-sys.Eg[sites]/2 - E)
 
             # additional charge
             f = (se*ve*_n + sh*vh*_p1) / (se*ve*(_n+_n1) + sh*vh*(_p+_p1))
@@ -57,8 +57,8 @@ def defectsF(sys, n, p, rho, r=None):
         else: # integral to perform, quad requires single value function
             # additional recombination
             def _r(E, sdx, site):
-                _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 + E)
-                _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 - E)
+                _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 + E)
+                _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 - E)
 
                 res = (_np[sdx] - ni2[sdx]) \
                       / ((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))
@@ -76,8 +76,8 @@ def defectsF(sys, n, p, rho, r=None):
 
             # additional charge
             def _rho(E, sdx, site):
-                _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 + E)
-                _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 - E)
+                _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 + E)
+                _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 - E)
 
                 f = (se*ve[sdx]*_n[sdx] + sh*vh[sdx]*_p1) \
                   / (se*ve[sdx]*(_n[sdx]+_n1) + sh*vh[sdx]*(_p[sdx]+_p1))
@@ -126,8 +126,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         # multipurpose derivative of rho
         def drho(E, sdx, site, var):
-            _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 + E)
-            _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 - E)
+            _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 + E)
+            _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 - E)
 
             if var == 'v':
                 res = (b-a) * ((se*ve[sdx])**2*_n[sdx]*_n1 +\
@@ -150,8 +150,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
         # multipurpose derivative of recombination
         def dr(E, sdx, site, var):
-            _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 + E)
-            _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 - E)
+            _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 + E)
+            _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * np.exp(-sys.Eg[site]/2 - E)
 
             if var == 'efn':
                 res = _np[sdx]*((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))\
@@ -175,8 +175,8 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
         # actual computation of things
         if E is not None: # no integration, vectorize as much as possible
             # additional charge
-            _n1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 + E)
-            _p1 = np.sqrt(sys.Nc[site]*sys.Nv[site]) * exp(-sys.Eg[site]/2 - E)
+            _n1 = np.sqrt(sys.Nc[sites]*sys.Nv[sites]) * np.exp(-sys.Eg[sites]/2 + E)
+            _p1 = np.sqrt(sys.Nc[sites]*sys.Nv[sites]) * np.exp(-sys.Eg[sites]/2 - E)
 
             d = (se*ve*(_n+_n1)+sh*vh*(_p+_p1))**2
             drho_dv[sites] += N/dl * (b-a) * ((se*ve)**2*_n*_n1 + 2*sh*vh*se*ve*_np\

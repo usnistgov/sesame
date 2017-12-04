@@ -62,8 +62,8 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         defectsJ(sys, n, p, drho_dv)
 
     # charge devided by epsilon
-    rho = rho / sys.epsilon
-    drho_dv = drho_dv / sys.epsilon
+    #rho = rho / sys.epsilon
+    #drho_dv = drho_dv / sys.epsilon
 
     # reshape the array as array[y-indices, x-indices]
     _sites = np.arange(Nx*Ny, dtype=int).reshape(Ny, Nx)
@@ -86,18 +86,24 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
     dybar = (dy + dym1) / 2.
 
     #------------------------------ fv ----------------------------------------
-    fv = laplacian(v[sites-Nx], v[sites-1], v[sites], v[sites+1], v[sites+Nx],\
-                   dxm1, dx, dym1, dy, dxbar, dybar) - rho[sites]
+    eps_m1x = .5 * (sys.epsilon[sites-1] + sys.epsilon[sites])
+    eps_p1x = .5 * (sys.epsilon[sites+1] + sys.epsilon[sites])
+    eps_m1y = .5 * (sys.epsilon[sites-Nx] + sys.epsilon[sites])
+    eps_p1y = .5 * (sys.epsilon[sites+Nx] + sys.epsilon[sites])
+
+    fv = (eps_m1x*(v[sites] - v[sites-1])/dxm1 - eps_p1x*(v[sites+1] - v[sites])/dx) / dxbar\
+            + (eps_m1y*(v[sites] - v[sites-Nx])/dym1 - eps_p1y*(v[sites+Nx] - v[sites])/dy) / dybar\
+            - rho[sites]
 
     # update the vector rows for the inner part of the system
     vec[sites] = fv
 
     #-------------------------- fv derivatives --------------------------------
-    dvmN = -1./(dym1 * dybar)
-    dvm1 = -1./(dxm1 * dxbar)
-    dv = 2./(dx * dxm1) + 2./(dy * dym1) - drho_dv[sites]
-    dvp1 = -1./(dx * dxbar)
-    dvpN = -1./(dy * dybar)
+    dvmN = -eps_m1y*1./(dym1 * dybar)
+    dvm1 = -eps_m1x*1./(dxm1 * dxbar)
+    dv = eps_m1x/(dxm1*dxbar) + eps_p1x/(dx*dxbar) + eps_m1y/(dym1*dybar) + eps_p1y/(dy*dybar) - drho_dv[sites]
+    dvp1 = -eps_p1x*1./(dx * dxbar)
+    dvpN = -eps_p1y*1./(dy * dybar)
 
     # update the sparse matrix row and columns for the inner part of the system
     dfv_rows = zip(sites, sites, sites, sites, sites)
@@ -185,53 +191,69 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
 
+        eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+        eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+        eps_m1y = .5 * (sys.epsilon[sites - Nx] + sys.epsilon[sites])
+        eps_p1y = .5 * (sys.epsilon[sites-Nx*(Ny-1)] + sys.epsilon[sites])
+
         #---------------------------------- fv -------------------------------------
+
         vsmN = v[sites-Nx]
         vsm1 = v[sites-1]
         vs = v[sites]
         vsp1 = v[sites+1]
         vspN = v[sites - Nx*(Ny-1)]
 
-        fv = laplacian(vsmN, vsm1, vs, vsp1, vspN, dxm1, dx, \
-                       dym1, dy, dxbar, dybar) - rho[sites]
+        fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+             + (eps_m1y * (v[sites] - v[sites - Nx]) / dym1 - eps_p1y * (v[sites-Nx*(Ny-1)] - v[sites]) / dy) / dybar \
+             - rho[sites]
 
         # update the vector rows for the inner part of the system
         vec[sites] = fv
 
         #-------------------------- fv derivatives --------------------------------
-        dvmN = -1./(dym1 * dybar)
-        dvm1 = -1./(dxm1 * dxbar)
-        dv = 2./(dx * dxm1) + (1/dy + 1/dym1)/dybar - drho_dv[sites]
-        dvp1 = -1./(dx * dxbar)
-        dvmNN = -1./(dy * dybar)
+        dvmN = -eps_m1y * 1. / (dym1 * dybar)
+        dvm1 = -eps_m1x * 1. / (dxm1 * dxbar)
+        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) + eps_m1y / (dym1 * dybar) + eps_p1y / (dy * dybar) - drho_dv[sites]
+        dvp1 = -eps_p1x * 1. / (dx * dxbar)
+        dvpN = -eps_p1y * 1. / (dy * dybar)
 
         # update the sparse matrix row and columns
         dfv_rows = zip(sites, sites, sites, sites, sites)
         dfv_cols = zip(sites-Nx*(Ny-1), sites-Nx, sites-1, sites, sites+1)
-        dfv_data = zip(dvmNN, dvmN, dvm1, dv, dvp1)
+        dfv_data = zip(dvpN, dvmN, dvm1, dv, dvp1)
 
     else:
+
+        # list of sites
+        sites = _sites[Ny - 1, 1:Nx - 1].flatten()
+
         # lattice distances
         dx = sys.dx[1:]
         dxm1 = sys.dx[:-1]
         dy = 0
         dym1 = np.repeat(sys.dy[-1], Nx-2)
         dxbar = (dx + dxm1) / 2.
-        dybar = dym1
+        dybar = (dy + dym1) / 2.
+
+        eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+        eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+        eps_m1y = .5 * (sys.epsilon[sites - Nx] + sys.epsilon[sites])
 
         #---------------------------------- fv -------------------------------------
-        fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-           + ((v[sites]-v[sites-Nx]) / dym1) / dybar\
-           - rho[sites]
+        fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+             + (eps_m1y * (v[sites] - v[sites - Nx]) / dym1) / dybar \
+             - rho[sites]
 
         # update the vector rows for the inner part of the system
         vec[sites] = fv
 
         #-------------------------- fv derivatives --------------------------------
-        dvmN = -1./(dym1 * dybar)
-        dvm1 = -1./(dxm1 * dxbar)
-        dv = 2./(dx * dxm1) + 1/(dym1*dybar) - drho_dv[sites]
-        dvp1 = -1./(dx * dxbar)
+        dvmN = -eps_m1y * 1. / (dym1 * dybar)
+        dvm1 = -eps_m1x * 1. / (dxm1 * dxbar)
+        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) + eps_m1y / (dym1 * dybar)  - \
+             drho_dv[sites]
+        dvp1 = -eps_p1x * 1. / (dx * dxbar)
 
         # update the sparse matrix row and columns
         dfv_rows = zip(sites, sites, sites, sites)
@@ -257,6 +279,11 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         dxbar = (dx + dxm1) / 2.
         dybar = (dy + dym1) / 2.
 
+        eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+        eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+        eps_m1y = .5 * (sys.epsilon[sites+Nx*(Ny-1)] + sys.epsilon[sites])
+        eps_p1y = .5 * (sys.epsilon[sites + Nx] + sys.epsilon[sites])
+
         #---------------------------------- fv -------------------------------------
         vsmN = v[sites + Nx*(Ny-1)]
         vsm1 = v[sites-1]
@@ -264,46 +291,56 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         vsp1 = v[sites+1]
         vspN = v[sites+Nx]
 
-        fv = laplacian(vsmN, vsm1, vs, vsp1, vspN, dxm1, dx, \
-                       dym1, dy, dxbar, dybar) - rho[sites]
+        fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+             + (eps_m1y * (v[sites] - v[sites + Nx * (Ny - 1)]) / dym1 - eps_p1y * (v[sites + Nx] - v[sites]) / dy) / dybar \
+             - rho[sites]
 
         # update the vector rows for the inner part of the system
         vec[sites] = fv
 
         #-------------------------- fv derivatives --------------------------------
-        dvpNN = -1./(dym1 * dybar)
-        dvm1 = -1./(dxm1 * dxbar)
-        dv = 2./(dx * dxm1) + (1/dym1 + 1/dy)/dybar - drho_dv[sites]
-        dvp1 = -1./(dx * dxbar)
-        dvpN = -1./(dy * dybar)
+        dvmN = -eps_m1y * 1. / (dym1 * dybar)
+        dvm1 = -eps_m1x * 1. / (dxm1 * dxbar)
+        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) + eps_m1y / (dym1 * dybar) + eps_p1y / (dy * dybar) - \
+             drho_dv[sites]
+        dvp1 = -eps_p1x * 1. / (dx * dxbar)
+        dvpN = -eps_p1y * 1. / (dy * dybar)
 
         # update the sparse matrix row and columns
         dfv_rows = zip(sites, sites, sites, sites, sites)
         dfv_cols = zip(sites-1, sites, sites+1, sites+Nx, sites+Nx*(Ny-1))
-        dfv_data = zip(dvm1, dv, dvp1, dvpN, dvpNN)
+        dfv_data = zip(dvm1, dv, dvp1, dvpN, dvmN)
 
     else:
+        # list of sites
+        sites = _sites[0, 1:Nx - 1].flatten()
+
         # dxbar and dybar
         dx = sys.dx[1:]
         dxm1 = sys.dx[:-1]
         dy = np.repeat(sys.dy[0], Nx-2)
         dym1 = 0
         dxbar = (dx + dxm1) / 2.
-        dybar = dy
+        dybar = (dy + dym1) / 2.
+
+        eps_m1x = .5 * (sys.epsilon[sites - 1] + sys.epsilon[sites])
+        eps_p1x = .5 * (sys.epsilon[sites + 1] + sys.epsilon[sites])
+        eps_p1y = .5 * (sys.epsilon[sites + Nx] + sys.epsilon[sites])
 
         #---------------------------------- fv -------------------------------------
-        fv = ((v[sites]-v[sites-1]) / dxm1 - (v[sites+1]-v[sites]) / dx) / dxbar\
-           + (-(v[sites+Nx]-v[sites]) / dy) / dybar\
-           - rho[sites]
+        fv = (eps_m1x * (v[sites] - v[sites - 1]) / dxm1 - eps_p1x * (v[sites + 1] - v[sites]) / dx) / dxbar \
+             + (- eps_p1y * (v[sites + Nx] - v[sites]) / dy) / dybar \
+             - rho[sites]
 
         # update the vector rows for the inner part of the system
         vec[sites] = fv
 
         #-------------------------- fv derivatives --------------------------------
-        dvm1 = -1./(dxm1 * dxbar)
-        dv = 2./(dx * dxm1) + 1/(dy*dybar) - drho_dv[sites]
-        dvp1 = -1./(dx * dxbar)
-        dvpN = -1./(dy * dybar)
+        dvm1 = -eps_m1x * 1. / (dxm1 * dxbar)
+        dv = eps_m1x / (dxm1 * dxbar) + eps_p1x / (dx * dxbar) + eps_p1y / (dy * dybar) - \
+             drho_dv[sites]
+        dvp1 = -eps_p1x * 1. / (dx * dxbar)
+        dvpN = -eps_p1y * 1. / (dy * dybar)
 
         # update the sparse matrix row and columns
         dfv_rows = zip(sites, sites, sites, sites)

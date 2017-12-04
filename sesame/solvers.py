@@ -167,6 +167,7 @@ def newton(sys, x, equilibrium=None, tol=1e-6, periodic_bcs=True,\
                         # print status of solution procedure every so often
                         if verbose:
                             logging.info('step {0}, error = {1}'.format(cc, error))
+                            print('step {0}, error = {1}'.format(cc, error))
             except SparseSolverError:
                 msg = "\n********************************************"+\
                       "\n*   The linear system could not be solved  *"+\
@@ -370,6 +371,11 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
         if result is not None:
             name = file_name + "_{0}".format(idx)
             if fmt == 'mat':
+                if (sys.ny > 1):
+                    result.update(
+                        {'x': sys.xpts, 'y': sys.ypts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
+                else:
+                    result.update({'x': sys.xpts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
                 savemat(name, result)
             else:
                 np.savez(name, efn=result['efn'], efp=result['efp'],\

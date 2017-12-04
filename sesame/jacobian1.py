@@ -59,11 +59,6 @@ def getJ(sys, v, efn, efp):
     # derivatives of the bulk recombination rates
     dr_defn_s, dr_defp_s, dr_dv_s = get_bulk_rr_derivs(sys, n, p)
 
-    # charge is divided by epsilon
-    drho_defn_s = drho_defn_s / sys.epsilon
-    drho_defp_s = drho_defp_s / sys.epsilon
-    drho_dv_s = drho_dv_s / sys.epsilon
-
     ###########################################################################
     #                  inside the system: 0 < i < Nx-1                        #
     ###########################################################################
@@ -148,12 +143,14 @@ def getJ(sys, v, efn, efp):
     #--------------------------------------------------------------------------
     #---------------- fv derivatives inside the system ------------------------
     #--------------------------------------------------------------------------
+    eps_av_p = 1 / 2. * (sys.epsilon[sites+1] + sys.epsilon[sites])
+    eps_av_m = 1 / 2. * (sys.epsilon[sites] + sys.epsilon[sites-1])
     # compute the derivatives
-    dvm1 = -1./(dxm1 * dxbar)
-    dv = 2./(dx * dxm1) - drho_dv_s[sites]
+    dvm1 = -eps_av_m * 1. / (dxm1 * dxbar)
+    dv = eps_av_m / (dxm1 * dxbar) + eps_av_p / (dx * dxbar) - drho_dv_s[sites]
+    dvp1 = -eps_av_p * 1. / (dx * dxbar)
     defn = - drho_defn_s[sites]
     defp = - drho_defp_s[sites]
-    dvp1 = -1./(dx * dxbar)
 
     # update the sparse matrix row and columns for the inner part of the system
     dfv_rows = zip(3*sites+2, 3*sites+2,  3*sites+2, 3*sites+2, 3*sites+2)
