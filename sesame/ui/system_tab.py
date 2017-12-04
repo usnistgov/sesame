@@ -171,7 +171,6 @@ class BuilderBox(QWidget):
             self.table.setItem(idx,1, item)
 
 
-
     # display params of selected material
     def comboSelect(self):
         idx = self.box.currentIndex()
@@ -182,7 +181,6 @@ class BuilderBox(QWidget):
 
         for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
-        self.table.show()
 
     # add new material 
     def addMat(self):
@@ -208,7 +206,7 @@ class BuilderBox(QWidget):
     def saveMat(self):
         # set ID of material
         self.matNumber += 1
-        idx = self.box.currentIndex()
+        idx = self.matNumber
         self.materials_list.append({})
 
         # get location

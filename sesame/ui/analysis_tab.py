@@ -193,18 +193,17 @@ class Analysis(QWidget):
         vt = system.scaling.energy
         N  = system.scaling.density
         G  = system.scaling.generation
-        j  = system.scaling.current
+        J  = system.scaling.current
 
         # clear the figure
         self.linearFig.figure.clear()
 
         # test what kind of plot we are making
-
         Xdata = ev(self.Xdata.text())
-        Ytxt = self.quantity2.currentText()
+        txt = self.quantity2.currentText()
 
         # loop over the files and plot
-        for fileName in files:
+        for fdx, fileName in enumerate(files):
             data = np.load(fileName)
             az = Analyzer(system, data)
 
@@ -243,7 +242,10 @@ class Analysis(QWidget):
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
-                ax.plot(X, Ydata)
+                if txt == "Full steady state current":
+                    ax.plot(X[fdx], Ydata)
+                else:
+                    ax.plot(X, Ydata)
             else:
                 az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
                 

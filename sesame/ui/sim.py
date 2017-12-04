@@ -117,8 +117,10 @@ class SimulationWorker(QObject):
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)
-                system.g *= 10
-
+                    if solution is None:
+                        self.logger.info("The solver diverged. Aborting now.")
+                        return
+            
             # Loop over voltages
             sesame.IVcurve(system, loopValues, solution, veq, simName, tol=tol,\
                            periodic_bcs=BCs, maxiter=maxiter, verbose=True,\
@@ -153,13 +155,17 @@ class SimulationWorker(QObject):
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)
+                    if solution is None:
+                        self.logger.info("The solver diverged. Aborting now.")
+                        break
+
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
                     # add some system settings to the saved results
                     solution.update({'x': system.xpts, 'y': system.ypts,\
                                      'z': system.zpts, 'affinity': system.bl,\
                                      'Eg': system.Eg, 'Nc': system.Nc,\
-                                     'Nv': sys.Nv, 'epsilon': system.epsilon})
+                                     'Nv': system.Nv, 'epsilon': system.epsilon})
 
                     if fmt == 'mat':
                         savemat(name, solution)
