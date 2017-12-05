@@ -245,7 +245,7 @@ class Analysis(QWidget):
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
-                X = X * system.scaling.length * 1e6 # set length in um
+                X = X * 1e6 # set length in um
                 if txt == "Full steady state current":
                     ax.plot(X[fdx], Ydata, 'o')
                 else:
