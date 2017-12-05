@@ -176,8 +176,8 @@ class Builder():
             [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
             material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
             :sup:`2`/(V s)], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
-            energy level of the bulk recombination centers [eV], band_offset:
-            band offset setting the zero of potential [eV], B: radiation
+            energy level of the bulk recombination centers [eV], affinity:
+            electron affinity [eV], B: radiation
             recombination constant [m\ :sup:`3`/s], Cn (Cp): Auger recombination constant for
             electrons (holes) [m\ :sup:`6`/s], mass_e (mass_h): effective mass of electrons
             (holes).
@@ -199,7 +199,7 @@ class Builder():
         # default material parameters
         mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
               'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, 'tau_e': 1e-6,\
-              'tau_h': 1e-6, 'band_offset': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
+              'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
         for key in mat.keys():
             mt[key] = mat[key]
@@ -215,14 +215,14 @@ class Builder():
         self.mu_h[s]    = mt['mu_h'] / mu
         self.tau_e[s]   = mt['tau_e'] / t
         self.tau_h[s]   = mt['tau_h'] / t
-        self.bl[s]      = mt['band_offset'] / vt
+        self.bl[s]      = mt['affinity'] / vt
         self.B[s]       = mt['B'] / ((1./N)/t)
         self.Cn[s]      = mt['Cn'] / ((1./N**2)/t)
         self.Cp[s]      = mt['Cp'] / ((1./N**2)/t)
 
         Etrap = mt['Et'] / self.scaling.energy
-        self.n1[s]      = self.Nc[s] * np.exp(-self.Eg[s]/2 + Etrap)
-        self.p1[s]      = self.Nv[s] * np.exp(-self.Eg[s]/2 - Etrap)
+        self.n1[s]      = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + Etrap)
+        self.p1[s]      = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 - Etrap)
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
@@ -275,8 +275,8 @@ class Builder():
         sigma_h: float
             Hole capture cross section [m\ :sup:`2`].
         E: float 
-            Energy level of a single state defined with respect to E\ :sub:`g`/2
-            [eV]. Set to `None` for a continuum of states.
+            Energy level of a single state defined with respect to the intrinsic
+            Fermi level [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level
@@ -316,8 +316,8 @@ class Builder():
         sigma_h: float
             Hole capture cross section [m\ :sup:`2`].
         E: float 
-            Energy level of a single state defined with respect to E\ :sub:`g`/2
-            [eV]. Set to `None` for a continuum of states.
+            Energy level of a single state defined with respect to the intrinsic
+            Fermi level [eV]. Set to `None` for a continuum of states.
         transition: tuple
             Charge transition occurring at the energy level E.  The tuple (p, q)
             represents a defect with transition p/q (level empty to level

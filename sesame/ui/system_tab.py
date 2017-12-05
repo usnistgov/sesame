@@ -1,3 +1,8 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -149,7 +154,7 @@ class BuilderBox(QWidget):
         self.materials_list = []
 
         self.rows = ("Nc", "Nv", "Eg", "epsilon", "mass_e", "mass_h",\
-                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "band_offset",\
+                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "affinity",\
                      "B", "Cn", "Cp")
         columns = ("Value", "Unit")
         self.table.setVerticalHeaderLabels(self.rows)
@@ -164,7 +169,6 @@ class BuilderBox(QWidget):
             item = QTableWidgetItem(unit)
             item.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(idx,1, item)
-
 
 
     # display params of selected material
@@ -182,9 +186,8 @@ class BuilderBox(QWidget):
     def addMat(self):
         mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
                     'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0,\
-                    'tau_e': 1e-6, 'tau_h': 1e-6, 'band_offset': 0,\
+                    'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0,\
                     'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
-        self.materials_list.append(mt)
 
         # 1. reinitialize location
         self.loc.clear()
@@ -201,12 +204,10 @@ class BuilderBox(QWidget):
 
     # store data entered
     def saveMat(self):
-        # set combo box material ID
+        # set ID of material
         self.matNumber += 1
-        self.box.addItem("Material " + str(self.matNumber+1))
-        self.box.setCurrentIndex(self.matNumber)
-        # get ID of material
-        idx = self.box.currentIndex()
+        idx = self.matNumber
+        self.materials_list.append({})
 
         # get location
         loc = self.loc.text()
@@ -219,6 +220,9 @@ class BuilderBox(QWidget):
             key = self.rows[row]
             self.materials_list[idx][key] = float(txt)
 
+        # set combo box material ID
+        self.box.addItem("Material " + str(self.matNumber+1))
+        self.box.setCurrentIndex(self.matNumber)
 
     def builder3(self):
         layout3 = QVBoxLayout()
@@ -233,19 +237,21 @@ class BuilderBox(QWidget):
         defectBox.setLayout(vlayout)
         layout3.addWidget(defectBox)
 
-        # Add local charges
+        # Combo box to keep track of defects
         self.hbox = QHBoxLayout()
         self.defectBox = QComboBox()
-        self.defectBox.currentIndexChanged.connect(self.comboSelect2)
-        self.defectButton = QPushButton("Add defects")
-        saveButton = QPushButton("Save")
-        saveButton.clicked.connect(self.saveDefect)
         self.hbox.addWidget(self.defectBox)
-        self.hbox.addWidget(self.defectButton)
-        self.hbox.addWidget(saveButton)
-
+        self.defectBox.currentIndexChanged.connect(self.comboSelect2)
         self.defectNumber = -1
-        self.defectButton.clicked.connect(self.addDefects)
+
+        # Add and save buttons
+        defectButton = QPushButton("Add defects")
+        defectButton.clicked.connect(self.addDefects)
+        saveButton2 = QPushButton("Save")
+        saveButton2.clicked.connect(self.saveDefect)
+        self.hbox.addWidget(defectButton)
+        self.hbox.addWidget(saveButton2)
+
         vlayout.addLayout(self.hbox)
 
         # Reminder to save
@@ -276,13 +282,13 @@ class BuilderBox(QWidget):
         self.defects_list = []
 
         self.rows2 = ("Energy", "Density", "sigma_e", "sigma_h", "Transition")
-        self.ctable.setVerticalHeaderLabels(self.rows)
+        self.ctable.setVerticalHeaderLabels(self.rows2)
 
         columns = ("Value", "Unit")
         self.ctable.setHorizontalHeaderLabels(columns)
 
         self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
-        self.units2 = ["eV", u"cm\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
+        self.units2 = ["eV", u"m\u207B\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
 
         for idx, (val, unit) in enumerate(zip(self.defectValues, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(val))
@@ -324,12 +330,10 @@ class BuilderBox(QWidget):
             self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
             item = QTableWidgetItem(unit)
 
-
     # add new defect
     def addDefects(self):
         mt = {'Energy': "0", 'Density': "1e13", 'sigma_e':
         "1e-15", 'sigma_h': "1e-15", 'Transition': "1/0", 'location': None}
-        self.defects_list.append(mt)
 
         # 2. reinitialize location
         self.cloc.clear()
@@ -346,19 +350,17 @@ class BuilderBox(QWidget):
 
     # store data entered
     def saveDefect(self):
-        # add "material number" to combo box
+        # set ID of defect
         self.defectNumber += 1
-        self.defectBox.addItem("Defect " + str(self.defectNumber+1))
-        self.defectBox.setCurrentIndex(self.defectNumber)
-        # get ID of defect
-        idx = self.defectBox.currentIndex()
+        idx = self.defectNumber
+        self.defects_list.append({})
 
         # get location
         loc = self.cloc.text()
         self.defects_list[idx]['location'] = loc
 
         # get params
-        for row in range(4):
+        for row in range(5):
             item = self.ctable.item(row, 0)
             txt = item.text()
             key = self.rows2[row]
@@ -366,7 +368,11 @@ class BuilderBox(QWidget):
                 self.defects_list[idx][key] = float(txt)
             except:
                 self.defects_list[idx][key] = txt
-    
+
+        # add "defect number" to combo box
+        self.defectBox.addItem("Defect " + str(self.defectNumber+1))
+        self.defectBox.setCurrentIndex(self.defectNumber)
+
     def getSystemSettings(self):
         settings = {}
 

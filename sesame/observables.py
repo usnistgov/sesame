@@ -27,7 +27,7 @@ def get_n(sys, efn, v, sites):
     n: numpy array
     """
 
-    n = sys.Nc[sites] * exp(-sys.bl[sites]+efn[sites]+v[sites])
+    n = sys.Nc[sites] * exp(+sys.bl[sites]+efn[sites]+v[sites])
     return n
 
 def get_p(sys, efp, v, sites):
@@ -52,7 +52,7 @@ def get_p(sys, efp, v, sites):
     bl = sys.bl[sites]
     Eg = sys.Eg[sites]
     Nv = sys.Nv[sites]
-    p = Nv * exp(-Eg+bl+efp[sites]-v[sites])
+    p = Nv * exp(-Eg-bl+efp[sites]-v[sites])
     return p
 
 
@@ -89,7 +89,7 @@ def get_bulk_rr_derivs(sys, n, p):
 def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     """
     Compute the electron current between sites ``site_i`` and ``sites_ip1``.
-    
+
     Parameters
     ----------
     sys: Builder
@@ -106,32 +106,28 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
         Indices of the sites the current is going to.
     dl: numpy arrays of floats
         Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
-    
+
     Returns
     -------
     jn: numpy array of floats
     """
 
-    bl = sys.bl[sites_i]
+    vp0 = v[sites_i] + sys.bl[sites_i] + np.log(sys.Nc[sites_i])
+    dv = vp0 - (v[sites_ip1] + sys.bl[sites_ip1] + np.log(sys.Nc[sites_ip1]))
+    dv = dv + (np.abs(dv) < 1e-5) * 1e-5
 
-    vp0 = v[sites_i]
-    dv = vp0 - v[sites_ip1]
-    efnp0= efn[sites_i]
+    efnp0 = efn[sites_i]
     efnp1 = efn[sites_ip1]
 
-    Nc = sys.Nc[sites_i]
     mu = sys.mu_e[sites_i]
+    jn =    mu * (exp(efnp1) - exp(efnp0)) / dl * dv / (-exp(-vp0) * (1 - exp(dv)))
 
-    dv = dv + (np.abs(dv) < 1e-5)*1e-5
-
-    jn = Nc * mu * exp(-bl) * (exp(efnp1) - exp(efnp0)) / dl * \
-         dv / (-exp(-vp0)*(1 - exp(dv)))
     return jn
 
 def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     """
     Compute the hole current between sites ``site_i`` and ``sites_ip1``.
-    
+
     Parameters
     ----------
     sys: Builder
@@ -148,90 +144,69 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
         Indices of the sites the current is going to.
     dl: numpy arrays of floats
         Lattice distances between sites ``sites_i`` and sites ``sites_ip1``.
-    
+
     Returns
     -------
     jp: numpy array of floats
     """
 
-    bl = sys.bl[sites_i]
+    vp0 = v[sites_i] + sys.bl[sites_i] + sys.Eg[sites_i] - np.log(sys.Nv[sites_i])
+    dv = vp0 - (v[sites_ip1] + sys.bl[sites_ip1] + sys.Eg[sites_ip1] - np.log(sys.Nv[sites_ip1]))
+    dv = dv + (np.abs(dv) < 1e-5) * 1e-5
 
-    vp0 = v[sites_i]
-    dv = vp0 - v[sites_ip1]
     efpp0= efp[sites_i]
     efpp1 = efp[sites_ip1]
 
-    Nv = sys.Nv[sites_i]
-    Eg = sys.Eg[sites_i]
     mu = sys.mu_h[sites_i]
-
-    dv = dv + (np.abs(dv) < 1e-5)*1e-5
-
-    jp = Nv * mu * exp(-Eg + bl) * (exp(efpp1) - exp(efpp0)) / dl *\
-         dv / (-exp(vp0)*(1 - exp(-dv)))
+    jp = mu * (exp(efpp1) - exp(efpp0)) / dl * dv / (-exp(vp0) * (1 - exp(-dv)))
 
     return jp
 
 def get_jn_derivs(sys, efn, v, sites_i, sites_ip1, dl):
-    bl = sys.bl[sites_i]
 
-    vp0 = v[sites_i]
-    vp1 = v[sites_ip1]
+    vp0 = v[sites_i] + sys.bl[sites_i] + np.log(sys.Nc[sites_i])
+    vp1 = v[sites_ip1] + sys.bl[sites_ip1] + np.log(sys.Nc[sites_ip1])
     dv = vp0 - vp1
-    efnp0= efn[sites_i]
-    efnp1 = efn[sites_ip1]
+    dv = dv + (np.abs(dv) < 1e-5) * 1e-5
 
-    Nc = sys.Nc[sites_i]
+    efnp0 = efn[sites_i]
+    efnp1 = efn[sites_ip1]
     mu = sys.mu_e[sites_i]
 
-    dv = dv + (np.abs(dv) < 1e-5)*1e-5
-
     ev0 = exp(-vp0)
-    ep1 = exp(-bl+efnp1)
-    ep0 = exp(-bl+efnp0)
+    ep1 = exp(efnp1)
+    ep0 = exp(efnp0)
 
-    defn_i = 1./dl * ep0 * (-dv) / (-ev0*(1 - exp(dv)))
+    defn_i = 1. / dl * exp(efnp0 + vp0) * (dv) / (1 - exp(dv))
+    defn_ip1 = -1. / dl * exp(efnp1 + vp0) * (dv) / (1 - exp(dv))
+    dv_i = -(ep1 - ep0)/ dl * ev0 * (1 + dv - exp(dv)) / (ev0 ** 2 * (exp(dv) - 1) ** 2)
+    dv_ip1 = -1. / dl * (ep1 - ep0) * exp(-vp1) * (1 - dv - exp(-dv)) / (exp(-2 * vp1) * (1 - exp(-dv)) ** 2)
 
-    defn_ip1 = -1./dl * ep1 * (-dv) / (-ev0 * (1 - exp(dv)))
+    return mu*defn_i, mu*defn_ip1, mu*dv_i, mu*dv_ip1
 
-    dv_i = -1./dl * (ep1 - ep0) * ev0*(1 + dv - exp(dv))\
-           / (ev0**2 * (exp(dv)-1)**2)
-
-    dv_ip1 = -1./dl * (ep1 - ep0) * exp(-vp1) * (1 - dv - exp(-dv))\
-            / (exp(-2*vp1) * (1-exp(-dv))**2)
-
-    return mu*Nc*defn_i, mu*Nc*defn_ip1, mu*Nc*dv_i, mu*Nc*dv_ip1   
 
 def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
-    bl = sys.bl[sites_i]
 
-    vp0 = v[sites_i]
-    vp1 = v[sites_ip1]
+    vp0 = v[sites_i] + sys.bl[sites_i] + sys.Eg[sites_i] - np.log(sys.Nv[sites_i])
+    vp1 = v[sites_ip1] + sys.bl[sites_ip1] + sys.Eg[sites_ip1] - np.log(sys.Nv[sites_ip1])
     dv = vp0 - vp1
-    efpp0= efp[sites_i]
-    efpp1 = efp[sites_ip1]
+    dv = dv + (np.abs(dv) < 1e-5) * 1e-5
 
-    Nv = sys.Nv[sites_i]
-    Eg = sys.Eg[sites_i]
+    efpp0 = efp[sites_i]
+    efpp1 = efp[sites_ip1]
     mu = sys.mu_h[sites_i]
 
-    dv = dv + (np.abs(dv) < 1e-5)*1e-5
-
     ev0 = exp(vp0)
-    ep1 = exp(bl+efpp1-Eg)
-    ep0 = exp(bl+efpp0-Eg)
+    ep1 = exp(efpp1)
+    ep0 = exp(efpp0)
 
-    defp_i = 1/dl * ep0 * (-dv) / (-ev0 * (1 - exp(-dv)))
+    defp_i = exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv)))
+    defp_ip1 = -exp(efpp1 - vp0) * dv / (dl * (1 - exp(-dv)))
+    dv_i = -(ep0 - ep1) * ev0*(exp(-dv) + (-1 + dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
+    dv_ip1 = -(ep0 - ep1) * ev0*(1 + exp(-dv)*(-1 - dv)) / (dl * exp(2*vp0)*(1 - exp(-dv))**2)
 
-    defp_ip1 = 1/dl * ep1 * (-dv) / (ev0 * (1 - exp(-dv)))
+    return mu*defp_i, mu*defp_ip1, mu*dv_i, mu*dv_ip1
 
-    dv_i = -1/dl * (ep1 - ep0) * ev0 * (1-dv - exp(-dv))\
-           / (ev0**2*((exp(-dv)-1)**2))
-
-    dv_ip1 = -1/dl * (ep1 - ep0) * exp(vp1) * (1+dv - exp(dv))\
-            / (exp(2*vp1)*((1-exp(dv))**2))
-
-    return mu*Nv*defp_i, mu*Nv*defp_ip1, mu*Nv*dv_i, mu*Nv*dv_ip1
 
 def get_srh_rr_derivs(sys, n, p, n1, p1, tau_e, tau_h):
     ni2 = n1 * p1

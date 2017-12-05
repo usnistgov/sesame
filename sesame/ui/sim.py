@@ -1,3 +1,8 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 import sesame
 import numpy as np
 from numpy import exp
@@ -77,12 +82,15 @@ class SimulationWorker(QObject):
 
         if solution is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
-        # Make a copy of the equilibrium potential
-        veq = np.copy(solution['v'])
-        # Initial arrays for the quasi-Fermi levels
-        efn = np.zeros((system.nx*system.ny*system.nz,))
-        efp = np.zeros((system.nx*system.ny*system.nz,))
-        solution.update({'efn': efn, 'efp': efp})
+            # Make a copy of the equilibrium potential
+            veq = np.copy(solution['v'])
+            # Initial arrays for the quasi-Fermi levels
+            efn = np.zeros((system.nx*system.ny*system.nz,))
+            efp = np.zeros((system.nx*system.ny*system.nz,))
+            solution.update({'efn': efn, 'efp': efp})
+        else:
+            self.logger.info("The solver failed to converge for the electrostatic potential")
+            return
 
         #===========================================================
         # Loop over voltages
@@ -109,8 +117,10 @@ class SimulationWorker(QObject):
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)
-                system.g *= 10
-
+                    if solution is None:
+                        self.logger.info("The solver diverged. Aborting now.")
+                        return
+            
             # Loop over voltages
             sesame.IVcurve(system, loopValues, solution, veq, simName, tol=tol,\
                            periodic_bcs=BCs, maxiter=maxiter, verbose=True,\
@@ -145,16 +155,25 @@ class SimulationWorker(QObject):
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)
+                    if solution is None:
+                        self.logger.info("The solver diverged. Aborting now.")
+                        break
+
                 if solution is not None:
-                    name = fileName + "_{0}".format(idx)
+                    name = simName + "_{0}".format(idx)
+                    # add some system settings to the saved results
+                    solution.update({'x': system.xpts, 'y': system.ypts,\
+                                     'z': system.zpts, 'affinity': system.bl,\
+                                     'Eg': system.Eg, 'Nc': system.Nc,\
+                                     'Nv': system.Nv, 'epsilon': system.epsilon})
+
                     if fmt == 'mat':
                         savemat(name, solution)
                     else:
-                        np.savez(name, efn=solution['efn'], efp=solution['efp'],\
-                                 v=solution['v'])
+                        np.savez_compressed(name, **solution)
                 else:
                     self.logger.info("The solver failed to converge for the parameter value"\
                           + " {0} (index {1}).".format(p, idx))
                     self.logger.info("Aborting now.")
-                    exit(1)
+                    break
             self.logger.info("********** Calculations completed **********")

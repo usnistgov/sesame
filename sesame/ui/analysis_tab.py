@@ -1,3 +1,8 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -9,6 +14,7 @@ import logging
 from .plotbox import *
 from .common import parseSettings, slotError
 from ..analyzer import Analyzer
+from ..plotter import plot
 
 
 class Analysis(QWidget):
@@ -44,7 +50,10 @@ class Analysis(QWidget):
         twoDBox = QGroupBox("Surface plot")
         twoDLayout = QVBoxLayout()
         self.quantity = QComboBox()
-        quantities = ["Choose one", "Electron current", "Hole current"]
+        quantities = ["Choose one", "Electron quasi-Fermi level",\
+        "Hole quasi-Fermi level", "Electrostatic potential",\
+        "Electron density", "Hole density", "Bulk SRH recombination",\
+        "Electron current", "Hole current"]
         self.quantity.addItems(quantities)
         twoDLayout.addWidget(self.quantity)
         self.plotBtnS = QPushButton("Plot")
@@ -135,9 +144,33 @@ class Analysis(QWidget):
             # make an instance of the Analyzer
             az = Analyzer(system, data)
 
+            # scalings
+            vt = system.scaling.energy
+            N  = system.scaling.density
+            G  = system.scaling.generation
+            j  = system.scaling.current
+
             # plot
             txt = self.quantity.currentText()
             self.surfaceFig.figure.clear()
+            dmap = None
+            if txt == "Electron quasi-Fermi level":
+                dmap = vt * az.efn
+            if txt == "Hole quasi-Fermi level":
+                dmap = vt * az.efp
+            if txt == "Electrostatic potential":
+                dmap = vt * az.v
+            if txt == "Electron density":
+                dmap = N * az.electron_density()
+            if txt == "Hole density":
+                dmap = N * az.hole_density()
+            if txt == "Shockley-Read-Hall recombination":
+                dmap = G * az.bulk_srh_rr()
+            
+            if dmap != None:
+                plot(system, dmap, scale=1e-6, cmap='viridis',\
+                     fig=self.surfaceFig.figure)
+ 
             if txt == "Electron current":
                 az.current_map(True, 'viridis', 1e6, fig=self.surfaceFig.figure)
 
@@ -160,18 +193,17 @@ class Analysis(QWidget):
         vt = system.scaling.energy
         N  = system.scaling.density
         G  = system.scaling.generation
-        j  = system.scaling.current
+        J  = system.scaling.current
 
         # clear the figure
         self.linearFig.figure.clear()
 
         # test what kind of plot we are making
-
         Xdata = ev(self.Xdata.text())
-        Ytxt = self.quantity2.currentText()
+        txt = self.quantity2.currentText()
 
         # loop over the files and plot
-        for fileName in files:
+        for fdx, fileName in enumerate(files):
             data = np.load(fileName)
             az = Analyzer(system, data)
 
@@ -179,6 +211,7 @@ class Analysis(QWidget):
             if isinstance(Xdata[0], tuple):
                 X, sites = az.line(system, Xdata[0], Xdata[1])
                 X = X * system.scaling.length * 1e6 # set length in um
+                p1, p2 = Xdata
             else:
                 X = Xdata
 
@@ -209,7 +242,10 @@ class Analysis(QWidget):
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
-                ax.plot(X, Ydata)
+                if txt == "Full steady state current":
+                    ax.plot(X[fdx], Ydata)
+                else:
+                    ax.plot(X, Ydata)
             else:
                 az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
                 
