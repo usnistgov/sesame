@@ -94,11 +94,13 @@ def Bresenham(system, p1, p2):
             condition = e1 < e2
         if condition:
             j += incy
+            # if j went over the edge, break
             if j == system.ny - 1:
                 break
             X.append(X[-1] + system.dy[j])
         else:
             i += incx
+            # if i went over the edge, break
             if i == system.nx - 1:
                 break
             X.append(X[-1] + system.dx[i])
@@ -106,10 +108,6 @@ def Bresenham(system, p1, p2):
         icoord.append(i)
         jcoord.append(j)
         kcoord.append(k1)
-
-        # stop if we arrive at an edge
-        if i == system.nx-1 or j == system.ny-1:
-            break
 
     sites = np.asarray(sites)
     X = np.asarray(X)
