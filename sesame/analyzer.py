@@ -106,7 +106,11 @@ class Analyzer():
 
         """
         p1, p2 = location
-        X, sites = self.line(self.sys, p1, p2)
+        if self.sys.dimension == 1:
+            X = self.sys.xpts
+            sites = np.arange(self.sys.nx, dtype=int)
+        if self.sys.dimension == 2:
+            X, sites = self.line(self.sys, p1, p2)
 
         show = False
         if fig is None:
