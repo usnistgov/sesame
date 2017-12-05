@@ -121,9 +121,12 @@ class Analyzer():
 
         l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
         l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
+        l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
+        l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
 
         fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
                               r'$\mathregular{-E_{F_p}}$'])
+
 
         ax.set_xlabel('position (µm)')
         ax.set_ylabel('Energy (eV)')

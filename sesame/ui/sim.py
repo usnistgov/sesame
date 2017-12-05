@@ -56,15 +56,15 @@ class SimulationWorker(QObject):
         nx = system.nx
         # determine what the potential on the left and right might be
         if system.rho[0] < 0: # p-doped
-            phi_left = -system.Eg[0] - np.log(abs(system.rho[0])/system.Nv[0])
+            phi_left = -system.Eg[0] - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
         else: # n-doped
-            phi_left = np.log(system.rho[0]/system.Nc[0])
+            phi_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
 
         if system.rho[nx-1] < 0:
-            phi_right = -system.Eg[nx-1] - np.log(abs(system.rho[nx-1])/system.Nv[nx-1])
+            phi_right = -system.Eg[nx-1] - np.log(abs(system.rho[nx-1])/system.Nv[nx-1]) - system.bl[nx-1]
             q = 1
         else:
-            phi_right = np.log(system.rho[nx-1]/system.Nc[nx-1])
+            phi_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
             q = -1
 
         # Make a linear guess and solve for the eqilibrium potential

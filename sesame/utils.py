@@ -94,9 +94,13 @@ def Bresenham(system, p1, p2):
             condition = e1 < e2
         if condition:
             j += incy
+            if j == system.ny - 1:
+                break
             X.append(X[-1] + system.dy[j])
         else:
             i += incx
+            if i == system.nx - 1:
+                break
             X.append(X[-1] + system.dx[i])
         sites.append(i + j*system.nx + k1*system.nx*system.ny)
         icoord.append(i)
