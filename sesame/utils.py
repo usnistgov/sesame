@@ -102,6 +102,11 @@ def Bresenham(system, p1, p2):
         icoord.append(i)
         jcoord.append(j)
         kcoord.append(k1)
+
+        # stop if we arrive at an edge
+        if i == system.nx-1 or j == system.ny-1:
+            break
+
     sites = np.asarray(sites)
     X = np.asarray(X)
     return sites, X, icoord, jcoord, kcoord

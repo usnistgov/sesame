@@ -104,9 +104,13 @@ class Window(QMainWindow):
 
         self.setWindowTitle('Sesame')
         # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
-        self.setGeometry(0,0, 1200,400)
+        # Create geomtry and center the window
+        self.setGeometry(0,0,1200,400)
+        windowFrame = self.frameGeometry()
+        screenCenter = QDesktopWidget().availableGeometry().center()
+        windowFrame.moveCenter(screenCenter)
+        self.move(windowFrame.topLeft())
         self.show()
-        # self.showMaximized()
 
     def setSystem(self, grid, doping, materials, defects, gen, param):
         build = self.table.build
@@ -170,13 +174,17 @@ class Window(QMainWindow):
                 build.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
                 item = QTableWidgetItem(unit)
                 item.setFlags(Qt.ItemIsEnabled)
-                self.ctable.setItem(idx,1, item)
+                build.ctable.setItem(idx,1, item)
             build.ctable.show()
 
 
-    def setSimulation(self, loopValues, workDir, fileName, ext, BCs,\
-                            ScnL, ScpL, ScnR, ScpR, precision,\
-                             maxSteps, useMumps, iterative):
+    def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
+                      BCs, ScnL, ScpL, ScnR, ScpR, precision, maxSteps,\
+                      useMumps, iterative):
+        if voltageLoop:
+            self.table.simulation.voltage.setChecked(True)
+        else:
+            self.table.simulation.other.setChecked(True)
         self.table.simulation.loopValues.setText(loopValues)
         self.table.simulation.workDirName.setText(workDir)
         self.table.simulation.fileName.setText(fileName)
@@ -220,6 +228,7 @@ class Window(QMainWindow):
             self.setSystem(ev(grid), ev(doping), ev(materials), ev(defects),\
                            gen, param)
 
+            voltageLoop = config.getboolean('Simulation', 'Voltage loop')
             loopValues = config.get('Simulation', 'Loop values')
             workDir = config.get('Simulation', 'Working directory')
             fileName = config.get('Simulation', 'Simulation name')
@@ -232,10 +241,10 @@ class Window(QMainWindow):
             precision = config.get('Simulation', 'Newton precision')
             maxSteps = config.get('Simulation', 'Maximum steps')
             useMumps = config.getboolean('Simulation', 'Use Mumps')
-            iterative = config.get('Simulation', 'Iterative solver')
-            self.setSimulation(loopValues, workDir, fileName, ext, BCs,\
-                                ScnL, ScpL, ScnR, ScpR, precision,\
-                                maxSteps, useMumps, iterative)
+            iterative = config.getboolean('Simulation', 'Iterative solver')
+            self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
+                               ext, BCs, ScnL, ScpL, ScnR, ScpR, precision,\
+                               maxSteps, useMumps, iterative)
 
             f.close()
 
@@ -244,7 +253,6 @@ class Window(QMainWindow):
         if self.cfgFile != '':
             self.saveConfig()
 
-    @slotError()
     def saveConfig(self):
 
         if not hasattr(self, 'cfgFile'):
@@ -270,6 +278,8 @@ class Window(QMainWindow):
                 config.set('System', 'Generation rate', gen)
                 config.set('System', 'Generation parameter', param)
 
+                config.set('Simulation', 'Voltage loop',\
+                                            str(simu.voltage.isChecked()))
                 config.set('Simulation', 'Loop values', simu.loopValues.text())
                 config.set('Simulation', 'Working directory', simu.workDirName.text())
                 config.set('Simulation', 'Simulation name', simu.fileName.text())

@@ -113,7 +113,7 @@ class SimulationWorker(QObject):
                 system.g /= 1e10
                 for a in range(10):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
-                    system.g *= 10**a
+                    system.g *= 10
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)
@@ -151,7 +151,7 @@ class SimulationWorker(QObject):
                 system.g /= 1e10
                 for a in range(11):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
-                    system.g *= 10**a
+                    system.g *= 10
                     solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
                                             periodic_bcs=BCs, maxiter=maxiter,\
                                             use_mumps=useMumps, iterative=iterative)

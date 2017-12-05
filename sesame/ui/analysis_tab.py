@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
  
+import os
 from ast import literal_eval as ev
 import numpy as np 
 import logging
@@ -117,6 +118,7 @@ class Analysis(QWidget):
         dialog = QFileDialog()
         paths = dialog.getOpenFileNames(self, "Select files")[0]
         for i, path in enumerate(paths):
+            path = os.path.basename(path)
             self.dataList.insertItem (i, path )
 
     @slotError("bool")
@@ -164,7 +166,7 @@ class Analysis(QWidget):
                 dmap = N * az.electron_density()
             if txt == "Hole density":
                 dmap = N * az.hole_density()
-            if txt == "Shockley-Read-Hall recombination":
+            if txt == "Bulk SRH recombination":
                 dmap = G * az.bulk_srh_rr()
             
             if dmap != None:
@@ -243,7 +245,7 @@ class Analysis(QWidget):
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
                 if txt == "Full steady state current":
-                    ax.plot(X[fdx], Ydata)
+                    ax.plot(X[fdx], Ydata, 'o')
                 else:
                     ax.plot(X, Ydata)
             else:
