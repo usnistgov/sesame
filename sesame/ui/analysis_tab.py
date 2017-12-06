@@ -39,11 +39,21 @@ class Analysis(QWidget):
 
         FileBox = QGroupBox("Import data")
         dataLayout = QVBoxLayout()
+
+        # Select and remove buttons
+        btnsLayout = QHBoxLayout()
         self.dataBtn = QPushButton("Select files...")
         self.dataBtn.clicked.connect(self.browse)
+        self.dataRemove = QPushButton("Remove selected")
+        self.dataRemove.clicked.connect(self.remove)
+        btnsLayout.addWidget(self.dataBtn)
+        btnsLayout.addWidget(self.dataRemove)
+        dataLayout.addLayout(btnsLayout)
+
+        # List itself
         self.dataList = QListWidget()
         self.dataList.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        dataLayout.addWidget(self.dataBtn)
+        self.dataList.setDragDropMode(QAbstractItemView.InternalMove)
         dataLayout.addWidget(self.dataList)
         FileBox.setLayout(dataLayout)
         prepare.addWidget(FileBox)
@@ -120,6 +130,11 @@ class Analysis(QWidget):
         for i, path in enumerate(paths):
             path = os.path.basename(path)
             self.dataList.insertItem (i, path )
+
+    def remove(self):
+        # remove the selected files from the list
+        for i in self.dataList.selectedItems():
+            self.dataList.takeItem(self.dataList.row(i))
 
     @slotError("bool")
     def surfacePlot(self, checked):
@@ -212,7 +227,6 @@ class Analysis(QWidget):
             if isinstance(Xdata[0], tuple):
                 if system.dimension == 1:
                     X = system.xpts
-                    X = X * system.scaling.length
                     sites = np.arange(system.nx, dtype=int)
                 if system.dimension == 2:
                     X, sites = az.line(system, Xdata[0], Xdata[1])
