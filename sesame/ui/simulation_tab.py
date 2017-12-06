@@ -275,13 +275,13 @@ class Simulation(QWidget):
 
         # define a thread in which to run the simulation
         self.thread = QThread(self)
-        self.thread.start()
 
         # add worker to thread and run simulation
         self.simulation = SimulationWorker(loop, system, solverSettings, generation, paramName)
         self.simulation.moveToThread(self.thread)
-        self.simulation.start.connect(self.simulation.run)
-        self.simulation.start.emit("hello")
+        self.simulation.simuDone.connect(self.thread_cleanup)
+        self.thread.started.connect(self.simulation.run)
+        self.thread.start()
 
     @pyqtSlot(str)
     def displayMessage(self, message):
@@ -290,6 +290,10 @@ class Simulation(QWidget):
 
     def stop(self):
         if self.thread.isRunning():
-            self.thread.terminate()
-            self.thread.wait()
+            self.simulation.abortSim()
+            self.thread_cleanup()
             self.logger.critical("****** Calculation interrupted manually ******")
+
+    def thread_cleanup(self):
+        self.thread.quit()
+        self.thread.wait()

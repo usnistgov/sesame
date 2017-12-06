@@ -229,7 +229,7 @@ class Analysis(QWidget):
                 Ydata = N * az.electron_density()[sites]
             if txt == "Hole density":
                 Ydata = N * az.hole_density()[sites]
-            if txt == "Shockley-Read-Hall recombination":
+            if txt == "Bulk SRH recombination":
                 Ydata = G * az.bulk_srh_rr()[sites]
             if txt == "Electron current along x":
                 Ydata = J * az.electron_current(component='x')[sites]

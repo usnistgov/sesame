@@ -14,6 +14,8 @@ logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
 
 class SimulationWorker(QObject):
 
+    simuDone = pyqtSignal()
+
     def __init__(self, loop, system, solverSettings,\
                        generation, paramName, parent=None):
         super(SimulationWorker, self).__init__()
@@ -27,12 +29,11 @@ class SimulationWorker(QObject):
         self.paramName = paramName
 
         self.logger = logging.getLogger(__name__)
+        self.abort = False
  
-
-    def __del__(self):
-        self.wait()
-
-    start = pyqtSignal(str)
+    @pyqtSlot()
+    def abortSim(self):
+        self.abort = True
 
     @pyqtSlot()
     def run(self):
@@ -92,6 +93,9 @@ class SimulationWorker(QObject):
             self.logger.info("The solver failed to converge for the electrostatic potential")
             return
 
+        if self.abort:
+            return
+
         #===========================================================
         # Loop over voltages
         #===========================================================
@@ -120,12 +124,61 @@ class SimulationWorker(QObject):
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
                         return
+                    if self.abort:
+                        return
             
             # Loop over voltages
-            sesame.IVcurve(system, loopValues, solution, veq, simName, tol=tol,\
-                           periodic_bcs=BCs, maxiter=maxiter, verbose=True,\
-                           use_mumps=useMumps,\
-                           iterative=iterative, fmt=fmt)
+            # sesame.IVcurve(system, loopValues, solution, veq, simName, tol=tol,\
+            #                periodic_bcs=BCs, maxiter=maxiter, verbose=True,\
+            #                use_mumps=useMumps,\
+            #                iterative=iterative, fmt=fmt)
+
+            # sites of the right contact
+            nx = system.nx
+            s = [nx-1 + j*nx + k*nx*system.ny for k in range(system.nz)\
+                                           for j in range(system.ny)]
+
+            # sign of the voltage to apply
+            if system.rho[nx-1] < 0:
+                q = 1
+            else:
+                q = -1
+
+            # Loop over the applied potentials made dimensionless
+            Vapp = loopValues / system.scaling.energy
+            for idx, vapp in enumerate(Vapp):
+                logging.info("Applied voltage: {0} V".format(loopValues[idx]))
+
+                # Apply the voltage on the right contact
+                solution['v'][s] = veq[s] + q*vapp
+
+                # Call the Drift Diffusion Poisson solver
+                solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
+                                            periodic_bcs=BCs, maxiter=maxiter,\
+                                            use_mumps=useMumps, iterative=iterative)
+
+                if self.abort:
+                    return
+
+                if solution is not None:
+                    name = simName + "_{0}".format(idx)
+
+                    # add some system settings to the saved results
+                    solution.update({'x': system.xpts, 'y': system.ypts, \
+                                     'z': system.zpts, 'affinity': system.bl,\
+                                     'Eg': system.Eg, 'Nc': system.Nc,\
+                                     'Nv': system.Nv,\
+                                     'epsilon': system.epsilon})
+
+                    if fmt == 'mat':
+                        savemat(name, solution)
+                    else:
+                        np.savez_compressed(name, **solution)
+                else:
+                    logging.info("The solver failed to converge for the applied voltage"\
+                          + " {0} V (index {1}).".format(voltages[idx], idx))
+                    break
+
             if solution is not None:
                 self.logger.info("********** Calculations completed **********")
 
@@ -158,6 +211,8 @@ class SimulationWorker(QObject):
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
                         break
+                    if self.abort:
+                        return
 
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
@@ -167,6 +222,8 @@ class SimulationWorker(QObject):
                                      'Eg': system.Eg, 'Nc': system.Nc,\
                                      'Nv': system.Nv, 'epsilon': system.epsilon})
 
+                    if self.abort:
+                        return
                     if fmt == 'mat':
                         savemat(name, solution)
                     else:
@@ -177,3 +234,6 @@ class SimulationWorker(QObject):
                     self.logger.info("Aborting now.")
                     break
             self.logger.info("********** Calculations completed **********")
+
+        # tell main thread to quit this thread
+        self.simuDone.emit()
