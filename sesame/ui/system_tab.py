@@ -170,10 +170,45 @@ class BuilderBox(QWidget):
             item.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(idx,1, item)
 
+        mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
+              'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, \
+              'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0, \
+              'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
+
+        # 1. reinitialize location
+        self.loc.clear()
+        self.loc.show()
+        self.lbl.show()
+        self.ex.show()
+
+        # 2. reinitialize table
+        values = [mt[i] for i in self.rows]
+        for idx, (val, unit) in enumerate(zip(values, self.units)):
+            self.table.setItem(idx, 0, QTableWidgetItem(str(val)))
+        self.table.show()
+
+        self.matNumber += 1
+        idx = self.matNumber
+        self.materials_list.append({})
+
+        loc = self.loc.text()
+        self.materials_list[idx]['location'] = loc
+
+        # get params
+        for row in range(15):
+            item = self.table.item(row, 0)
+            txt = item.text()
+            key = self.rows[row]
+            self.materials_list[idx][key] = float(txt)
+
+        self.box.addItem("Material " + str(self.matNumber + 1))
+        self.box.setCurrentIndex(self.matNumber)
+
 
     # display params of selected material
     def comboSelect(self):
         idx = self.box.currentIndex()
+        self.matNumber = idx
         mat = self.materials_list[idx]
         values = [mat[i] for i in self.rows]
 
@@ -201,11 +236,8 @@ class BuilderBox(QWidget):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
         self.table.show()
 
-
-    # store data entered
-    def saveMat(self):
-        # set ID of material
-        self.matNumber += 1
+        #self.matNumber += 1
+        self.matNumber = self.materials_list.__len__()
         idx = self.matNumber
         self.materials_list.append({})
 
@@ -220,9 +252,32 @@ class BuilderBox(QWidget):
             key = self.rows[row]
             self.materials_list[idx][key] = float(txt)
 
-        # set combo box material ID
-        self.box.addItem("Material " + str(self.matNumber+1))
+        self.box.addItem("Material " + str(self.matNumber + 1))
         self.box.setCurrentIndex(self.matNumber)
+
+
+
+    # store data entered
+    def saveMat(self):
+        # set ID of material
+        #self.matNumber += 1
+        idx = self.matNumber
+        #self.materials_list.append({})
+
+        # get location
+        loc = self.loc.text()
+        self.materials_list[idx]['location'] = loc
+
+        # get params
+        for row in range(15):
+            item = self.table.item(row, 0)
+            txt = item.text()
+            key = self.rows[row]
+            self.materials_list[idx][key] = float(txt)
+
+        # set combo box material ID
+        #self.box.addItem("Material " + str(self.matNumber+1))
+        #self.box.setCurrentIndex(self.matNumber)
 
     def builder3(self):
         layout3 = QVBoxLayout()
@@ -321,6 +376,7 @@ class BuilderBox(QWidget):
     # display params of selected defect
     def comboSelect2(self):
         idx = self.defectBox.currentIndex()
+        self.defectNumber = idx
         defect = self.defects_list[idx]
         values = [defect[i] for i in self.rows2]
 
@@ -347,11 +403,7 @@ class BuilderBox(QWidget):
             self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
         self.ctable.show()
 
-
-    # store data entered
-    def saveDefect(self):
-        # set ID of defect
-        self.defectNumber += 1
+        self.defectNumber = self.defects_list.__len__()
         idx = self.defectNumber
         self.defects_list.append({})
 
@@ -370,8 +422,34 @@ class BuilderBox(QWidget):
                 self.defects_list[idx][key] = txt
 
         # add "defect number" to combo box
-        self.defectBox.addItem("Defect " + str(self.defectNumber+1))
+        self.defectBox.addItem("Defect " + str(self.defectNumber + 1))
         self.defectBox.setCurrentIndex(self.defectNumber)
+
+
+    # store data entered
+    def saveDefect(self):
+        # set ID of defect
+        #self.defectNumber += 1
+        idx = self.defectNumber
+        #self.defects_list.append({})
+
+        # get location
+        loc = self.cloc.text()
+        self.defects_list[idx]['location'] = loc
+
+        # get params
+        for row in range(5):
+            item = self.ctable.item(row, 0)
+            txt = item.text()
+            key = self.rows2[row]
+            try:
+                self.defects_list[idx][key] = float(txt)
+            except:
+                self.defects_list[idx][key] = txt
+
+        # add "defect number" to combo box
+        #self.defectBox.addItem("Defect " + str(self.defectNumber+1))
+        #self.defectBox.setCurrentIndex(self.defectNumber)
 
     def getSystemSettings(self):
         settings = {}

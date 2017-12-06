@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
  
+import os
 from ast import literal_eval as ev
 import numpy as np 
 import logging
@@ -117,6 +118,7 @@ class Analysis(QWidget):
         dialog = QFileDialog()
         paths = dialog.getOpenFileNames(self, "Select files")[0]
         for i, path in enumerate(paths):
+            path = os.path.basename(path)
             self.dataList.insertItem (i, path )
 
     @slotError("bool")
@@ -148,7 +150,6 @@ class Analysis(QWidget):
             vt = system.scaling.energy
             N  = system.scaling.density
             G  = system.scaling.generation
-            j  = system.scaling.current
 
             # plot
             txt = self.quantity.currentText()
@@ -164,7 +165,7 @@ class Analysis(QWidget):
                 dmap = N * az.electron_density()
             if txt == "Hole density":
                 dmap = N * az.hole_density()
-            if txt == "Shockley-Read-Hall recombination":
+            if txt == "Bulk SRH recombination":
                 dmap = G * az.bulk_srh_rr()
             
             if dmap != None:
@@ -209,9 +210,11 @@ class Analysis(QWidget):
 
             # get sites and coordinates of a line or else
             if isinstance(Xdata[0], tuple):
-                X, sites = az.line(system, Xdata[0], Xdata[1])
-                X = X * system.scaling.length * 1e6 # set length in um
-                p1, p2 = Xdata
+                if system.dimension == 1:
+                    X = system.xpts
+                    sites = np.arange(system.nx, dtype=int)
+                if system.dimension == 2:
+                    X, sites = az.line(system, Xdata[0], Xdata[1])
             else:
                 X = Xdata
 
@@ -223,27 +226,28 @@ class Analysis(QWidget):
             if txt == "Electrostatic potential":
                 Ydata = vt * az.v[sites]
             if txt == "Electron density":
-                Ydata = N * az.electron_density(location=(p1, p2))
+                Ydata = N * az.electron_density()[sites]
             if txt == "Hole density":
-                Ydata = N * az.hole_density(location=(p1, p2))
+                Ydata = N * az.hole_density()[sites]
             if txt == "Shockley-Read-Hall recombination":
-                Ydata = G * az.bulk_srh_rr(location=(p1, p2))
+                Ydata = G * az.bulk_srh_rr()[sites]
             if txt == "Electron current along x":
-                Ydata = J * az.electron_current(component='x', location=(p1, p2))
+                Ydata = J * az.electron_current(component='x')[sites]
             if txt == "Hole current along x":
-                Ydata = J * az.hole_current(component='x', location=(p1, p2))
+                Ydata = J * az.hole_current(component='x')[sites]
             if txt == "Electron current along y":
-                Ydata = J * az.electron_current(component='y', location=(p1, p2))
+                Ydata = J * az.electron_current(component='y')[sites]
             if txt == "Hole current along x":
-                Ydata = J * az.hole_current(component='y', location=(p1, p2))
+                Ydata = J * az.hole_current(component='y')[sites]
             if txt == "Full steady state current":
                 Ydata = J * az.full_current()
 
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
+                X = X * 1e6 # set length in um
                 if txt == "Full steady state current":
-                    ax.plot(X[fdx], Ydata)
+                    ax.plot(X[fdx], Ydata, 'o')
                 else:
                     ax.plot(X, Ydata)
             else:

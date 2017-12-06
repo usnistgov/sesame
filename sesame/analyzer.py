@@ -4,7 +4,7 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 from scipy.interpolate import InterpolatedUnivariateSpline as spline, interp2d
-from .utils import Bresenham
+from .utils import Bresenham, get_indices
 from .observables import *
 
 try:
@@ -106,7 +106,13 @@ class Analyzer():
 
         """
         p1, p2 = location
-        X, sites = self.line(self.sys, p1, p2)
+        if self.sys.dimension == 1:
+            idx1, _, _ = get_indices(self.sys, (p1[0],0,0))
+            idx2, _, _ = get_indices(self.sys, (p2[0],0,0))
+            X = self.sys.xpts[idx1:idx2]
+            sites = np.arange(idx1, idx2, 1, dtype=int)
+        if self.sys.dimension == 2:
+            X, sites = self.line(self.sys, p1, p2)
 
         show = False
         if fig is None:
@@ -117,13 +123,16 @@ class Analyzer():
         ax = fig.add_subplot(111)
 
         vt = self.sys.scaling.energy
-        X = X*self.sys.scaling.length * 1e6 # in um
+        X = X * 1e6 # in um
 
         l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
         l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
+        l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
+        l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
 
         fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
                               r'$\mathregular{-E_{F_p}}$'])
+
 
         ax.set_xlabel('position (µm)')
         ax.set_ylabel('Energy (eV)')
