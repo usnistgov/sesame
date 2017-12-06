@@ -75,7 +75,7 @@ class BuilderBox(QWidget):
         self.N1 = QLineEdit()
         layout1.addRow("Acceptor doping", QLabel())
         layout1.addRow("Location [m]", self.loc1)
-        layout1.addRow("Concentration [m\u207B\u00B3]", self.N1)
+        layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
         layoutD.addLayout(layout1)
 
         layoutD.addSpacing(40)
@@ -86,7 +86,7 @@ class BuilderBox(QWidget):
         self.N2 = QLineEdit()
         layout2.addRow("Donor doping", QLabel())
         layout2.addRow("Location [m]", self.loc2)
-        layout2.addRow("Concentration [m\u207B\u00B3]", self.N2)
+        layout2.addRow("Concentration [cm\u207B\u00B3]", self.N2)
         layoutD.addLayout(layout2)
 
         dopingBox.setLayout(layoutD)
@@ -296,7 +296,7 @@ class BuilderBox(QWidget):
         #=====================================================
         # Line and plane defects
         #=====================================================
-        defectBox = QGroupBox("Defects")
+        defectBox = QGroupBox("Planar Defects")
         defectBox.setMaximumWidth(400)
         vlayout = QVBoxLayout()
         defectBox.setLayout(vlayout)
@@ -378,7 +378,7 @@ class BuilderBox(QWidget):
 
         hlayout = QFormLayout()
         self.gen = QLineEdit("", self)
-        hlayout.addRow("Expression", self.gen)
+        hlayout.addRow("Expression [m\u207B\u00B3s\u207B\u00B9]", self.gen)
         self.paramName = QLineEdit("", self)
         hlayout.addRow("Paramater name", self.paramName)
         genLayout.addLayout(hlayout)

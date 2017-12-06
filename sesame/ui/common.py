@@ -109,12 +109,14 @@ def parseSettings(settings):
 
     # location function, and concentration
     f = parseLocation(acceptor['location'], dimension)
-    N = float(acceptor['concentration'])
+    # convert to m^-3
+    N = float(acceptor['concentration']) * 1e6
     system.add_acceptor(N, f)
 
     # location function, and concentration
     f = parseLocation(donor['location'], dimension)
-    N = float(donor['concentration'])
+    # convert to m^-3
+    N = float(donor['concentration']) * 1e6
     system.add_donor(N, f)
 
     # 4. set the defects if present

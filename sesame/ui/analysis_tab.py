@@ -238,35 +238,52 @@ class Analysis(QWidget):
             # get the corresponding Y data
             if txt == "Electron quasi-Fermi level":
                 Ydata = vt * az.efn[sites]
+                YLabel = r'$\mathregular{E_{F_n}}$ [eV]'
             if txt == "Hole quasi-Fermi level":
                 Ydata = vt * az.efp[sites]
+                YLabel = r'$\mathregular{E_{F_p}}$ [eV]'
             if txt == "Electrostatic potential":
                 Ydata = vt * az.v[sites]
+                YLabel = 'V [eV]'
             if txt == "Electron density":
-                Ydata = N * az.electron_density()[sites]
+                Ydata = N * az.electron_density()[sites] * 1e-6
+                YLabel = r'n [$\mathregular{cm^{-3}}$]'
             if txt == "Hole density":
-                Ydata = N * az.hole_density()[sites]
+                Ydata = N * az.hole_density()[sites] * 1e-6
+                YLabel = r'p [$\mathregular{cm^{-3}}$]'
             if txt == "Bulk SRH recombination":
                 Ydata = G * az.bulk_srh_rr()[sites]
+                YLabel = r'Bulk SRH [$\mathregular{m^{-3}s^{-1}}$]'
             if txt == "Electron current along x":
                 Ydata = J * az.electron_current(component='x')[sites]
+                YLabel = r'$\mathregular{J_{n,x} [A m^{-2}]}$'
             if txt == "Hole current along x":
                 Ydata = J * az.hole_current(component='x')[sites]
+                YLabel = r'$\mathregular{J_{p,x} [A m^{-2}]}$'
             if txt == "Electron current along y":
                 Ydata = J * az.electron_current(component='y')[sites]
-            if txt == "Hole current along x":
+                YLabel = r'$\mathregular{J_{n,y} [A m^{-2}]}$'
+            if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites]
+                YLabel = r'$\mathregular{J_{p,y} [A m^{-2}]}$'
             if txt == "Full steady state current":
                 Ydata = J * az.full_current()
+                if system.dimension == 1:
+                    YLabel = r'J [$\mathregular{A m^{-2}}$]'
+                if system.dimension == 2:
+                    YLabel = r'J [$\mathregular{A m^{-1}}$]'
 
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
                 if txt == "Full steady state current":
                     ax.plot(X[fdx], Ydata, 'ko')
+                    ax.set_ylabel(YLabel)
                 else:
                     X = X * 1e6  # set length in um
                     ax.plot(X, Ydata)
+                    ax.set_ylabel(YLabel)
+                    ax.set_xlabel(r'Position [$\mathregular{\mu m}$]')
             else:
                 az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
                 
