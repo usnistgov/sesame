@@ -105,7 +105,7 @@ class Window(QMainWindow):
         self.setWindowTitle('Sesame')
         # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
         # Create geomtry and center the window
-        self.setGeometry(0,0,1200,400)
+        self.setGeometry(0,0,1200,500)
         windowFrame = self.frameGeometry()
         screenCenter = QDesktopWidget().availableGeometry().center()
         windowFrame.moveCenter(screenCenter)
@@ -217,7 +217,17 @@ class Window(QMainWindow):
             return
 
         with open(self.cfgFile, 'r') as f:
-            config.read(self.cfgFile)
+            try:
+                config.read(self.cfgFile)
+            except:
+                f.close()
+                msg = QMessageBox()
+                msg.setWindowTitle("Processing error")
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("The file could not be read.")
+                msg.setEscapeButton(QMessageBox.Ok)
+                msg.exec_()
+                return
 
             grid = config.get('System', 'Grid')
             doping = config.get('System', 'Doping')

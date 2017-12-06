@@ -169,22 +169,21 @@ class Analysis(QWidget):
             # plot
             txt = self.quantity.currentText()
             self.surfaceFig.figure.clear()
-            dmap = None
             if txt == "Electron quasi-Fermi level":
-                dmap = vt * az.efn
+                dataMap = vt * az.efn
             if txt == "Hole quasi-Fermi level":
-                dmap = vt * az.efp
+                dataMap = vt * az.efp
             if txt == "Electrostatic potential":
-                dmap = vt * az.v
+                dataMap = vt * az.v
             if txt == "Electron density":
-                dmap = N * az.electron_density()
+                dataMap = N * az.electron_density()
             if txt == "Hole density":
-                dmap = N * az.hole_density()
+                dataMap = N * az.hole_density()
             if txt == "Bulk SRH recombination":
-                dmap = G * az.bulk_srh_rr()
+                dataMap = G * az.bulk_srh_rr()
             
-            if dmap != None:
-                plot(system, dmap, scale=1e-6, cmap='viridis',\
+            if txt != "Electron current" and txt != "Hole current":
+                plot(system, dataMap, scale=1e-6, cmap='viridis',\
                      fig=self.surfaceFig.figure)
  
             if txt == "Electron current":

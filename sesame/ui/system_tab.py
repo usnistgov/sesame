@@ -108,14 +108,19 @@ class BuilderBox(QWidget):
         self.box.currentIndexChanged.connect(self.comboSelect)
         self.matNumber = -1
 
-        # Add and save buttons
-        button = QPushButton("Add material")
-        button.clicked.connect(self.addMat)
-        saveButton = QPushButton("Save")
-        saveButton.clicked.connect(self.saveMat)
+        # Add, remove and save buttons
+        self.newButton = QPushButton("New")
+        self.newButton.clicked.connect(self.addMat)
+        self.newButton.setEnabled(False) # disable on start
+        self.saveButton = QPushButton("Save")
+        self.saveButton.clicked.connect(self.saveMat)
+        self.removeButton = QPushButton("Remove")
+        self.removeButton.setEnabled(False) # disabled on start
+        self.removeButton.clicked.connect(self.removeMat)
         matLayout.addWidget(self.box)
-        matLayout.addWidget(button)
-        matLayout.addWidget(saveButton)
+        matLayout.addWidget(self.newButton)
+        matLayout.addWidget(self.saveButton)
+        matLayout.addWidget(self.removeButton)
         vlayout.addLayout(matLayout)
 
         # Reminder to save
@@ -128,15 +133,12 @@ class BuilderBox(QWidget):
         self.lbl = QLabel("Location")
         locLayout.addWidget(self.lbl)
         locLayout.addWidget(self.loc)
-        self.loc.hide()
-        self.lbl.hide()
         vlayout.addLayout(locLayout)
 
         # Label explaining how to write location
         self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with \n(y < 1.5e-6) | (y > 2.5e-6) \nUse the bitwise operators | for `or`, and & for `and`.")
         self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
         self.ex.setWordWrap(True)
-        self.ex.hide()
         vlayout.addWidget(self.ex)
 
 
@@ -144,7 +146,6 @@ class BuilderBox(QWidget):
         self.table = QTableWidget()
         self.table.setRowCount(15)
         self.table.setColumnCount(2)
-        self.table.hide()
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
         vlayout.addWidget(self.table)
@@ -165,28 +166,20 @@ class BuilderBox(QWidget):
                  u"m\u00B2/(V s)", "eV", "s", "s", "eV", u"m\u00B3/s",\
                  u"m\u2076/s", u"m\u2076/s"]
 
-        for idx, unit in enumerate(self.units):
-            item = QTableWidgetItem(unit)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.table.setItem(idx,1, item)
-
+        # Initialize table
         mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
               'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, \
               'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0, \
               'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
 
-        # 1. reinitialize location
-        self.loc.clear()
-        self.loc.show()
-        self.lbl.show()
-        self.ex.show()
-
-        # 2. reinitialize table
         values = [mt[i] for i in self.rows]
         for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx, 0, QTableWidgetItem(str(val)))
-        self.table.show()
+            item = QTableWidgetItem(unit)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.table.setItem(idx,1, item)
 
+        
         self.matNumber += 1
         idx = self.matNumber
         self.materials_list.append({})
@@ -226,9 +219,6 @@ class BuilderBox(QWidget):
 
         # 1. reinitialize location
         self.loc.clear()
-        self.loc.show()
-        self.lbl.show()
-        self.ex.show()
 
         # 2. reinitialize table
         values = [mt[i] for i in self.rows]
@@ -236,15 +226,14 @@ class BuilderBox(QWidget):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
         self.table.show()
 
-        #self.matNumber += 1
         self.matNumber = self.materials_list.__len__()
         idx = self.matNumber
         self.materials_list.append({})
 
+        # 3. save standard quantities for the material
         # get location
         loc = self.loc.text()
         self.materials_list[idx]['location'] = loc
-
         # get params
         for row in range(15):
             item = self.table.item(row, 0)
@@ -252,17 +241,19 @@ class BuilderBox(QWidget):
             key = self.rows[row]
             self.materials_list[idx][key] = float(txt)
 
+        # 4. Increment material number in combo box
         self.box.addItem("Material " + str(self.matNumber + 1))
         self.box.setCurrentIndex(self.matNumber)
 
+        # 5. Disable remove and new buttons
+        self.removeButton.setEnabled(False)
+        self.newButton.setEnabled(False)
 
 
     # store data entered
     def saveMat(self):
         # set ID of material
-        #self.matNumber += 1
         idx = self.matNumber
-        #self.materials_list.append({})
 
         # get location
         loc = self.loc.text()
@@ -275,9 +266,28 @@ class BuilderBox(QWidget):
             key = self.rows[row]
             self.materials_list[idx][key] = float(txt)
 
-        # set combo box material ID
-        #self.box.addItem("Material " + str(self.matNumber+1))
-        #self.box.setCurrentIndex(self.matNumber)
+        # disable save, enable remove and new buttons
+        self.newButton.setEnabled(True)
+        if len(self.materials_list) > 1:
+            self.removeButton.setEnabled(True)
+
+    # remove a material
+    def removeMat(self):
+        if len(self.materials_list) > 1:
+            # remove from list
+            idx = self.box.currentIndex()
+            self.materials_list.pop(idx)
+            self.matNumber -= 1
+            # remove from combo box
+            self.box.removeItem(idx)
+            # rename all the others
+            for idx in range(self.box.count()):
+                self.box.setItemText(idx, "Material " + str(idx + 1))
+
+        # disable remove if nothing to remove, enable new mat
+        if len(self.materials_list) == 1:
+            self.removeButton.setEnabled(False)
+            self.newButton.setEnabled(True)
 
     def builder3(self):
         layout3 = QVBoxLayout()
