@@ -212,11 +212,15 @@ class Analysis(QWidget):
             if isinstance(Xdata[0], tuple):
                 if system.dimension == 1:
                     X = system.xpts
+                    X = X * system.scaling.length
                     sites = np.arange(system.nx, dtype=int)
                 if system.dimension == 2:
                     X, sites = az.line(system, Xdata[0], Xdata[1])
+                    X = X * system.scaling.length
             else:
                 X = Xdata
+
+
 
             # get the corresponding Y data
             if txt == "Electron quasi-Fermi level":
@@ -245,10 +249,10 @@ class Analysis(QWidget):
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
-                X = X * 1e6 # set length in um
                 if txt == "Full steady state current":
-                    ax.plot(X[fdx], Ydata, 'o')
+                    ax.plot(X[fdx], Ydata, 'ko')
                 else:
+                    X = X * 1e6  # set length in um
                     ax.plot(X, Ydata)
             else:
                 az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
