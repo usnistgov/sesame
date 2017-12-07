@@ -269,6 +269,8 @@ class Simulation(QWidget):
         settings = self.tabsTable.build.getSystemSettings()
         system = parseSettings(settings)
         generation, paramName = settings['gen']
+        # converting generation string from 1/(cm^3*sec) to 1/(m^3*sec)
+        generation = '1e6*('+generation+')'
 
         # get solver settings
         solverSettings = self.getSolverSettings()

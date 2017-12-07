@@ -407,12 +407,14 @@ class Analyzer():
         if electron:
             Jx = get_jn(self.sys, self.efn, self.v, s, s+1, dx)
             Jy = get_jn(self.sys, self.efn, self.v, s, s+(nx+1), dy)
+            title = r'$\mathregular{J_{n}\ [A\cdot cm^{-2}]}$'
         else:
             Jx = get_jp(self.sys, self.efp, self.v, s, s+1, dx)
             Jy = get_jp(self.sys, self.efp, self.v, s, s+(nx+1), dy)
+            title = r'$\mathregular{J_{p}\ [A\cdot cm^{-2}]}$'
 
-        Jx = np.reshape(Jx, (ny, nx))
-        Jy = np.reshape(Jy, (ny, nx))
+        Jx = np.reshape(Jx, (ny, nx)) * self.sys.scaling.current * 1e-4
+        Jy = np.reshape(Jy, (ny, nx)) * self.sys.scaling.current * 1e-4
 
         jx = interp2d(x*scale, y*scale, Jx, kind='linear')
         jy = interp2d(x*scale, y*scale, Jy, kind='linear')
@@ -429,8 +431,9 @@ class Analyzer():
         ax.set_xlim(xmax=Lx, xmin=0)
         ax.set_ylim(ymin=0, ymax=Ly)
 
-        ax.set_xlabel('x')
-        ax.set_ylabel('y')
+        ax.set_xlabel(r'x [$\mathregular{\mu m}$]')
+        ax.set_ylabel(r'y [$\mathregular{\mu m}$]')
+        ax.set_title(title)
 
         if show:
             plt.show()

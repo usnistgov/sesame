@@ -111,7 +111,7 @@ def plot_plane_defects(sys, scale=1e-6, fig=None):
     if show:
         plt.show()
 
-def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None):
+def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None, title=''):
     """
     Plot a 2D map of a parameter (like mobility) across the system.
 
@@ -151,8 +151,9 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None):
 
     ax.set_xlim(xmin=0, xmax=xpts[-1])
     ax.set_ylim(ymin=0, ymax=ypts[-1])
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    ax.set_xlabel(r'x [$\mathregular{\mu m}$]')
+    ax.set_ylabel(r'y [$\mathregular{\mu m}$]')
+    ax.set_title(title)
 
     if show:
         plt.show()

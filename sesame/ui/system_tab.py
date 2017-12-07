@@ -161,14 +161,14 @@ class BuilderBox(QWidget):
         self.table.setVerticalHeaderLabels(self.rows)
         self.table.setHorizontalHeaderLabels(columns)
 
-        self.units = [u"m\u207B\u00B3", u"m\u207B\u00B3", "eV", "NA", "NA", "NA",
-                 u"m\u00B2/(V s)",\
-                 u"m\u00B2/(V s)", "eV", "s", "s", "eV", u"m\u00B3/s",\
-                 u"m\u2076/s", u"m\u2076/s"]
+        self.units = [u"cm\u207B\u00B3", u"cm\u207B\u00B3", "eV", "NA", "NA", "NA",
+                 u"cm\u00B2/(V s)",\
+                 u"cm\u00B2/(V s)", "eV", "s", "s", "eV", u"cm\u00B3/s",\
+                 u"cm\u2076/s", u"cm\u2076/s"]
 
         # Initialize table
-        mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
-              'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, \
+        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1, \
+              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, \
               'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0, \
               'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
 
@@ -212,8 +212,8 @@ class BuilderBox(QWidget):
 
     # add new material 
     def addMat(self):
-        mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
-                    'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0,\
+        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1,\
+                    'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0,\
                     'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0,\
                     'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
 
@@ -353,7 +353,7 @@ class BuilderBox(QWidget):
         self.ctable.setHorizontalHeaderLabels(columns)
 
         self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
-        self.units2 = ["eV", u"m\u207B\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
+        self.units2 = ["eV", u"cm\u207B\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
 
         for idx, (val, unit) in enumerate(zip(self.defectValues, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(val))
@@ -378,7 +378,7 @@ class BuilderBox(QWidget):
 
         hlayout = QFormLayout()
         self.gen = QLineEdit("", self)
-        hlayout.addRow("Expression [m\u207B\u00B3s\u207B\u00B9]", self.gen)
+        hlayout.addRow("Expression [cm\u207B\u00B3s\u207B\u00B9]", self.gen)
         self.paramName = QLineEdit("", self)
         hlayout.addRow("Paramater name", self.paramName)
         genLayout.addLayout(hlayout)

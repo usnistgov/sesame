@@ -171,26 +171,33 @@ class Analysis(QWidget):
             self.surfaceFig.figure.clear()
             if txt == "Electron quasi-Fermi level":
                 dataMap = vt * az.efn
+                title = r'$\mathregular{E_{F_n}}$ [eV]'
             if txt == "Hole quasi-Fermi level":
                 dataMap = vt * az.efp
+                title = r'$\mathregular{E_{F_p}}$ [eV]'
             if txt == "Electrostatic potential":
                 dataMap = vt * az.v
+                title = r'$\mathregular{V}$ [eV]'
             if txt == "Electron density":
-                dataMap = N * az.electron_density()
+                dataMap = N * az.electron_density() * 1e-6
+                title = r'n [$\mathregular{cm^{-3}}$]'
             if txt == "Hole density":
-                dataMap = N * az.hole_density()
+                dataMap = N * az.hole_density() * 1e-6
+                title = r'p [$\mathregular{cm^{-3}}$]'
             if txt == "Bulk SRH recombination":
-                dataMap = G * az.bulk_srh_rr()
+                dataMap = G * az.bulk_srh_rr() * 1e-6
+                title = r'Bulk SRH [$\mathregular{cm^{-3}s^{-1}}$]'
             
             if txt != "Electron current" and txt != "Hole current":
                 plot(system, dataMap, scale=1e-6, cmap='viridis',\
-                     fig=self.surfaceFig.figure)
+                     fig=self.surfaceFig.figure, title=title)
  
             if txt == "Electron current":
                 az.current_map(True, 'viridis', 1e6, fig=self.surfaceFig.figure)
 
             if txt == "Hole current":
                 az.current_map(False, 'viridis', 1e6, fig=self.surfaceFig.figure)
+
             self.surfaceFig.canvas.draw()
 
     @slotError("bool")
@@ -252,26 +259,26 @@ class Analysis(QWidget):
                 Ydata = N * az.hole_density()[sites] * 1e-6
                 YLabel = r'p [$\mathregular{cm^{-3}}$]'
             if txt == "Bulk SRH recombination":
-                Ydata = G * az.bulk_srh_rr()[sites]
-                YLabel = r'Bulk SRH [$\mathregular{m^{-3}s^{-1}}$]'
+                Ydata = G * az.bulk_srh_rr()[sites] * 1e-6
+                YLabel = r'Bulk SRH [$\mathregular{cm^{-3}s^{-1}}$]'
             if txt == "Electron current along x":
-                Ydata = J * az.electron_current(component='x')[sites]
-                YLabel = r'$\mathregular{J_{n,x} [A m^{-2}]}$'
+                Ydata = J * az.electron_current(component='x')[sites] * 1e-4
+                YLabel = r'$\mathregular{J_{n,x}\ [A\cdot cm^{-2}]}$'
             if txt == "Hole current along x":
-                Ydata = J * az.hole_current(component='x')[sites]
-                YLabel = r'$\mathregular{J_{p,x} [A m^{-2}]}$'
+                Ydata = J * az.hole_current(component='x')[sites] * 1e-4
+                YLabel = r'$\mathregular{J_{p,x}\ [A\cdot cm^{-2}]}$'
             if txt == "Electron current along y":
-                Ydata = J * az.electron_current(component='y')[sites]
-                YLabel = r'$\mathregular{J_{n,y} [A m^{-2}]}$'
+                Ydata = J * az.electron_current(component='y')[sites] * 1e-4
+                YLabel = r'$\mathregular{J_{n,y}\ [A\cdot cm^{-2}]}$'
             if txt == "Hole current along y":
-                Ydata = J * az.hole_current(component='y')[sites]
-                YLabel = r'$\mathregular{J_{p,y} [A m^{-2}]}$'
+                Ydata = J * az.hole_current(component='y')[sites] * 1e-4
+                YLabel = r'$\mathregular{J_{p,y}\ [A\cdot cm^{-2}]}$'
             if txt == "Full steady state current":
-                Ydata = J * az.full_current()
+                Ydata = J * az.full_current() * 1e-4
                 if system.dimension == 1:
-                    YLabel = r'J [$\mathregular{A m^{-2}}$]'
+                    YLabel = r'J [$\mathregular{A\cdot cm^{-2}}$]'
                 if system.dimension == 2:
-                    YLabel = r'J [$\mathregular{A m^{-1}}$]'
+                    YLabel = r'J [$\mathregular{A\cdot cm^{-2}}$]'
 
             # plot
             if txt != "Band diagram": # everything except band diagram
