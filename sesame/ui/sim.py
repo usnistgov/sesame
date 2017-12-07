@@ -145,7 +145,7 @@ class SimulationWorker(QObject):
                 q = -1
 
             # Loop over the applied potentials made dimensionless
-            Vapp = loopValues / system.scaling.energy
+            Vapp = [i / system.scaling.energy for i in loopValues]
             for idx, vapp in enumerate(Vapp):
                 logging.info("Applied voltage: {0} V".format(loopValues[idx]))
 

@@ -207,10 +207,23 @@ class Simulation(QWidget):
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
         self.workDirName.setText(folder_path + '/')
 
+    def getLoopValues(self):
+        exec("val = {0}".format(self.loopValues.text()), globals())
+        try:
+            values = [v for v in val]
+            return values
+        except TypeError:
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("The loop values expression is not iterable.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            return
+
     def getSolverSettings(self):
         # loopValues
-        loopValues = ev(self.loopValues.text() + ',')
-        loopValues = np.asarray(loopValues)
+        loopValues = self.getLoopValues()
         # simulation name
         simName = self.workDirName.text() + self.fileName.text()
         # extension
