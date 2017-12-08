@@ -212,7 +212,8 @@ class Window(QMainWindow):
             self.table.simulation.noIterative.setChecked(True)
         
     def openConfig(self):
-        self.cfgFile = QFileDialog.getOpenFileName(self, 'Open File')[0]
+        self.cfgFile = QFileDialog.getOpenFileName(self, 'Open File', '',\
+                        "(*.ini)")[0]
         if self.cfgFile == '':
             return
 
@@ -259,8 +260,12 @@ class Window(QMainWindow):
             f.close()
 
     def saveAsConfig(self):
-        self.cfgFile = QFileDialog.getSaveFileName(self, 'Save File')[0]
+        self.cfgFile = QFileDialog.getSaveFileName(self, 'Save File', '.ini', \
+                        "(*.ini)")[0]
         if self.cfgFile != '':
+            # append extension if changed
+            if self.cfgFile[-4:] != '.ini':
+                self.cfgFile += '.ini'
             self.saveConfig()
 
     def saveConfig(self):

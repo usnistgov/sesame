@@ -149,7 +149,8 @@ class Analysis(QWidget):
 
     def browse(self):
         dialog = QFileDialog()
-        paths = dialog.getOpenFileNames(self, "Upload files")[0]
+        wd = self.table.simulation.workDirName.text()
+        paths = dialog.getOpenFileNames(self, "Upload files", wd, "(*.npz)")[0]
         for path in paths:
             self.filesList.append(path)
             path = os.path.basename(path)
