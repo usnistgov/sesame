@@ -29,7 +29,11 @@ def defectsF(sys, n, p, rho, r=None):
         _np = _n * _p
 
         # thermal velocity: arrays
-        ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        ### need to check unit type here!
+        if sys.input_length=='m':
+            ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        else:
+            ct = 100*np.sqrt(epsilon_0*1e-2 / sys.scaling.density) / sys.scaling.mobility
         ve = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
         vh = ct * np.sqrt(3/(sys.mass_h[sites]*m_e))
 
@@ -112,7 +116,10 @@ def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
         _np = _n * _p
 
         # thermal velocity: arrays
-        ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        if sys.input_length=='m':
+            ct = np.sqrt(epsilon_0/sys.scaling.density)/sys.scaling.mobility
+        else:
+            ct = 100*np.sqrt(epsilon_0*1e-2 / sys.scaling.density) / sys.scaling.mobility
         ve = ct * np.sqrt(3/(sys.mass_e[sites]*m_e)) 
         vh = ct * np.sqrt(3/(sys.mass_h[sites]*m_e))
 
