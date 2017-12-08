@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
 class SimulationWorker(QObject):
 
     simuDone = pyqtSignal()
+    newFile = pyqtSignal(str)
 
     def __init__(self, loop, system, solverSettings,\
                        generation, paramName, parent=None):
@@ -128,11 +129,6 @@ class SimulationWorker(QObject):
                         return
             
             # Loop over voltages
-            # sesame.IVcurve(system, loopValues, solution, veq, simName, tol=tol,\
-            #                periodic_bcs=BCs, maxiter=maxiter, verbose=True,\
-            #                use_mumps=useMumps,\
-            #                iterative=iterative, fmt=fmt)
-
             # sites of the right contact
             nx = system.nx
             s = [nx-1 + j*nx + k*nx*system.ny for k in range(system.nz)\
@@ -174,9 +170,11 @@ class SimulationWorker(QObject):
                         savemat(name, solution)
                     else:
                         np.savez_compressed(name, **solution)
+                    # signal a new file has been created to the main thread
+                    self.newFile.emit(name)
                 else:
                     logging.info("The solver failed to converge for the applied voltage"\
-                          + " {0} V (index {1}).".format(voltages[idx], idx))
+                          + " {0} V (index {1}).".format(loopValues[idx], idx))
                     break
 
             if solution is not None:
@@ -228,6 +226,8 @@ class SimulationWorker(QObject):
                         savemat(name, solution)
                     else:
                         np.savez_compressed(name, **solution)
+                    # signal a new file has been created to the main thread
+                    self.newFile.emit(name)
                 else:
                     self.logger.info("The solver failed to converge for the parameter value"\
                           + " {0} (index {1}).".format(p, idx))

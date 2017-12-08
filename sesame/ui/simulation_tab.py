@@ -7,6 +7,7 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
  
+import os
 import sys
 import numpy as np 
 import logging
@@ -293,6 +294,7 @@ class Simulation(QWidget):
         self.simulation = SimulationWorker(loop, system, solverSettings, generation, paramName)
         self.simulation.moveToThread(self.thread)
         self.simulation.simuDone.connect(self.thread_cleanup)
+        self.simulation.newFile.connect(self.updateDataList)
         self.thread.started.connect(self.simulation.run)
         self.thread.start()
 
@@ -310,3 +312,10 @@ class Simulation(QWidget):
     def thread_cleanup(self):
         self.thread.quit()
         self.thread.wait()
+
+    @pyqtSlot(str)
+    def updateDataList(self, name):
+        self.tabsTable.analysis.filesList.append(name)
+        name = os.path.basename(name)
+        self.tabsTable.analysis.dataList.addItem(name)
+

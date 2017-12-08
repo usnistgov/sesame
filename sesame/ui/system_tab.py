@@ -276,7 +276,7 @@ class BuilderBox(QWidget):
         if len(self.materials_list) > 1:
             # remove from list
             idx = self.box.currentIndex()
-            self.materials_list.pop(idx)
+            del self.materials_list[idx]
             self.matNumber -= 1
             # remove from combo box
             self.box.removeItem(idx)

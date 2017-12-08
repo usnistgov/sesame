@@ -53,6 +53,7 @@ class Analysis(QWidget):
         dataLayout.addLayout(btnsLayout)
 
         # List itself
+        self.filesList = []
         self.dataList = QListWidget()
         self.dataList.setSelectionMode(QAbstractItemView.ExtendedSelection)
         dataLayout.addWidget(self.dataList)
@@ -148,15 +149,19 @@ class Analysis(QWidget):
 
     def browse(self):
         dialog = QFileDialog()
-        paths = dialog.getOpenFileNames(self, "Upload files")[0]
-        for i, path in enumerate(paths):
+        wd = self.table.simulation.workDirName.text()
+        paths = dialog.getOpenFileNames(self, "Upload files", wd, "(*.npz)")[0]
+        for path in paths:
+            self.filesList.append(path)
             path = os.path.basename(path)
-            self.dataList.insertItem (i, path )
+            self.dataList.addItem(path)
 
     def remove(self):
         # remove the selected files from the list
         for i in self.dataList.selectedItems():
-            self.dataList.takeItem(self.dataList.row(i))
+            idx = self.dataList.row(i)
+            self.dataList.takeItem(idx)
+            del self.filesList[idx]
 
     @slotError("bool")
     def radioLoop_toggled(self, checked):
@@ -194,7 +199,9 @@ class Analysis(QWidget):
         system = parseSettings(settings)
 
         # get data from file
-        files = [x.text() for x in self.dataList.selectedItems()]
+        files = [self.filesList[self.dataList.row(i)]\
+                for i in self.dataList.selectedItems()
+        ]
         if len(files) == 0:
             return
         elif len(files) > 1:
@@ -267,7 +274,9 @@ class Analysis(QWidget):
             return
 
         # get data files names
-        files = [x.text() for x in self.dataList.selectedItems()]
+        files = [self.filesList[self.dataList.row(i)]\
+                for i in self.dataList.selectedItems()
+        ]
         files.sort() # so that loop values coincide with file order
         if len(files) == 0:
             return
