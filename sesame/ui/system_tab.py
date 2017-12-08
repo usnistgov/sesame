@@ -47,13 +47,13 @@ class BuilderBox(QWidget):
         self.g3 = QLineEdit()
         h1 = QHBoxLayout()
         h1.addWidget(self.g1)
-        h1.addWidget(QLabel("m"))
+        h1.addWidget(QLabel("cm"))
         h2 = QHBoxLayout()
         h2.addWidget(self.g2)
-        h2.addWidget(QLabel("m"))
+        h2.addWidget(QLabel("cm"))
         h3 = QHBoxLayout()
         h3.addWidget(self.g3)
-        h3.addWidget(QLabel("m"))
+        h3.addWidget(QLabel("cm"))
 
         gridLayout.addRow("Grid x-axis", h1)
         gridLayout.addRow("Grid y-axis", h2)
@@ -71,10 +71,10 @@ class BuilderBox(QWidget):
 
         # Accceptor doping
         layout1 = QFormLayout()
-        self.loc1 = QLineEdit("x > 1e-6")
+        self.loc1 = QLineEdit("x > 1e-4")
         self.N1 = QLineEdit()
         layout1.addRow("Acceptor doping", QLabel())
-        layout1.addRow("Location [m]", self.loc1)
+        layout1.addRow("Location [cm]", self.loc1)
         layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
         layoutD.addLayout(layout1)
 
@@ -82,10 +82,10 @@ class BuilderBox(QWidget):
 
         # Donor doping
         layout2 = QFormLayout()
-        self.loc2 = QLineEdit("x <= 1e-6")
+        self.loc2 = QLineEdit("x <= 1e-4")
         self.N2 = QLineEdit()
         layout2.addRow("Donor doping", QLabel())
-        layout2.addRow("Location [m]", self.loc2)
+        layout2.addRow("Location [cm]", self.loc2)
         layout2.addRow("Concentration [cm\u207B\u00B3]", self.N2)
         layoutD.addLayout(layout2)
 

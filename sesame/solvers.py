@@ -351,7 +351,7 @@ def IVcurve(sys, voltages, guess, equilibrium, file_name, tol=1e-6,\
         q = -1
 
     # Loop over the applied potentials made dimensionless
-    Vapp = voltages / sys.scaling.energy
+    Vapp = [i / sys.scaling.energy for i in voltages]
     for idx, vapp in enumerate(Vapp):
 
         if verbose:

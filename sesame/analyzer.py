@@ -123,7 +123,8 @@ class Analyzer():
         ax = fig.add_subplot(111)
 
         vt = self.sys.scaling.energy
-        X = X * self.sys.scaling.length * 1e6 # in um
+        X = X * self.sys.scaling.length * 1e4 # in um
+        #X = X * 1e4  # in um
 
         l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
         l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
@@ -134,8 +135,8 @@ class Analyzer():
                               r'$\mathregular{-E_{F_p}}$'])
 
 
-        ax.set_xlabel('position (µm)')
-        ax.set_ylabel('Energy (eV)')
+        ax.set_xlabel('Position [µm]')
+        ax.set_ylabel('Energy [eV]')
 
         if show:
             plt.show()
@@ -407,20 +408,21 @@ class Analyzer():
         if electron:
             Jx = get_jn(self.sys, self.efn, self.v, s, s+1, dx)
             Jy = get_jn(self.sys, self.efn, self.v, s, s+(nx+1), dy)
-            title = r'$\mathregular{J_{n}\ [A\cdot cm^{-2}]}$'
+            title = r'$\mathregular{J_{n}\ [mA\cdot cm^{-2}]}$'
         else:
             Jx = get_jp(self.sys, self.efp, self.v, s, s+1, dx)
             Jy = get_jp(self.sys, self.efp, self.v, s, s+(nx+1), dy)
-            title = r'$\mathregular{J_{p}\ [A\cdot cm^{-2}]}$'
+            title = r'$\mathregular{J_{p}\ [mA\cdot cm^{-2}]}$'
 
-        Jx = np.reshape(Jx, (ny, nx)) * self.sys.scaling.current * 1e-4
-        Jy = np.reshape(Jy, (ny, nx)) * self.sys.scaling.current * 1e-4
+        Jx = np.reshape(Jx, (ny, nx)) * self.sys.scaling.current * 1e3
+        Jy = np.reshape(Jy, (ny, nx)) * self.sys.scaling.current * 1e3
 
         jx = interp2d(x*scale, y*scale, Jx, kind='linear')
         jy = interp2d(x*scale, y*scale, Jy, kind='linear')
 
+        J  = self.sys.scaling.current
         xx, yy = np.linspace(0, Lx, 100), np.linspace(0, Ly, 100)
-        jnx, jny = jx(xx, yy), jy(xx, yy)
+        jnx, jny = J*jx(xx, yy), J*jy(xx, yy)
         norm = np.sqrt(jnx**2 + jny**2)
 
         y, x = np.mgrid[0:Ly:100j, 0:Lx:100j]

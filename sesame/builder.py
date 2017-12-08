@@ -46,23 +46,36 @@ class Scaling():
     current: float
         Electrical current density scale.
     """
-    def __init__(self, T=300):
+    def __init__(self, input_length='cm', T=300):
         # densities
-        self.density = 1e19 * 1e6 # [m^-3]
+        if input_length == "m":
+            self.density = 1e19 * 1e6 # [m^-3]
+        else:
+            self.density = 1e19 # [cm^-3]
         # energies
         self.energy = cts.k * T / cts.e
-        # mobilities [m^2 / (V.s)]
-        self.mobility = 1 * 1e-4
+        # mobilities
+        if input_length == "m":
+            self.mobility = 1 * 1e-4 # [m^2 / (V.s)]
+        else:
+            self.mobility = 1 # [cm^2 / (V.s)]
         # time [s]
-        self.time = cts.epsilon_0 / (self.mobility * cts.e * self.density)
+        if input_length == "m":
+            self.time = cts.epsilon_0 / (self.mobility * cts.e * self.density) # s
+        else:
+            self.time = cts.epsilon_0*1e-2 / (self.mobility * cts.e * self.density)  # s
         # lengths [m]
-        self.length = np.sqrt(cts.epsilon_0 * self.energy / (cts.e * self.density))
+        if input_length == "m":
+            self.length = np.sqrt(cts.epsilon_0 * self.energy / (cts.e * self.density)) # m
+        else:
+            self.length = np.sqrt(cts.epsilon_0*1e-2 * self.energy / (cts.e * self.density))  # cm
         # generation rate [m^-3 s^-1]
         self.generation = (self.density * self.mobility * self.energy) / self.length**2 
         # recombination velocities
         self.velocity = self.length / self.time
         # current
         self.current = cts.k * T * self.mobility * self.density / self.length
+
 
 
 class Builder():
@@ -117,9 +130,10 @@ class Builder():
     """
 
 
-    def __init__(self, xpts, ypts=None, zpts=None, T=300):
+    def __init__(self, xpts, ypts=None, zpts=None, input_length='cm', T=300):
 
-        self.scaling = Scaling(T)
+        self.scaling = Scaling(input_length,T)
+        self.input_length = input_length
 
         self.xpts = xpts
         self.dx = (self.xpts[1:] - self.xpts[:-1]) / self.scaling.length
@@ -197,9 +211,15 @@ class Builder():
         mu = self.scaling.mobility
 
         # default material parameters
-        mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
+        if self.input_length == 'm':
+            mt = {'Nc': 1e25, 'Nv': 1e25, 'Eg': 1, 'epsilon': 1, 'mass_e': 1,\
               'mass_h': 1, 'mu_e': 100e-4, 'mu_h': 100e-4, 'Et': 0, 'tau_e': 1e-6,\
               'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
+        else:
+            mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 1, 'mass_e': 1, \
+                  'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6, \
+                  'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
+
 
         for key in mat.keys():
             mt[key] = mat[key]

@@ -118,10 +118,10 @@ class Simulation(QWidget):
         self.g5 = QLineEdit("", self)
         self.g6 = QLineEdit("", self)
         self.g7 = QLineEdit("", self)
-        BCform.addRow("Electron recombination velocity in x=0 [m/s]", self.g4)
-        BCform.addRow("Hole recombination velocity in x=0 [m/s]", self.g5)
-        BCform.addRow("Electron recombination velocity in x=L [m/s]", self.g6)
-        BCform.addRow("Hole recombination velocity in x=L [m/s]", self.g7)
+        BCform.addRow("Electron recombination velocity in x=0 [cm/s]", self.g4)
+        BCform.addRow("Hole recombination velocity in x=0 [cm/s]", self.g5)
+        BCform.addRow("Electron recombination velocity in x=L [cm/s]", self.g6)
+        BCform.addRow("Hole recombination velocity in x=L [cm/s]", self.g7)
 
         # transverse BC
         tbcLayout = QHBoxLayout()
@@ -207,10 +207,23 @@ class Simulation(QWidget):
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
         self.workDirName.setText(folder_path + '/')
 
+    def getLoopValues(self):
+        exec("val = {0}".format(self.loopValues.text()), globals())
+        try:
+            values = [v for v in val]
+            return values
+        except TypeError:
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("The loop values expression is not iterable.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            return
+
     def getSolverSettings(self):
         # loopValues
-        loopValues = ev(self.loopValues.text() + ',')
-        loopValues = np.asarray(loopValues)
+        loopValues = self.getLoopValues()
         # simulation name
         simName = self.workDirName.text() + self.fileName.text()
         # extension
@@ -269,8 +282,6 @@ class Simulation(QWidget):
         settings = self.tabsTable.build.getSystemSettings()
         system = parseSettings(settings)
         generation, paramName = settings['gen']
-        # converting generation string from 1/(cm^3*sec) to 1/(m^3*sec)
-        generation = '1e6*('+generation+')'
 
         # get solver settings
         solverSettings = self.getSolverSettings()

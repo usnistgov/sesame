@@ -101,14 +101,6 @@ def parseSettings(settings):
         location = mat['location']
         # define a function that returns true/false dpending on location
         f = parseLocation(location, dimension)
-        # do necessary unit conversions: from cm to m
-        mat['Nc'] *= 1e6
-        mat['Nv'] *= 1e6
-        mat['mu_e'] /= 1e4
-        mat['mu_h'] /= 1e4
-        mat['B'] /= 1e6
-        mat['Cn'] /= 1e9
-        mat['Cp'] /= 1e9
         system.add_material(mat, f)
 
     # 3. set the doping
@@ -118,13 +110,13 @@ def parseSettings(settings):
     # location function, and concentration
     f = parseLocation(acceptor['location'], dimension)
     # convert from cm^-3 to m^-3
-    N = float(acceptor['concentration']) * 1e6
+    N = float(acceptor['concentration'])
     system.add_acceptor(N, f)
 
     # location function, and concentration
     f = parseLocation(donor['location'], dimension)
     # convert from cm^-3 to m^-3
-    N = float(donor['concentration']) * 1e6
+    N = float(donor['concentration'])
     system.add_donor(N, f)
 
     # 4. set the defects if present
@@ -133,11 +125,11 @@ def parseSettings(settings):
     for defect in defects:
         loc = ev(defect['location'])
         # convert from cm^-2 to m^-2
-        N = float(defect['Density']) * 1e4
+        N = float(defect['Density'])
         E = float(defect['Energy'])
         # convert from cm^2 to m^2
-        sh = float(defect['sigma_h']) / 1e4
-        se = float(defect['sigma_e']) / 1e4
+        sh = float(defect['sigma_h'])
+        se = float(defect['sigma_e'])
         transition = defect['Transition'].replace("/", ",")
         transition = (ev(transition))
 
