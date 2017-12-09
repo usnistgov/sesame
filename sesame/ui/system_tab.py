@@ -66,7 +66,7 @@ class BuilderBox(QWidget):
         # Doping
         #==============================
         dopingBox = QGroupBox("Doping")
-        dopingBox.setMaximumWidth(400)
+        dopingBox.setMinimumWidth(400)
         layoutD = QVBoxLayout()
 
         # Accceptor doping
@@ -78,7 +78,7 @@ class BuilderBox(QWidget):
         layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
         layoutD.addLayout(layout1)
 
-        layoutD.addSpacing(40)
+        layoutD.addSpacing(10)
 
         # Donor doping
         layout2 = QFormLayout()
@@ -96,7 +96,7 @@ class BuilderBox(QWidget):
 
     def builder2(self):
         matBox = QGroupBox("Materials")
-        matBox.setMaximumWidth(400)
+        matBox.setMinimumWidth(400)
         vlayout = QVBoxLayout()
         matBox.setLayout(vlayout)
         self.tabLayout.addWidget(matBox)
@@ -125,7 +125,6 @@ class BuilderBox(QWidget):
 
         # Reminder to save
         vlayout.addWidget(QLabel("Save a material before adding a new one."))
-        vlayout.addStretch()
 
         # Location
         locLayout = QHBoxLayout()
@@ -136,7 +135,7 @@ class BuilderBox(QWidget):
         vlayout.addLayout(locLayout)
 
         # Label explaining how to write location
-        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with \n(y < 1.5e-6) | (y > 2.5e-6) \nUse the bitwise operators | for `or`, and & for `and`.")
+        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with (y < 1.5e-6) | (y > 2.5e-6). Use the bitwise operators | for `or`, and & for `and`.")
         self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
         self.ex.setWordWrap(True)
         vlayout.addWidget(self.ex)
@@ -149,7 +148,6 @@ class BuilderBox(QWidget):
         header = self.table.horizontalHeader()
         header.setStretchLastSection(True)
         vlayout.addWidget(self.table)
-        vlayout.addStretch()
 
         # set table
         self.materials_list = []
@@ -249,7 +247,6 @@ class BuilderBox(QWidget):
         self.removeButton.setEnabled(False)
         self.newButton.setEnabled(False)
 
-
     # store data entered
     def saveMat(self):
         # set ID of material
@@ -297,7 +294,7 @@ class BuilderBox(QWidget):
         # Line and plane defects
         #=====================================================
         defectBox = QGroupBox("Planar Defects")
-        defectBox.setMaximumWidth(400)
+        defectBox.setMinimumWidth(400)
         vlayout = QVBoxLayout()
         defectBox.setLayout(vlayout)
         layout3.addWidget(defectBox)
@@ -310,18 +307,22 @@ class BuilderBox(QWidget):
         self.defectNumber = -1
 
         # Add and save buttons
-        defectButton = QPushButton("Add defects")
-        defectButton.clicked.connect(self.addDefects)
-        saveButton2 = QPushButton("Save")
-        saveButton2.clicked.connect(self.saveDefect)
-        self.hbox.addWidget(defectButton)
-        self.hbox.addWidget(saveButton2)
+        self.defectButton = QPushButton("New")
+        self.defectButton.clicked.connect(self.addDefects)
+        self.saveButton2 = QPushButton("Save")
+        self.saveButton2.clicked.connect(self.saveDefect)
+        self.saveButton2.setEnabled(False) # disabled on start
+        self.removeButton2 = QPushButton("Remove")
+        self.removeButton2.setEnabled(False) # disabled on start
+        self.removeButton2.clicked.connect(self.removeDefect)
+        self.hbox.addWidget(self.defectButton)
+        self.hbox.addWidget(self.saveButton2)
+        self.hbox.addWidget(self.removeButton2)
 
         vlayout.addLayout(self.hbox)
 
         # Reminder to save
         vlayout.addWidget(QLabel("Save a defect before adding a new one."))
-        vlayout.addStretch()
 
         self.clocLayout = QHBoxLayout()
         self.cloc = QLineEdit("(x1, y1), (x2, y2)")
@@ -387,27 +388,33 @@ class BuilderBox(QWidget):
     def comboSelect2(self):
         idx = self.defectBox.currentIndex()
         self.defectNumber = idx
-        defect = self.defects_list[idx]
-        values = [defect[i] for i in self.rows2]
+        if len(self.defects_list) == 0:
+            # nothing to display so, hide the table
+            self.cloc.hide()
+            self.ctable.hide()
+        else:
+            # display settings of desired defect
+            defect = self.defects_list[idx]
+            values = [defect[i] for i in self.rows2]
 
-        self.cloc.setText(defect['location'])
+            self.cloc.setText(defect['location'])
 
-        for idx, (val, unit) in enumerate(zip(values, self.units2)):
-            self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
-            item = QTableWidgetItem(unit)
+            for idx, (val, unit) in enumerate(zip(values, self.units2)):
+                self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
+                item = QTableWidgetItem(unit)
 
     # add new defect
     def addDefects(self):
         mt = {'Energy': "0", 'Density': "1e13", 'sigma_e':
         "1e-15", 'sigma_h': "1e-15", 'Transition': "1/0", 'location': None}
 
-        # 2. reinitialize location
+        # reinitialize location
         self.cloc.clear()
         self.cloc.insert("(x1, y1), (x2, y2)")
         self.cloc.show()
         self.clbl.show()
 
-        # 3. reinitialize table
+        # reinitialize table
         values = [mt[i] for i in self.rows2]
         for idx, (val, unit) in enumerate(zip(values, self.units2)):
             self.ctable.setItem(idx,0, QTableWidgetItem(str(val)))
@@ -435,13 +442,16 @@ class BuilderBox(QWidget):
         self.defectBox.addItem("Defect " + str(self.defectNumber + 1))
         self.defectBox.setCurrentIndex(self.defectNumber)
 
+        # Disable remove and new buttons, enable save button
+        self.removeButton2.setEnabled(False)
+        self.defectButton.setEnabled(False)
+        self.saveButton2.setEnabled(True)
+
 
     # store data entered
     def saveDefect(self):
         # set ID of defect
-        #self.defectNumber += 1
         idx = self.defectNumber
-        #self.defects_list.append({})
 
         # get location
         loc = self.cloc.text()
@@ -457,9 +467,30 @@ class BuilderBox(QWidget):
             except:
                 self.defects_list[idx][key] = txt
 
-        # add "defect number" to combo box
-        #self.defectBox.addItem("Defect " + str(self.defectNumber+1))
-        #self.defectBox.setCurrentIndex(self.defectNumber)
+        # enable remove and new buttons
+        self.defectButton.setEnabled(True)
+        self.removeButton2.setEnabled(True)
+
+    # remove a defect
+    def removeDefect(self):
+        if len(self.defects_list) > 0:
+            # remove from list
+            idx = self.defectBox.currentIndex()
+            del self.defects_list[idx]
+            self.defectNumber -= 1
+            # remove from combo box
+            self.defectBox.removeItem(idx)
+            # rename all the others
+            for idx in range(self.defectBox.count()):
+                self.defectBox.setItemText(idx, "Defect " + str(idx + 1))
+
+        # disable remove if nothing to remove, enable new defect
+        self.defectButton.setEnabled(True)
+        if len(self.defects_list) > 0:
+            self.removeButton2.setEnabled(False)
+        if len(self.defects_list) == 0:
+            self.removeButton2.setEnabled(False)
+            self.saveButton2.setEnabled(False)
 
     def getSystemSettings(self):
         settings = {}
@@ -488,3 +519,5 @@ class BuilderBox(QWidget):
         settings['defects'] = self.defects_list
         settings['gen'] = self.gen.text(), self.paramName.text()
         return settings
+
+

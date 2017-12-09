@@ -14,7 +14,6 @@ import logging
 from ast import literal_eval as ev
 from io import StringIO
 
-from ..solvers import IVcurve
 from .common import parseSettings, slotError
 from .sim import SimulationWorker
 
@@ -34,6 +33,10 @@ class logBuffer(StringIO):
 
 
 class Simulation(QWidget):
+    """
+    UI of the simulation tab with simulation and solver settings, and logging to
+    follow the output of the solver.
+    """
     def __init__(self, parent):
         super(Simulation, self).__init__(parent)
 
@@ -50,13 +53,16 @@ class Simulation(QWidget):
         self.logger.setLevel(logging.INFO)
         self.logger.addHandler(logHandler)
 
-
         #===============================================
         #  Settings boxes
         #===============================================
-        self.vlayout = QVBoxLayout()
+        self.vlayout = QVBoxLayout() # main
+        self.hlayout = QHBoxLayout() # secondary
+        self.tabLayout.addLayout(self.vlayout)
 
-        #######  Basics
+        #===============================================
+        #  Basics
+        #===============================================
         self.outputBox = QGroupBox("Basic settings")
 
         self.form1 = QFormLayout()
@@ -96,11 +102,13 @@ class Simulation(QWidget):
         self.outputBox.setLayout(self.form1)
         self.vlayout.addWidget(self.outputBox)
 
-        ######  Boundary conditions
+        #===============================================
+        #  Boundary conditions
+        #===============================================
         self.BCbox = QGroupBox("Boundary conditions")
         BCform = QFormLayout()
         self.BCbox.setLayout(BCform)
-        self.vlayout.addWidget(self.BCbox)
+        self.hlayout.addWidget(self.BCbox)
 
         # contacts BCs
         contactLayout = QHBoxLayout()
@@ -136,7 +144,9 @@ class Simulation(QWidget):
         tbcLayout.addWidget(self.hardwall)
         BCform.addRow("Transverse boundary conditions", tbcLayout)
 
-        ######  Advanced settings
+        #===============================================
+        #  Advanced settings
+        #===============================================
         self.algoBox = QGroupBox("Algorithm settings")
         self.form2 = QFormLayout()
 
@@ -171,8 +181,8 @@ class Simulation(QWidget):
         self.form2.addRow("Iterative solver", self.radioLayout2)
 
         self.algoBox.setLayout(self.form2)
-        self.vlayout.addWidget(self.algoBox)
-        self.tabLayout.addLayout(self.vlayout)
+        self.hlayout.addWidget(self.algoBox)
+        self.vlayout.addLayout(self.hlayout)
 
         #===============================================
         #  Run simulation
@@ -180,6 +190,7 @@ class Simulation(QWidget):
         self.vlayout2 = QVBoxLayout()
 
         self.simBox = QGroupBox("Simulation log")
+        self.simBox.setMinimumWidth(300)
         self.logLayout = QVBoxLayout()
         self.simBox.setLayout(self.logLayout)
 

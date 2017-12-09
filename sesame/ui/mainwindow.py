@@ -3,10 +3,13 @@
 # This file is part of Sesame. It is subject to the license terms in the file
 # LICENSE.rst found in the top-level directory of this distribution.
 
-from .system_tab import *
+from .system_tab import BuilderBox
 from .simulation_tab import Simulation
 from .analysis_tab import Analysis
+from .. import plotter
+from .common import parseSettings, slotError
 
+import sys
 import os
 os.environ['QT_API'] = 'pyqt5'
 import sip
@@ -14,13 +17,12 @@ sip.setapi("QString", 2)
 sip.setapi("QVariant", 2)
 from PyQt5.QtGui  import *
 from PyQt5.QtWidgets import *
-# Import the console machinery from ipython
+from PyQt5.QtCore import *
+
 from qtconsole.rich_ipython_widget import RichJupyterWidget
 from qtconsole.inprocess import QtInProcessKernelManager
+from IPython import version_info
 from IPython.lib import guisupport
-
-from .. import plotter
-from .common import parseSettings, slotError
 
 from configparser import ConfigParser
 config = ConfigParser()
@@ -31,6 +33,9 @@ config.add_section('Simulation')
 from ast import literal_eval as ev
 
 class Window(QMainWindow): 
+    """
+    Class defining the main window of the GUI.
+    """
     def __init__(self):
         super(Window, self).__init__()
 
@@ -39,19 +44,13 @@ class Window(QMainWindow):
     def init_ui(self):
         'init the UI'
 
-        # Split the window: top with tabs, bottom with console
-        splitter = QSplitter(Qt.Vertical)
-        self.layout = QVBoxLayout()
-        self.layout.addWidget(splitter)
-
-        self.setCentralWidget(QWidget(self))
-        self.centralWidget().setLayout(self.layout)
-
-        # menu bar
+        #============================================
+        # Menu bar
+        #============================================
         menuBar = self.menuBar()
         menuBar.setNativeMenuBar(False)
 
-
+        # File menu
         fileMenu = menuBar.addMenu("&File")
         openAction = QAction('Open...', self)
         saveAction = QAction('Save', self)
@@ -60,8 +59,10 @@ class Window(QMainWindow):
         fileMenu.addAction(openAction)
         fileMenu.addAction(saveAction)
         fileMenu.addAction(saveAsAction)
+        fileMenu.addSeparator()
         fileMenu.addAction(exitAction)
 
+        # View menu
         viewMenu = menuBar.addMenu("&View")
         view1 = QAction('Lines defects', self)
         view2 = QAction('Planes defects', self)
@@ -81,6 +82,11 @@ class Window(QMainWindow):
         view4.addAction(view41)
         view4.addAction(view42)
 
+        # IPython menu
+        ipythonMenu = menuBar.addMenu("&IPython")
+        ip1 = QAction('Show console', self)
+        ipythonMenu.addAction(ip1)
+
         # actions
         openAction.triggered.connect(self.openConfig)
         saveAction.triggered.connect(self.saveConfig)
@@ -92,27 +98,42 @@ class Window(QMainWindow):
         view32.triggered.connect(lambda: self.displayPlot("mu_h",1))
         view41.triggered.connect(lambda: self.displayPlot("tau_e",1))
         view42.triggered.connect(lambda: self.displayPlot("tau_h",1))
+        ip1.triggered.connect(lambda: self.dock.show())
 
-
-        # Top with tabs
-        self.table = TableWidget(self)
-        splitter.addWidget(self.table)
-
-        # Bottom window: Set up logging to use your widget as a handler
-        self.ipython = IPythonWidget(self)
-        splitter.addWidget(self.ipython)
-
+        #============================================
+        # Window settings
+        #============================================
+        # Basic settings
         self.setWindowTitle('Sesame')
         # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
         # Create geomtry and center the window
-        self.setGeometry(0,0,1200,500)
+        self.setGeometry(0,0,1000,700)
         windowFrame = self.frameGeometry()
         screenCenter = QDesktopWidget().availableGeometry().center()
         windowFrame.moveCenter(screenCenter)
         self.move(windowFrame.topLeft())
+
+        # Set window tabs
+        self.table = TableWidget(self)
+        self.setCentralWidget(self.table)
+
+        # Create and hide a dock for an IPython console
+        self.dock = QDockWidget("  IPython console", self)
+        self.ipython = IPythonWidget(self)
+        self.dock.setWidget(self.ipython)
+        self.addDockWidget(Qt.BottomDockWidgetArea, self.dock)
+        self.dock.hide()
+
+        # Show the interface
         self.show()
 
     def setSystem(self, grid, doping, materials, defects, gen, param):
+        """
+        Fill out all fields of the interface system tab with the settings from
+        the configuration file.  
+        """
+        
+        # system tab instance 
         build = self.table.build
         
         # edit QLineEdit widgets
@@ -181,6 +202,10 @@ class Window(QMainWindow):
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
                       BCs, ScnL, ScpL, ScnR, ScpR, precision, maxSteps,\
                       useMumps, iterative):
+        """
+        Fill out all fields of the interface simulation tab with the settings
+        from the configuration file.  
+        """
         if voltageLoop:
             self.table.simulation.voltage.setChecked(True)
         else:
@@ -212,6 +237,10 @@ class Window(QMainWindow):
             self.table.simulation.noIterative.setChecked(True)
         
     def openConfig(self):
+        """
+        Open and read the configuration of the interface system and analysis
+        tabs. This file must end with extension .ini.
+        """
         self.cfgFile = QFileDialog.getOpenFileName(self, 'Open File', '',\
                         "(*.ini)")[0]
         if self.cfgFile == '':
@@ -269,6 +298,10 @@ class Window(QMainWindow):
             self.saveConfig()
 
     def saveConfig(self):
+        """
+        Save the configuration of the interface system and analysis
+        tabs in a file with extension .ini.
+        """
 
         if not hasattr(self, 'cfgFile'):
             self.saveAsConfig()
@@ -320,6 +353,10 @@ class Window(QMainWindow):
 
     @slotError()
     def displayPlot(self, prop, checked):
+        """
+        Access to plotter routines to visualize some basic system settings in 2D
+        to make sure the regions are defined as envisioned.
+        """
         settings = self.table.get_system_settings()
         system = parseSettings(settings)
         if prop == "mu_e":
@@ -335,18 +372,24 @@ class Window(QMainWindow):
         elif prop == "planes":
             plotter.plot_plane_defects(system)
 
-
         
 class QIPythonWidget(RichJupyterWidget):
-    """ Convenience class for a live IPython console widget. We can replace the
-    standard banner using the customBanner argument
+    """ 
+    Convenience class for the definition of a live IPython console widget. We
+    replace the standard banner using the sesameBanner argument.
     """ 
     
-    def __init__(self,customBanner=None,*args,**kwargs):
-        if not customBanner is None: self.banner=customBanner
+    def __init__(self, *args, **kwargs):
         super(QIPythonWidget, self).__init__(*args,**kwargs)
+        # banners printed at the top of the shell
+        self.banner = ''
+        banner1 = 'Python ' + sys.version.replace('\n', '')
+        banner2 = 'IPython ' + ".".join(map(str, version_info[:3]))
+        # create qt console kernel
         self.kernel_manager = kernel_manager = QtInProcessKernelManager()
         kernel_manager.start_kernel()
+        kernel_manager.kernel.shell.banner1 = banner1
+        kernel_manager.kernel.shell.banner2 = banner2
         kernel_manager.kernel.gui = 'qt'
         self.kernel_client = kernel_client = self._kernel_manager.client()
         kernel_client.start_channels()
@@ -358,42 +401,36 @@ class QIPythonWidget(RichJupyterWidget):
         self.exit_requested.connect(stop)
 
     def pushVariables(self,variableDict):
-        """ Given a dictionary containing name / value pairs, push those
-        variables to the IPython console widget 
-        """
+        # Given a dictionary containing name / value pairs, push those
+        # variables to the IPython console widget 
         self.kernel_manager.kernel.shell.push(variableDict)
     def clearTerminal(self):
-        """ Clears the terminal """
+        # Clears the terminal
         self._control.clear()    
     def printText(self,text):
-        """ Prints some plain text to the console """
+        # Prints some plain text to the console
         self._append_plain_text(text)        
     def executeCommand(self,command):
-        """ Execute a command in the frame of the console widget """
+        # Execute a command in the frame of the console widget
         self._execute(command,False)
 
 
 class IPythonWidget(QWidget):
-    """ Main GUI Widget including an IPython Console widget inside vertical
-    layout 
+    """ 
+    GUI widget including an IPython console inside a vertical layout. 
     """ 
     
     def __init__(self, parent=None):
         super(IPythonWidget, self).__init__(parent)
+        console = QIPythonWidget()
         layout = QVBoxLayout(self)
-        ipyConsole = QIPythonWidget(customBanner="Welcome to Sesame IPython console\n")
-        layout.addWidget(ipyConsole)        
-        # This allows the variable foo and method print_process_id to be accessed from the ipython console
-        # ipyConsole.pushVariables({"foo":43,"print_process_id":print_process_id})
-        # ipyConsole.printText("The variable 'foo' and the method 'print_process_id()' are available. Use the 'whos' command for information.")                           
-
-def print_process_id():
-    print('Process ID is:', os.getpid())
-
-
-
+        layout.addWidget(console)        
 
 class TableWidget(QWidget):
+    """
+    Definition of the three tabs that make the GUI: system, simulation,
+    analysis.
+    """
     def __init__(self, parent):
         super(TableWidget, self).__init__(parent)
 

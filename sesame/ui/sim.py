@@ -170,8 +170,8 @@ class SimulationWorker(QObject):
                         savemat(name, solution)
                     else:
                         np.savez_compressed(name, **solution)
-                    # signal a new file has been created to the main thread
-                    self.newFile.emit(name)
+                        # signal a new file has been created to the main thread
+                        self.newFile.emit(name + '.npz')
                 else:
                     logging.info("The solver failed to converge for the applied voltage"\
                           + " {0} V (index {1}).".format(loopValues[idx], idx))
@@ -226,8 +226,8 @@ class SimulationWorker(QObject):
                         savemat(name, solution)
                     else:
                         np.savez_compressed(name, **solution)
-                    # signal a new file has been created to the main thread
-                    self.newFile.emit(name)
+                        # signal a new file has been created to the main thread
+                        self.newFile.emit(name + '.npz')
                 else:
                     self.logger.info("The solver failed to converge for the parameter value"\
                           + " {0} (index {1}).".format(p, idx))
