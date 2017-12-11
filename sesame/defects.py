@@ -56,7 +56,7 @@ def defectsF(sys, defects_list, n, p, rho, r=None):
             rho[sites] += N / dl * (a + (b-a)*f)
 
             # additional recombination
-            tau_e, tau_h = se*ve*N/dl, sh*vh*N/dl
+            tau_e, tau_h = 1/(se*ve*N/dl), 1/(sh*vh*N/dl)
             if r is not None:
                 r[sites] += (_np - ni2) / (tau_h*(_n+_n1) + tau_e*(_p+_p1))
 

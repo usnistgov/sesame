@@ -472,9 +472,8 @@ class Analyzer():
         jx = interp2d(x*scale, y*scale, Jx, kind='linear')
         jy = interp2d(x*scale, y*scale, Jy, kind='linear')
 
-        J  = self.sys.scaling.current
         xx, yy = np.linspace(0, Lx, 100), np.linspace(0, Ly, 100)
-        jnx, jny = J*jx(xx, yy), J*jy(xx, yy)
+        jnx, jny = jx(xx, yy), jy(xx, yy)
         norm = np.sqrt(jnx**2 + jny**2)
 
         y, x = np.mgrid[0:Ly:100j, 0:Lx:100j]
