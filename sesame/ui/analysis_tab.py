@@ -68,7 +68,9 @@ class Analysis(QWidget):
         quantities = ["Choose one", "Electron quasi-Fermi level",\
         "Hole quasi-Fermi level", "Electrostatic potential",\
         "Electron density", "Hole density", "Bulk SRH recombination",\
-        "Radiative recombination", "Electron current", "Hole current"]
+        "Radiative recombination", "Auger recombination",\
+        "Total recombination", "Electron current", "Hole current",\
+        ]
         self.quantity.addItems(quantities)
         twoDLayout.addWidget(self.quantity)
         self.plotBtnS = QPushButton("Plot")
@@ -83,6 +85,7 @@ class Analysis(QWidget):
         oneDBox = QGroupBox("Linear plot")
         oneDBox.setMaximumWidth(width)
         oneDLayout = QVBoxLayout()
+        oneDBox.setLayout(oneDLayout)
         form = QFormLayout()
 
         # Choice between Loop values and position
@@ -106,16 +109,23 @@ class Analysis(QWidget):
         "Electron quasi-Fermi level", "Hole quasi-Fermi level",\
         "Electrostatic potential","Electron density",\
         "Hole density", "Bulk SRH recombination", "Radiative recombination",\
+        "Auger recombination", \
         "Electron current along x", "Electron current along y",\
         "Hole current along x", "Hole current along y",\
+        "Defects recombination current", "Total recombination current",\
         "Full steady state current"]
         self.quantity2.addItems(quantities)
         form.addRow("Y data", self.quantity2)
         oneDLayout.addLayout(form)
+
+        btnLayout = QHBoxLayout()
         self.plotBtn = QPushButton("Plot")
         self.plotBtn.clicked.connect(self.linearPlot)
-        oneDLayout.addWidget(self.plotBtn)
-        oneDBox.setLayout(oneDLayout)
+        self.clearBtn = QPushButton("Clear")
+        self.clearBtn.clicked.connect(self.clearPlot)
+        btnLayout.addWidget(self.clearBtn)
+        btnLayout.addWidget(self.plotBtn)
+        oneDLayout.addLayout(btnLayout)
         prepare.addWidget(oneDBox)
  
 
@@ -172,10 +182,12 @@ class Analysis(QWidget):
             item = self.dataList.item(i)
             item.setSelected(True)
         # disable some combo box rows
-        for i in range(1,13):
+        for i in range(1,14):
             self.quantity2.model().item(i).setEnabled(False)
         # enable some rows
-            self.quantity2.model().item(13).setEnabled(True)
+            self.quantity2.model().item(14).setEnabled(True)
+            self.quantity2.model().item(15).setEnabled(True)
+            self.quantity2.model().item(16).setEnabled(True)
 
     def radioPos_toggled(self):
         # give example in XData area
@@ -186,11 +198,18 @@ class Analysis(QWidget):
         else:
             self.Xdata.setText("(x1, y1), (x2, y2)")
         # disable some combo box rows
-        self.quantity2.model().item(13).setEnabled(False)
+        self.quantity2.model().item(14).setEnabled(False)
+        self.quantity2.model().item(15).setEnabled(False)
+        self.quantity2.model().item(16).setEnabled(False)
         # enable some combo box rows
-        for i in range(1,13):
+        for i in range(1,14):
             self.quantity2.model().item(i).setEnabled(True)
 
+    def clearPlot(self):
+        # clear the figure of linear plot box
+        self.linearFig.canvas.figure.clear()
+        self.linearFig.figure.add_subplot(111)
+        self.linearFig.canvas.draw()
         
     @slotError("bool")
     def surfacePlot(self, checked):
@@ -248,6 +267,12 @@ class Analysis(QWidget):
             if txt == "Radiative recombination":
                 dataMap = G * az.radiative_rr()
                 title = r'Radiative Recomb. [$\mathregular{cm^{-3}s^{-1}}$]'
+            if txt == "Auger recombination":
+                dataMap = G * az.auger_rr()
+                title = r'Auger Recomb. [$\mathregular{cm^{-3}s^{-1}}$]'
+            if txt == "Total recombination":
+                dataMap = G * az.total_rr()
+                title = r'Total Recomb. [$\mathregular{cm^{-3}s^{-1}}$]'
             if txt != "Electron current" and txt != "Hole current":
                 plot(system, dataMap, scale=1e-4, cmap='viridis',\
                      fig=self.surfaceFig.figure, title=title)
@@ -258,6 +283,7 @@ class Analysis(QWidget):
             if txt == "Hole current":
                 az.current_map(False, 'viridis', 1e4, fig=self.surfaceFig.figure)
 
+            self.linearFig.figure.tight_layout()
             self.surfaceFig.canvas.draw()
 
     @slotError("bool")
@@ -279,6 +305,12 @@ class Analysis(QWidget):
         ]
         files.sort() # so that loop values coincide with file order
         if len(files) == 0:
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("No data files were selected.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
             return
 
         # test what kind of plot we are making
@@ -326,9 +358,6 @@ class Analysis(QWidget):
         G  = system.scaling.generation
         J  = system.scaling.current
 
-        # clear the figure
-        self.linearFig.figure.clear()
-
         # loop over the files and plot
         for fdx, fileName in enumerate(files):
             data = np.load(fileName)
@@ -367,6 +396,9 @@ class Analysis(QWidget):
             if txt == "Radiative recombination":
                 Ydata = G * az.radiative_rr()[sites]
                 YLabel = r'Radiative recombination [$\mathregular{cm^{-3}s^{-1}}$]'
+            if txt == "Auger recombination":
+                Ydata = G * az.auger_rr()[sites]
+                YLabel = r'Auger recombination [$\mathregular{cm^{-3}s^{-1}}$]'
             if txt == "Electron current along x":
                 Ydata = J * az.electron_current(component='x')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{n,x}\ [mA\cdot cm^{-2}]}$'
@@ -379,6 +411,19 @@ class Analysis(QWidget):
             if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
+            if txt == "Defects recombination current":
+                Ydata = J * sum(az.defect_recombination_current(d)\
+                                for d in system.defects_list)\
+                        * 1e3
+                YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
+            if txt == "Total recombination current":
+                j_srh = az.bulk_srh_recombination_current()
+                j_rad = az.bulk_radiative_recombination_current()
+                j_aug = az.bulk_auger_recombination_current()
+                j_def = sum(az.defect_recombination_current(d)\
+                                for d in system.defects_list)
+                Ydata = J * (j_srh + j_rad + j_aug + j_def) * 1e3
+                YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
             if txt == "Full steady state current":
                 Ydata = J * az.full_current() * 1e3
                 if system.dimension == 1:
@@ -389,7 +434,9 @@ class Analysis(QWidget):
             # plot
             if txt != "Band diagram": # everything except band diagram
                 ax = self.linearFig.figure.add_subplot(111)
-                if txt == "Full steady state current":
+                if txt == "Full steady state current" or\
+                   txt == "Total recombination current" or\
+                   txt == "Defects recombination current":
                     ax.plot(X[fdx], Ydata, 'ko')
                     ax.set_ylabel(YLabel)
                 else:
@@ -400,4 +447,5 @@ class Analysis(QWidget):
             else:
                 az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
                 
+            self.linearFig.canvas.figure.tight_layout()
             self.linearFig.canvas.draw()

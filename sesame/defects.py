@@ -4,20 +4,22 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 
-# These functions define the model for the charge at the defects.
-#
-# The functions we integrate are somewhat repetitive because I want to avoid
-# making numerous Python function calls by quad
-
 import numpy as np
 from scipy.integrate import quad
 from scipy.constants import m_e, epsilon_0
 from math import exp
 
 
-def defectsF(sys, n, p, rho, r=None):
+def defectsF(sys, defects_list, n, p, rho, r=None):
+    """
+    These functions define the model for the charge at the defects.
 
-    for defect in sys.defects_list:
+    The functions we integrate are somewhat repetitive because I want to avoid
+    making numerous Python function calls by quad.
+    """
+
+
+    for defect in defects_list:
         sites = defect.sites
         E = defect.energy
         a, b = max(defect.transition), min(defect.transition)
@@ -100,11 +102,11 @@ def defectsF(sys, n, p, rho, r=None):
 
 
             
-def defectsJ(sys, n, p, drho_dv, drho_defn=None, drho_defp=None,\
+def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
              dr_defn=None, dr_defp=None, dr_dv=None):
 
 
-    for defect in sys.defects_list:
+    for defect in defects_list:
         sites = defect.sites
         E = defect.energy
         a, b = max(defect.transition), min(defect.transition)

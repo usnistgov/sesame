@@ -46,7 +46,7 @@ def getF(sys, v, efn, efp, veq):
 
     # charge defects
     if len(sys.defects_list) != 0:
-        defectsF(sys, n, p, rho, r)
+        defectsF(sys, sys.defects_list, n, p, rho, r)
 
     # reshape the array as array[y-indices, x-indices]
     _sites = np.arange(Nx*Ny, dtype=int).reshape(Ny, Nx)

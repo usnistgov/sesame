@@ -70,8 +70,8 @@ def getJ(sys, v, efn, efp):
 
     # charge defects
     if len(sys.defects_list) != 0:
-        defectsJ(sys, n, p, drho_dv_s, drho_defn_s, drho_defp_s, dr_defn_s,\
-                 dr_defp_s, dr_dv_s)
+        defectsJ(sys, sys.defects_list, n, p, drho_dv_s, drho_defn_s,\
+                    drho_defp_s, dr_defn_s, dr_defp_s, dr_dv_s)
 
     # charge is divided by epsilon
     drho_defn_s = drho_defn_s / sys.epsilon

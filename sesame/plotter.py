@@ -17,7 +17,7 @@ try:
 except:
     mpl_enabled = False
 
-def plot_line_defects(sys, scale=1e-6, ls='-o', show=True):
+def plot_line_defects(sys, ls='-o', fig=None):
     """
     Plot the sites containing additional charges located on lines in 2D. The
     length scale of the graph is 1 micrometer by default.
@@ -26,8 +26,6 @@ def plot_line_defects(sys, scale=1e-6, ls='-o', show=True):
     ----------
     sys: Builder
         The discretized system.
-    scale: float
-        Relevant scaling to apply to the axes.
     ls: string
         Line style of the plotted paths.
     ax: Maplotlib axis
@@ -51,18 +49,18 @@ def plot_line_defects(sys, scale=1e-6, ls='-o', show=True):
         _, _, xcoord, ycoord, _ = utils.Bresenham(sys, (xa, ya,0), (xb,yb,0))
 
         # plot the path of added charges
-        ax.plot(sys.xpts[xcoord]/scale, sys.ypts[ycoord]/scale, ls)
+        ax.plot(sys.xpts[xcoord], sys.ypts[ycoord], ls)
 
     ax.set_xlabel('x')
     ax.set_ylabel('y')
        
-    ax.set_xlim(xmin=0, xmax=sys.xpts[-1]/scale)
-    ax.set_ylim(ymin=0, ymax=sys.ypts[-1]/scale)
+    ax.set_xlim(xmin=0, xmax=sys.xpts[-1])
+    ax.set_ylim(ymin=0, ymax=sys.ypts[-1])
 
     if show:
         plt.show()
 
-def plot_plane_defects(sys, scale=1e-6, fig=None):
+def plot_plane_defects(sys, fig=None):
     """
     Plot the sites containing additional charges located on planes in 3D. The
     length scale of the graph is 1 micrometer by default.
@@ -104,9 +102,9 @@ def plot_plane_defects(sys, scale=1e-6, fig=None):
     yLabel = ax.set_ylabel('y')
     zLabel = ax.set_zlabel('z')
 
-    ax.set_xlim3d(0, sys.xpts[-1]/scale)
-    ax.set_ylim3d(0, sys.ypts[-1]/scale)
-    ax.set_zlim3d(0, sys.zpts[-1]/scale)
+    ax.set_xlim3d(0, sys.xpts[-1])
+    ax.set_ylim3d(0, sys.ypts[-1])
+    ax.set_zlim3d(0, sys.zpts[-1])
 
     if show:
         plt.show()

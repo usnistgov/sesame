@@ -297,7 +297,6 @@ def plane_defects_sites(sys, location):
     xcoord.append(sys.xpts[ic])
     ycoord.append(sys.ypts[jc])
     zcoord.append(sys.zpts[kc])
-    print(incx, incy, incz)
     for _ in range(travel-1):
         # find the coordinates of the next line
         e1 = error(sys.xpts[i1+incx], sys.ypts[j1], sys.zpts[k1])

@@ -68,8 +68,8 @@ def getJ(sys, v, efn, efp):
 
     # charge defects
     if len(sys.defects_list) != 0:
-        defectsJ(sys, n, p, drho_dv_s, drho_defn_s, drho_defp_s, dr_defn_s,\
-                 dr_defp_s, dr_dv_s)
+        defectsJ(sys, sys.defects_list, n, p, drho_dv_s, drho_defn_s,\
+                    drho_defp_s, dr_defn_s, dr_defp_s, dr_dv_s)
 
     # reshape the array as array[y-indices, x-indices]
     _sites = np.arange(Nx*Ny, dtype=int).reshape(Ny, Nx)

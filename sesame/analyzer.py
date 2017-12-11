@@ -6,6 +6,7 @@
 from scipy.interpolate import InterpolatedUnivariateSpline as spline, interp2d
 from .utils import Bresenham, get_indices
 from .observables import *
+from .defects import defectsF
 
 try:
     import matplotlib.pyplot as plt
@@ -280,6 +281,64 @@ class Analyzer():
         r = self.sys.B[sites] * (n*p - ni2)
         return r
 
+    def defect_rr(self, defect):
+        """
+        Compute the recombination for all sites of a defect (2D and 3D).
+
+        Parameters
+        ----------
+        defect: named tuple
+            Container with the properties of a defect. The expected field names
+            of the named tuple are sites, location, dos, energy, sigma_e,
+            sigma_h, transition, perp_dl.
+
+        Returns
+        -------
+        r: numpy array of floats
+            An array with the values of recombination at each sites.
+        """
+
+        # Create arrays to pass to defectsF
+        n = self.electron_density()
+        p = self.hole_density()
+        rho = np.zeros_like(n) 
+        r = np.zeros_like(n)
+
+        # Update r (and rho but we don't use it)
+        defectsF(self.sys, [defect], n, p, rho, r=r)
+        r = r[defect.sites]
+
+        # Multiply by perp_dl because the surface recombination velocity has
+        # been divided by it in defectsF, and normalize by the length in the
+        # y-direction to get a result in 1/(m^3 s)
+        Ly = self.sys.ypts[-1] / self.sys.scaling.length
+        r *= defect.perp_dl
+        r /= Ly
+
+        return r
+
+    def total_rr(self):
+        """
+        Compute the sum of all the recombination sources for all sites of the
+        system.
+
+        Returns
+        -------
+        r: numpy array of floats
+            An array with the values of the total recombination at each sites.
+        """
+
+        srh = self.bulk_srh_rr()
+        radiative = self.radiative_rr()
+        auger = self.auger_rr()
+        defects = np.zeros_like(srh)
+        for defect in self.sys.defects_list:
+            sites = defect.sites
+            defects[sites] += self.defect_rr(defect)
+
+        return srh + radiative + auger + defects
+
+
     def electron_current(self, component='x', location=None):
         """
         Compute the electron current either by component (x or y) across the
@@ -521,6 +580,15 @@ class Analyzer():
         return self.bulk_recombination_current('radiative')
 
     def bulk_recombination_current(self, mec):
+        # Compute recombination averywhere
+        if mec == 'srh':
+            r = self.bulk_srh_rr()
+        if mec == 'auger':
+            r = self.auger_rr()
+        if mec == 'radiative':
+            r = self.radiative_rr()
+
+        # Integrate along x for each y (if any
         x = self.sys.xpts / self.sys.scaling.length
         if self.sys.ny > 1:
             y = self.sys.ypts / self.sys.scaling.length
@@ -528,27 +596,7 @@ class Analyzer():
         for j in range(self.sys.ny):
             # List of sites
             s = [i + j*self.sys.nx for i in range(self.sys.nx)]
-
-            # Carrier densities
-            n = get_n(self.sys, self.efn, self.v, s)
-            p = get_p(self.sys, self.efp, self.v, s)
-
-            # Recombination
-            ni2 = self.sys.ni[s]**2
-
-            if mec == 'srh':
-                n1 = self.sys.n1[s]
-                p1 = self.sys.p1[s]
-                tau_h = self.sys.tau_h[s]
-                tau_e = self.sys.tau_e[s]
-                r = (n*p - ni2)/(tau_h * (n+n1) + tau_e*(p+p1))
-            if mec == 'auger':
-                r = self.sys.Cn[s] * n * (n*p - ni2)\
-                  + self.sys.Cp[s] * p * (n*p - ni2)
-            if mec == 'radiative':
-                r = self.sys.B[s] * (n*p - ni2)
-
-            sp = spline(x, r)
+            sp = spline(x, r[s])
             u.append(sp.integral(x[0], x[-1]))
         if self.sys.ny == 1:
             JR = u[-1]
@@ -557,6 +605,35 @@ class Analyzer():
             JR = sp.integral(y[0], y[-1])
         return JR
      
+    def defect_recombination_current(self, defect):
+        """
+        Compute the recombination current from a defect in 2D.
+
+        Returns
+        -------
+        JD: float
+            The recombination integrated along the line of the defect.
+
+        Warnings
+        --------
+        Not implemented in 3D.
+        """
+        # Find the path along which to integrate
+        p1 = defect.location[0]
+        p2 = defect.location[1]
+        X, _ = self.line(self.sys, p1, p2)
+
+        # interpolate recombination and integrate but first, remove the
+        # normalization of the recombination introduced in defect_rr to get a
+        # result in 1/(m s)
+        Ly = self.sys.ypts[-1] / self.sys.scaling.length
+        r = self.defect_rr(defect) * Ly
+        sp = spline(X, r)
+        JD = sp.integral(X[0], X[-1])
+
+        return JD
+
+
     def full_current(self):
         """
         Compute the steady state current in 1D and 2D.

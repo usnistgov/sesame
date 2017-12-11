@@ -54,7 +54,7 @@ def getF(sys, v, efn, efp, veq):
 
     # charge defects
     if len(sys.defects_list) != 0:
-        defectsF(sys, n, p, rho, r)
+        defectsF(sys, sys.defects_list, n, p, rho, r)
 
     # charge devided by epsilon
     rho = rho / sys.epsilon

@@ -145,8 +145,8 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
 
     # charge defects
     if len(sys.defects_list) != 0:
-        defectsF(sys, n, p, rho)
-        defectsJ(sys, n, p, drho_dv)
+        defectsF(sys, sys.defects_list, n, p, rho)
+        defectsJ(sys, sys.defects_list, n, p, drho_dv)
 
     # charge devided by epsilon
     rho = rho / sys.epsilon

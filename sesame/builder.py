@@ -11,6 +11,9 @@ from itertools import product
 
 from . import utils
 
+import logging
+logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+
 # named tuple of the characteristics of a defect
 defect = namedtuple('defect', ['sites', 'location', \
                                'dos', 'energy', 'sigma_e', 'sigma_h',\
@@ -24,6 +27,9 @@ class Scaling():
 
     Parameters
     ----------
+    input_length: string
+        Reference unit for lengths. Acceptable entries are 'cm' for centimeters
+        and 'm' for meters.
     T: float
         Temperature for the simulation.
 
@@ -64,7 +70,7 @@ class Scaling():
             self.time = cts.epsilon_0 / (self.mobility * cts.e * self.density) # s
         else:
             self.time = cts.epsilon_0*1e-2 / (self.mobility * cts.e * self.density)  # s
-        # lengths [m]
+        # lengths 
         if input_length == "m":
             self.length = np.sqrt(cts.epsilon_0 * self.energy / (cts.e * self.density)) # m
         else:
@@ -90,6 +96,9 @@ class Builder():
     ----------
     xpts, ypts, zpts: numpy arrays of floats
         Mesh with original dimensions.
+    input_length: string
+        Reference unit for lengths. Acceptable entries are 'cm' for centimeters
+        and 'm' for meters.
     T: float
         Temperature for the simulation.
 
@@ -132,7 +141,7 @@ class Builder():
 
     def __init__(self, xpts, ypts=None, zpts=None, input_length='cm', T=300):
 
-        self.scaling = Scaling(input_length,T)
+        self.scaling = Scaling(input_length, T)
         self.input_length = input_length
 
         self.xpts = xpts
@@ -220,7 +229,6 @@ class Builder():
                   'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6, \
                   'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
-
         for key in mat.keys():
             mt[key] = mat[key]
 
@@ -241,8 +249,8 @@ class Builder():
         self.Cp[s]      = mt['Cp'] / ((1./N**2)/t)
 
         Etrap = mt['Et'] / self.scaling.energy
-        self.n1[s]      = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + Etrap)
-        self.p1[s]      = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 - Etrap)
+        self.n1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + Etrap)
+        self.p1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 - Etrap)
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
@@ -256,9 +264,10 @@ class Builder():
         elif len(location) == 4:
             s, _, _, _, dl = utils.plane_defects_sites(self, location) 
         else:
-            print("Wrong definition for the defects location: the list must"+\
-                  "contain two points for a line, four points for a plane.")
-            exit(1)
+            msg = "Wrong definition for the defects location: "\
+            "the list must contain two points for a line, four points for a plane."
+            logging.error(msg)
+            return
 
         # The scale of the density of states is also the inverse of the scale 
         # for the capture cross section
@@ -360,7 +369,6 @@ class Builder():
         self.add_defects(location, N, sigma_e, sigma_h, E, transition)
  
     def doping_profile(self, density, location):
-
         s = get_sites(self, location)
         self.rho[s] = density / self.scaling.density
 

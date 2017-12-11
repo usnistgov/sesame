@@ -83,7 +83,7 @@ class Window(QMainWindow):
         view4.addAction(view42)
 
         # IPython menu
-        ipythonMenu = menuBar.addMenu("&IPython")
+        ipythonMenu = menuBar.addMenu("&Console")
         ip1 = QAction('Show console', self)
         ipythonMenu.addAction(ip1)
 
