@@ -124,8 +124,10 @@ class SimulationWorker(QObject):
                                             use_mumps=useMumps, iterative=iterative)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
+                        self.simuDone.emit()
                         return
                     if self.abort:
+                        self.simuDone.emit()
                         return
             
             # Loop over voltages
@@ -154,6 +156,7 @@ class SimulationWorker(QObject):
                                             use_mumps=useMumps, iterative=iterative)
 
                 if self.abort:
+                    self.simuDone.emit()
                     return
 
                 if solution is not None:
@@ -175,7 +178,9 @@ class SimulationWorker(QObject):
                 else:
                     logging.info("The solver failed to converge for the applied voltage"\
                           + " {0} V (index {1}).".format(loopValues[idx], idx))
-                    break
+                    self.logger.info("Aborting now.")
+                    self.simuDone.emit()
+                    return
 
             if solution is not None:
                 self.logger.info("********** Calculations completed **********")
@@ -208,8 +213,10 @@ class SimulationWorker(QObject):
                                             use_mumps=useMumps, iterative=iterative)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
-                        break
+                        self.simuDone.emit()
+                        return
                     if self.abort:
+                        self.simuDone.emit()
                         return
 
                 if solution is not None:
@@ -232,8 +239,10 @@ class SimulationWorker(QObject):
                     self.logger.info("The solver failed to converge for the parameter value"\
                           + " {0} (index {1}).".format(p, idx))
                     self.logger.info("Aborting now.")
-                    break
-            self.logger.info("********** Calculations completed **********")
+                    self.simuDone.emit()
+                    return
+            if solution is not None:
+                self.logger.info("********** Calculations completed **********")
 
         # tell main thread to quit this thread
         self.simuDone.emit()

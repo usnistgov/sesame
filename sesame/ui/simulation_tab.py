@@ -272,7 +272,7 @@ class Simulation(QWidget):
 
     @slotError("bool")
     def run(self, checked):
-
+        self.brun.setEnabled(False)
         loop = ""
         while(loop == ""):
             # loop over voltages
@@ -288,6 +288,7 @@ class Simulation(QWidget):
                 msg.setText("Choose what to loop over: voltages or generation rates.")
                 msg.setEscapeButton(QMessageBox.Ok)
                 msg.exec_()
+                self.brun.setEnabled(True)
                 return
 
         # get system settings and build system without generation
@@ -315,12 +316,14 @@ class Simulation(QWidget):
             self.logWidget.appendPlainText(message)
 
     def stop(self):
+        self.brun.setEnabled(True)
         if self.thread.isRunning():
             self.simulation.abortSim()
             self.thread_cleanup()
             self.logger.critical("****** Calculation interrupted manually ******")
 
     def thread_cleanup(self):
+        self.brun.setEnabled(True)
         self.thread.quit()
         self.thread.wait()
 

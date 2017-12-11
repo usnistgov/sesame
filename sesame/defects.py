@@ -56,9 +56,9 @@ def defectsF(sys, defects_list, n, p, rho, r=None):
             rho[sites] += N / dl * (a + (b-a)*f)
 
             # additional recombination
-            Se, Sh = se*ve*N/dl, sh*vh*N/dl
+            tau_e, tau_h = se*ve*N/dl, sh*vh*N/dl
             if r is not None:
-                r[sites] += (_np - ni2) / ((_n+_n1)/Sh + (_p+_p1)/Se)
+                r[sites] += (_np - ni2) / (tau_h*(_n+_n1) + tau_e*(_p+_p1))
 
         else: # integral to perform, quad requires single value function
             # additional recombination
@@ -195,13 +195,13 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 drho_defn[sites] += N/dl * (b-a) * se*ve*_n * (se*ve*_n1 + sh*vh*_p) / d
                 drho_defp[sites] += -N/dl * (b-a) * (se*ve*_n + sh*vh*_p1) * sh*vh*_p / d
                 
-                Se, Sh = se*ve*N/dl, sh*vh*N/dl
-                dr_defn[sites] += (_np*((_n+_n1)/Sh + (_p+_p1)/Se) - (_np-ni2)*_n/Sh)\
-                                  / ((_n+_n1)/Sh + (_p+_p1)/Se)**2
-                dr_defp[sites] += (_np*((_n+_n1)/Sh + (_p+_p1)/Se) - (_np-ni2)*_p/Se)\
-                                  / ((_n+_n1)/Sh + (_p+_p1)/Se)**2
-                dr_dv[sites]   += (_np-ni2) * (_p/Se - _n/Sh)\
-                                  / ((_n+_n1)/Sh + (_p+_p1)/Se)**2
+                tau_e, tau_h = 1/(se*ve*N/dl), 1/(sh*vh*N/dl)
+                dr_defn[sites] += (_np*(tau_h*(_n+_n1) + tau_e*(_p+_p1)) - (_np-ni2)*_n*tau_h)\
+                                  / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
+                dr_defp[sites] += (_np*(tau_h*(_n+_n1) + tau_e*(_p+_p1)) - (_np-ni2)*_p*tau_e)\
+                                  / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
+                dr_dv[sites]   += (_np-ni2) * (tau_e*_p - tau_h*_n)\
+                                  / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
 
         else: # integral to perform, quad requires single value function
             # always compute drho_dv

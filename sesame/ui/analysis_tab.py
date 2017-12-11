@@ -30,6 +30,12 @@ class Analysis(QWidget):
         self.hlayout = QHBoxLayout()
         self.tabLayout.addLayout(self.hlayout)
 
+        # plotting colors for linear plot
+        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728',\
+                       '#9467bd', '#8c564b', '#e377c2', '#7f7f7f',\
+                       '#bcbd22', '#17becf']
+        self.iterColors = iter(self.colors)
+
 
         #==============================================
         # Upload data and settings
@@ -91,7 +97,7 @@ class Analysis(QWidget):
         # Choice between Loop values and position
         XradioLayout = QHBoxLayout()
         radio = QButtonGroup(XradioLayout)
-        self.radioLoop = QRadioButton("Loop Values")
+        self.radioLoop = QRadioButton("Loop values")
         self.radioLoop.toggled.connect(self.radioLoop_toggled)
         self.radioPos = QRadioButton("Position")
         self.radioPos.toggled.connect(self.radioPos_toggled)
@@ -112,7 +118,7 @@ class Analysis(QWidget):
         "Auger recombination", \
         "Electron current along x", "Electron current along y",\
         "Hole current along x", "Hole current along y",\
-        "Defects recombination current", "Total recombination current",\
+        "Integrated defects recombination", "Integrated total recombination",\
         "Full steady state current"]
         self.quantity2.addItems(quantities)
         form.addRow("Y data", self.quantity2)
@@ -210,6 +216,8 @@ class Analysis(QWidget):
         self.linearFig.canvas.figure.clear()
         self.linearFig.figure.add_subplot(111)
         self.linearFig.canvas.draw()
+        # Reset the iterator over colors
+        self.iterColors = iter(self.colors)
         
     @slotError("bool")
     def surfacePlot(self, checked):
@@ -222,6 +230,12 @@ class Analysis(QWidget):
                 for i in self.dataList.selectedItems()
         ]
         if len(files) == 0:
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("No data files were selected.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
             return
         elif len(files) > 1:
             msg = QMessageBox()
@@ -358,6 +372,9 @@ class Analysis(QWidget):
         G  = system.scaling.generation
         J  = system.scaling.current
 
+        # Ydata is a list for the quantities looped over
+        Ydata = []
+
         # loop over the files and plot
         for fdx, fileName in enumerate(files):
             data = np.load(fileName)
@@ -411,41 +428,50 @@ class Analysis(QWidget):
             if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
-            if txt == "Defects recombination current":
-                Ydata = J * sum(az.defect_recombination_current(d)\
-                                for d in system.defects_list)\
-                        * 1e3
+            if txt == "Integrated defects recombination":
+                Ydata.append(J * sum(az.defect_recombination_current(d)*1e3\
+                                for d in system.defects_list))
                 YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
-            if txt == "Total recombination current":
-                j_srh = az.bulk_srh_recombination_current()
-                j_rad = az.bulk_radiative_recombination_current()
-                j_aug = az.bulk_auger_recombination_current()
-                j_def = sum(az.defect_recombination_current(d)\
+            if txt == "Integrated total recombination":
+                j_srh = az.integrated_bulk_srh_recombination()
+                j_rad = az.integrated_radiative_recombination()
+                j_aug = az.integrated_auger_recombination()
+                j_def = sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list)
-                Ydata = J * (j_srh + j_rad + j_aug + j_def) * 1e3
+                Ydata.append(J * (j_srh + j_rad + j_aug + j_def) * 1e3)
                 YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
             if txt == "Full steady state current":
-                Ydata = J * az.full_current() * 1e3
+                Ydata.append(J * az.full_current() * 1e3 * system.scaling.length)
                 if system.dimension == 1:
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-2}}$]'
                 if system.dimension == 2:
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
 
             # plot
-            if txt != "Band diagram": # everything except band diagram
-                ax = self.linearFig.figure.add_subplot(111)
-                if txt == "Full steady state current" or\
-                   txt == "Total recombination current" or\
-                   txt == "Defects recombination current":
-                    ax.plot(X[fdx], Ydata, 'ko')
-                    ax.set_ylabel(YLabel)
-                else:
+            if txt not in ["Full steady state current",\
+                           "Integrated total recombination",\
+                           "Integrated defects recombination"]:
+                if txt != "Band diagram":
+                    ax = self.linearFig.figure.add_subplot(111)
                     X = X * 1e4  # set length in um
                     ax.plot(X, Ydata)
                     ax.set_ylabel(YLabel)
                     ax.set_xlabel(r'Position [$\mathregular{\mu m}$]')
-            else:
-                az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
-                
-            self.linearFig.canvas.figure.tight_layout()
-            self.linearFig.canvas.draw()
+                else:
+                    az.band_diagram((Xdata[0], Xdata[1]), fig=self.linearFig.figure)
+
+        # For quantities looped over
+        if txt in ["Full steady state current",\
+                   "Integrated total recombination",\
+                   "Integrated defects recombination"]:
+            try:
+                c = next(self.iterColors)
+            except StopIteration:
+                self.iterColors = iter(self.colors)
+                c = next(self.iterColors)
+            ax = self.linearFig.figure.add_subplot(111)
+            ax.plot(X, Ydata, marker='o', color=c)
+            ax.set_ylabel(YLabel)
+       
+        self.linearFig.canvas.figure.tight_layout()
+        self.linearFig.canvas.draw()

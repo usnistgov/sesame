@@ -308,13 +308,6 @@ class Analyzer():
         defectsF(self.sys, [defect], n, p, rho, r=r)
         r = r[defect.sites]
 
-        # Multiply by perp_dl because the surface recombination velocity has
-        # been divided by it in defectsF, and normalize by the length in the
-        # y-direction to get a result in 1/(m^3 s)
-        Ly = self.sys.ypts[-1] / self.sys.scaling.length
-        r *= defect.perp_dl
-        r /= Ly
-
         return r
 
     def total_rr(self):
@@ -534,9 +527,10 @@ class Analyzer():
         plt.show()
 
 
-    def bulk_srh_recombination_current(self):
+    def integrated_bulk_srh_recombination(self):
         """
-        Compute the bulk Shockley-Read-Hall recombination current.
+        Integrate the bulk Shockley-Read-Hall recombination over an entire
+        system.
 
         Returns
         -------
@@ -547,39 +541,39 @@ class Analyzer():
         --------
         Not implemented in 3D.
         """
-        return self.bulk_recombination_current('srh')
+        return self.integrated_recombination('srh')
 
-    def bulk_auger_recombination_current(self):
+    def integrated_auger_recombination(self):
         """
-        Compute the bulk Auger recombination current.
+        Integrate the Auger recombination over an entire system.
 
         Returns
         -------
         JR: float
-            The integrated bulk recombination.
+            The integrated Auger recombination.
 
         Warnings
         --------
         Not implemented in 3D.
         """
-        return self.bulk_recombination_current('auger')
+        return self.integrated_recombination('auger')
 
-    def bulk_radiative_recombination_current(self):
+    def integrated_radiative_recombination(self):
         """
-        Compute the bulk radiative recombination current.
+        Integrate the radiative recombination over an entire system.
 
         Returns
         -------
         JR: float
-            The integrated bulk recombination.
+            The integrated radiative recombination.
 
         Warnings
         --------
         Not implemented in 3D.
         """
-        return self.bulk_recombination_current('radiative')
+        return self.integrated_recombination('radiative')
 
-    def bulk_recombination_current(self, mec):
+    def integrated_recombination(self, mec):
         # Compute recombination averywhere
         if mec == 'srh':
             r = self.bulk_srh_rr()
@@ -605,9 +599,9 @@ class Analyzer():
             JR = sp.integral(y[0], y[-1])
         return JR
      
-    def defect_recombination_current(self, defect):
+    def integrated_defect_recombination(self, defect):
         """
-        Compute the recombination current from a defect in 2D.
+        Integrate the recombination along a defect in 2D.
 
         Returns
         -------
@@ -623,11 +617,8 @@ class Analyzer():
         p2 = defect.location[1]
         X, _ = self.line(self.sys, p1, p2)
 
-        # interpolate recombination and integrate but first, remove the
-        # normalization of the recombination introduced in defect_rr to get a
-        # result in 1/(m s)
-        Ly = self.sys.ypts[-1] / self.sys.scaling.length
-        r = self.defect_rr(defect) * Ly
+        # interpolate recombination and integrate
+        r = self.defect_rr(defect)
         sp = spline(X, r)
         JD = sp.integral(X[0], X[-1])
 
