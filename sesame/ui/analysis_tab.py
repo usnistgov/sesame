@@ -430,22 +430,32 @@ class Analysis(QWidget):
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
             if txt == "Integrated defects recombination":
-                Ydata.append(G * x0**2 * sum(az.defect_recombination_current(d)\
+                if system.dimension == 1:
+                    Ydata.append(G * x0 * sum(az.defect_recombination_current(d)\
                                 for d in system.defects_list))
-                YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-1}\cdot s^{-1}}$]'
+                    YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-2}\cdot s^{-1}}$]'
+                if system.dimension == 2:
+                    Ydata.append(G * x0**2 * sum(az.defect_recombination_current(d)\
+                                for d in system.defects_list))
+                    YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-1}\cdot s^{-1}}$]'
             if txt == "Integrated total recombination":
                 j_srh = az.integrated_bulk_srh_recombination()
                 j_rad = az.integrated_radiative_recombination()
                 j_aug = az.integrated_auger_recombination()
                 j_def = sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list)
-                Ydata.append(G * x0**2 * (j_srh + j_rad + j_aug + j_def))
-                YLabel = r'[$G_{tot}\ \mathregular{cm^{-1}\cdot s^{-1}}$]'
-            if txt == "Full steady state current":
-                Ydata.append(J * az.full_current() * 1e3 * x0)
                 if system.dimension == 1:
+                    Ydata.append(G * x0 * (j_srh + j_rad + j_aug + j_def))
+                    YLabel = r'[$G_{tot}\ \mathregular{cm^{-2}\cdot s^{-1}}$]'
+                if system.dimension == 2:
+                    Ydata.append(G * x0**2 * (j_srh + j_rad + j_aug + j_def))
+                    YLabel = r'[$G_{tot}\ \mathregular{cm^{-1}\cdot s^{-1}}$]'
+            if txt == "Full steady state current":
+                if system.dimension == 1:
+                    Ydata.append(J * az.full_current() * 1e3)
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-2}}$]'
                 if system.dimension == 2:
+                    Ydata.append(J * az.full_current() * 1e3 * x0)
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
 
             # plot
