@@ -151,12 +151,10 @@ class Window(QMainWindow):
         build.materials_list = materials
         build.matNumber = -1
         build.box.clear()
+        build.loc.clear()
         for mat in materials:
             # location
-            build.loc.clear()
             build.loc.setText(mat['location'])
-            build.loc.show()
-            build.lbl.show()
             # add "material number" to combo box
             build.matNumber += 1
             build.box.addItem("Material " + str(build.matNumber+1))
@@ -172,17 +170,22 @@ class Window(QMainWindow):
                 item.setFlags(Qt.ItemIsEnabled)
                 build.table.setItem(idx,1, item)
             build.table.show()
+            build.loc.show()
+            build.lbl.show()
+        # Disable remove and new buttons, enable save button
+        if len(build.materials_list) > 1:
+            build.removeButton.setEnabled(True)
+        build.newButton.setEnabled(True)
+        build.saveButton.setEnabled(False)
 
         # set defects properties 
         build.defects_list = defects
         build.defectNumber = -1
         build.defectBox.clear()
+        build.cloc.clear()
         for defect in defects:
             # location
-            build.cloc.clear()
             build.cloc.setText(defect['location'])
-            build.cloc.show()
-            build.clbl.show()
             # add "defect number" to combo box
             build.defectNumber += 1
             build.defectBox.addItem("Defect " + str(build.defectNumber+1))
@@ -197,6 +200,13 @@ class Window(QMainWindow):
                 item.setFlags(Qt.ItemIsEnabled)
                 build.ctable.setItem(idx,1, item)
             build.ctable.show()
+            build.cloc.show()
+            build.clbl.show()
+        # Disable remove and new buttons, enable save button
+        build.removeButton2.setEnabled(True)
+        build.defectButton.setEnabled(True)
+        build.saveButton2.setEnabled(False)
+
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
@@ -357,7 +367,7 @@ class Window(QMainWindow):
         Access to plotter routines to visualize some basic system settings in 2D
         to make sure the regions are defined as envisioned.
         """
-        settings = self.table.get_system_settings()
+        settings = self.table.build.getSystemSettings()
         system = parseSettings(settings)
         if prop == "mu_e":
             plotter.plot(system, system.mu_e)

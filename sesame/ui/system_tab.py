@@ -246,6 +246,7 @@ class BuilderBox(QWidget):
         # 5. Disable remove and new buttons
         self.removeButton.setEnabled(False)
         self.newButton.setEnabled(False)
+        self.saveButton.setEnabled(True)
 
     # store data entered
     def saveMat(self):
@@ -265,6 +266,7 @@ class BuilderBox(QWidget):
 
         # disable save, enable remove and new buttons
         self.newButton.setEnabled(True)
+        self.saveButton.setEnabled(False)
         if len(self.materials_list) > 1:
             self.removeButton.setEnabled(True)
 
@@ -285,6 +287,7 @@ class BuilderBox(QWidget):
         if len(self.materials_list) == 1:
             self.removeButton.setEnabled(False)
             self.newButton.setEnabled(True)
+            self.saveButton.setEnabled(False)
 
     def builder3(self):
         layout3 = QVBoxLayout()

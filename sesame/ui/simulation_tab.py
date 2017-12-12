@@ -272,7 +272,13 @@ class Simulation(QWidget):
 
     @slotError("bool")
     def run(self, checked):
+        # Disable run button
         self.brun.setEnabled(False)
+        # Clear the list of data files already uploaded in simulation tab
+        self.tabsTable.analysis.filesList.clear()
+        self.tabsTable.analysis.dataList.clear()
+
+        # Make sure a type of simulation was chosen
         loop = ""
         while(loop == ""):
             # loop over voltages
