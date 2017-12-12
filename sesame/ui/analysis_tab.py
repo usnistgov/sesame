@@ -371,6 +371,7 @@ class Analysis(QWidget):
         N  = system.scaling.density
         G  = system.scaling.generation
         J  = system.scaling.current
+        x0 = system.scaling.length
 
         # Ydata is a list for the quantities looped over
         Ydata = []
@@ -429,19 +430,19 @@ class Analysis(QWidget):
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
             if txt == "Integrated defects recombination":
-                Ydata.append(J * sum(az.defect_recombination_current(d)*1e3\
+                Ydata.append(G * x0**2 * sum(az.defect_recombination_current(d)\
                                 for d in system.defects_list))
-                YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
+                YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-1}\cdot s^{-1}}$]'
             if txt == "Integrated total recombination":
                 j_srh = az.integrated_bulk_srh_recombination()
                 j_rad = az.integrated_radiative_recombination()
                 j_aug = az.integrated_auger_recombination()
                 j_def = sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list)
-                Ydata.append(J * (j_srh + j_rad + j_aug + j_def) * 1e3)
-                YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
+                Ydata.append(G * x0**2 * (j_srh + j_rad + j_aug + j_def))
+                YLabel = r'[$G_{tot}\ \mathregular{cm^{-1}\cdot s^{-1}}$]'
             if txt == "Full steady state current":
-                Ydata.append(J * az.full_current() * 1e3 * system.scaling.length)
+                Ydata.append(J * az.full_current() * 1e3 * x0)
                 if system.dimension == 1:
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-2}}$]'
                 if system.dimension == 2:
