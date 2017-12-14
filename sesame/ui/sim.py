@@ -3,12 +3,13 @@
 # This file is part of Sesame. It is subject to the license terms in the file
 # LICENSE.rst found in the top-level directory of this distribution.
 
-import sesame
 import numpy as np
-from numpy import exp
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
 import logging
+
+import sesame
+from ..solvers import Solver
 
 logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
 
@@ -51,50 +52,33 @@ class SimulationWorker(QObject):
         # Add contacts surface recombination velocities
         system.contacts(*Sc)
 
+        # Create a Solver instance, I don't use the one already present
+        solver = Solver()
+
         #===========================================================
         # Equilibrium potential
         #===========================================================
-        self.logger.info("Solving for the equilibrium electrostatic potential")
         nx = system.nx
-        # determine what the potential on the left and right might be
-        if system.rho[0] < 0: # p-doped
-            phi_left = -system.Eg[0] - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
-        else: # n-doped
-            phi_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
 
-        if system.rho[nx-1] < 0:
-            phi_right = -system.Eg[nx-1] - np.log(abs(system.rho[nx-1])/system.Nv[nx-1]) - system.bl[nx-1]
-            q = 1
-        else:
-            phi_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
-            q = -1
+        # Equilibrium guess
+        guess = solver.make_guess(system)
+        # Solve Poisson equation
+        solver.default_solver('Poisson', system, guess, tol, BCs, contacts,\
+                              maxiter, True, useMumps, iterative, 1e-6, 1)
 
-        # Make a linear guess and solve for the eqilibrium potential
-        v = np.linspace(phi_left, phi_right, system.nx)
-        if system.dimension == 2:
-            v = np.tile(v, system.ny) # replicate the guess in the y-direction
-        if system.dimension == 3:
-            v = np.tile(v, system.ny*system.nz) # replicate the guess in the y and z-direction
-
-        # Solver Poisson equation
-        solution = {'v':v}
-        solution = sesame.solve(system, solution, tol=tol, periodic_bcs=BCs,\
-                                contacts_bcs=contacts, maxiter=maxiter,\
-                                use_mumps=useMumps, iterative=iterative)
-
-        if solution is not None:
+        if solver.equilibrium is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
-            # Make a copy of the equilibrium potential
-            veq = np.copy(solution['v'])
-            # Initial arrays for the quasi-Fermi levels
-            efn = np.zeros((system.nx*system.ny*system.nz,))
-            efp = np.zeros((system.nx*system.ny*system.nz,))
-            solution.update({'efn': efn, 'efp': efp})
+            # Construct the solution dictionnary
+            efn = np.zeros_like(solver.equilibrium)
+            efp = np.zeros_like(solver.equilibrium)
+            v = np.copy(solver.equilibrium)
+            solution = {'efn': efn, 'efp': efp, 'v': v}
         else:
             self.logger.info("The solver failed to converge for the electrostatic potential")
             return
 
         if self.abort:
+            self.simuDone.emit()
             return
 
         #===========================================================
@@ -119,9 +103,9 @@ class SimulationWorker(QObject):
                 for a in range(10):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
-                    solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
-                                            periodic_bcs=BCs, maxiter=maxiter,\
-                                            use_mumps=useMumps, iterative=iterative)
+                    solution = solver.default_solver('all', system, solution,\
+                                    tol, BCs, contacts, maxiter, True,\
+                                    useMumps, iterative, 1e-6, 1)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
                         self.simuDone.emit()
@@ -148,12 +132,13 @@ class SimulationWorker(QObject):
                 logging.info("Applied voltage: {0} V".format(loopValues[idx]))
 
                 # Apply the voltage on the right contact
-                solution['v'][s] = veq[s] + q*vapp
+                solution['v'][s] = solver.equilibrium[s] + q*vapp
 
                 # Call the Drift Diffusion Poisson solver
-                solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
-                                            periodic_bcs=BCs, maxiter=maxiter,\
-                                            use_mumps=useMumps, iterative=iterative)
+                QtCore.QCoreApplication.processEvents()    
+                solution = solver.default_solver('all', system, solution,\
+                                tol, BCs, contacts, maxiter, True,\
+                                useMumps, iterative, 1e-6, 1)
 
                 if self.abort:
                     self.simuDone.emit()
@@ -161,7 +146,6 @@ class SimulationWorker(QObject):
 
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
-
                     # add some system settings to the saved results
                     solution.update({'x': system.xpts, 'y': system.ypts, \
                                      'z': system.zpts, 'affinity': system.bl,\
@@ -192,7 +176,7 @@ class SimulationWorker(QObject):
             self.logger.info("Generation rate loop starting now")
             for idx, p in enumerate(loopValues):
                 # give the named parameter its value
-                exec(paramName + '=' + str(p))
+                exec(paramName + '=' + str(p), globals())
                 self.logger.info("Parameter value: {0} = {1}".format(paramName, p))
                 # create callable 
                 if system.dimension == 1:
@@ -208,9 +192,9 @@ class SimulationWorker(QObject):
                 for a in range(11):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
-                    solution = sesame.solve(system, solution, equilibrium=veq, tol=tol,\
-                                            periodic_bcs=BCs, maxiter=maxiter,\
-                                            use_mumps=useMumps, iterative=iterative)
+                    solution = solver.default_solver('all', system, solution,\
+                                    tol, BCs, contacts, maxiter, True,\
+                                    useMumps, iterative, 1e-6, 1)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
                         self.simuDone.emit()
