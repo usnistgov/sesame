@@ -259,13 +259,16 @@ class Builder():
         if E is not None:
             E /= self.scaling.energy
 
-        if len(location) == 2:
+        if isinstance(location, float):
+            s, dl = utils.get_point_defects_sites(self, location)
+        elif len(location) == 2:
             s, dl = utils.get_line_defects_sites(self, location)
         elif len(location) == 4:
-            s, _, _, _, dl = utils.plane_defects_sites(self, location) 
+            s, _, _, _, dl = utils.plane_defects_sites(self, location)
+
         else:
             msg = "Wrong definition for the defects location: "\
-            "the list must contain two points for a line, four points for a plane."
+            "the list must contain one number for a point, two points for a line, four points for a plane."
             logging.error(msg)
             return
 
@@ -284,7 +287,46 @@ class Builder():
 
         params = defect(s, location, f, E, sigma_e, sigma_h, transition, dl)
         self.defects_list.append(params)
- 
+
+    def add_point_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1, -1)):
+        """
+        Add additional charges (for a grain boundary for instance) to the total
+        charge of the system. These charges are distributed on a line.
+
+        Parameters
+        ----------
+        location: float
+            The coordinate in [m] defines a point defect in 1D.
+        N: float or function
+            Defect density of states [m\ :sup:`-2` ]. Provide a float when the
+            defect density of states is a delta function, or a function
+            returning a float for a continuum. This function should take a
+            single energy argument in [eV].
+        sigma_e: float
+            Electron capture cross section [m\ :sup:`2`].
+        sigma_h: float
+            Hole capture cross section [m\ :sup:`2`].
+        E: float
+            Energy level of a single state defined with respect to the intrinsic
+            Fermi level [eV]. Set to `None` for a continuum of states.
+        transition: tuple
+            Charge transition occurring at the energy level E.  The tuple (p, q)
+            represents a defect with transition p/q (level empty to level
+            occupied).
+
+        Warnings
+        --------
+        * Point defects are defined for one-dimensional systems only.
+
+        * We assume that no additional charge is on the contacts.
+
+        See Also
+        --------
+        add_line_defects
+        """
+
+        self.add_defects(location, N, sigma_e, sigma_h, E, transition)
+
     def add_line_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1,-1)):
         """
         Add additional charges (for a grain boundary for instance) to the total

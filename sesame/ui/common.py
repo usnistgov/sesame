@@ -109,13 +109,11 @@ def parseSettings(settings):
 
     # location function, and concentration
     f = parseLocation(acceptor['location'], dimension)
-    # convert from cm^-3 to m^-3
     N = float(acceptor['concentration'])
     system.add_acceptor(N, f)
 
     # location function, and concentration
     f = parseLocation(donor['location'], dimension)
-    # convert from cm^-3 to m^-3
     N = float(donor['concentration'])
     system.add_donor(N, f)
 
@@ -124,16 +122,17 @@ def parseSettings(settings):
     defects = defects
     for defect in defects:
         loc = ev(defect['location'])
-        # convert from cm^-2 to m^-2
         N = float(defect['Density'])
         E = float(defect['Energy'])
-        # convert from cm^2 to m^2
         sh = float(defect['sigma_h'])
         se = float(defect['sigma_e'])
         transition = defect['Transition'].replace("/", ",")
         transition = (ev(transition))
 
-        if len(loc) == 2:
+        if isinstance(loc,float):
+            system.add_point_defects(loc, N, se, sigma_h=sh, E=E, \
+                                    transition=transition)
+        elif len(loc) == 2:
             system.add_line_defects(loc, N, se, sigma_h=sh, E=E,\
                                     transition=transition)
         elif len(loc) == 4:

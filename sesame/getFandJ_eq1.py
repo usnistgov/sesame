@@ -7,6 +7,7 @@ import numpy as np
 from itertools import chain
 
 from .observables import get_n, get_p
+from .defects  import defectsF, defectsJ
 # remember that efn and efp are zero at equilibrium
 
 def getFandJ_eq(sys, v, contacts_bcs):
@@ -47,6 +48,11 @@ def getFandJ_eq(sys, v, contacts_bcs):
     # bulk charges
     rho = sys.rho - n + p
     drho_dv = -n - p
+
+    # charge defects
+    if len(sys.defects_list) != 0:
+        defectsF(sys, sys.defects_list, n, p, rho)
+        defectsJ(sys, sys.defects_list, n, p, drho_dv)
 
     ###########################################################################
     #                 inside the system: 0 < i < Nx-1                         #

@@ -161,6 +161,16 @@ def check_plane(P1, P2, P3, P4):
         exit(1)
 
 
+def get_point_defects_sites(system, location):
+    # find the site closest to a given point
+    xa = location
+    ia, _, _ = get_indices(system, (xa, 0, 0))
+    sites = ia
+    perp_dl = system.dx[ia]
+    return sites, perp_dl
+
+
+
 def get_line_defects_sites(system, location):
     # find the sites closest to the straight line defined by
     # (xa,ya,za) and (xb,yb,zb) 

@@ -266,7 +266,6 @@ class BuilderBox(QWidget):
 
         # disable save, enable remove and new buttons
         self.newButton.setEnabled(True)
-        self.saveButton.setEnabled(False)
         if len(self.materials_list) > 1:
             self.removeButton.setEnabled(True)
 

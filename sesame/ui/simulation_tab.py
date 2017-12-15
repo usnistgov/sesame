@@ -123,10 +123,10 @@ class Simulation(QWidget):
         BCform.addRow("Contacts boundary conditions", contactLayout)
 
         # contacts surface recombination velocities
-        self.g4 = QLineEdit("", self)
-        self.g5 = QLineEdit("", self)
-        self.g6 = QLineEdit("", self)
-        self.g7 = QLineEdit("", self)
+        self.g4 = QLineEdit("1e5", self)
+        self.g5 = QLineEdit("1e5", self)
+        self.g6 = QLineEdit("1e5", self)
+        self.g7 = QLineEdit("1e5", self)
         BCform.addRow("Electron recombination velocity in x=0 [cm/s]", self.g4)
         BCform.addRow("Hole recombination velocity in x=0 [cm/s]", self.g5)
         BCform.addRow("Electron recombination velocity in x=L [cm/s]", self.g6)

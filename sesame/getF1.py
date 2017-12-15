@@ -5,6 +5,7 @@
 
 import numpy as np
 from .observables import *
+from .defects  import defectsF
 
 def getF(sys, v, efn, efp, veq):
     ###########################################################################
@@ -37,6 +38,10 @@ def getF(sys, v, efn, efp, veq):
 
     # recombination rates
     r = get_bulk_rr(sys, n, p)
+
+    # charge defects
+    if len(sys.defects_list) != 0:
+        defectsF(sys, sys.defects_list, n, p, rho, r)
 
     ###########################################################################
     #                   inside the system: 0 < i < Nx-1                       #
