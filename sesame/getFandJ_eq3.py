@@ -220,7 +220,7 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         dav_cols = zip(sites, sites+1)
         dav_data = zip(dv, dvp1)
 
-    if contacts_bcs[0] == "Ohmic" or contacts_bc[0] == 'Schottky'
+    if contacts_bcs[0] == "Ohmic" or contacts_bc[0] == 'Schottky':
         # update vector with zeros
         vec[sites] = 0
         # update Jacobian

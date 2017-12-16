@@ -209,8 +209,9 @@ class Window(QMainWindow):
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
-                      BCs, ScnL, ScpL, ScnR, ScpR, precision, maxSteps,\
-                      useMumps, iterative):
+                      BCs, L_contact, R_contact, L_WF, R_WF,\
+                      ScnL, ScpL, ScnR, ScpR,\
+                      precision, maxSteps, useMumps, iterative):
         """
         Fill out all fields of the interface simulation tab with the settings
         from the configuration file.  
@@ -230,10 +231,24 @@ class Window(QMainWindow):
             self.table.simulation.periodic.setChecked(True)
         else:
             self.table.simulation.hardwall.setChecked(True)
+        if L_contact == 'Ohmic':
+            self.table.simulation.L_Ohmic.setChecked(True)
+        if L_contact == 'Schottky':
+            self.table.simulation.L_Schottky.setChecked(True)
+        if L_contact == 'Neutral':
+            self.table.simulation.L_Neutral.setChecked(True)
+        if R_contact == 'Ohmic':
+            self.table.simulation.R_Ohmic.setChecked(True)
+        if R_contact == 'Schottky':
+            self.table.simulation.R_Schottky.setChecked(True)
+        if R_contact == 'Neutral':
+            self.table.simulation.R_Neutral.setChecked(True)
         self.table.simulation.g4.setText(ScnL)
         self.table.simulation.g5.setText(ScpL)
         self.table.simulation.g6.setText(ScnR)
         self.table.simulation.g7.setText(ScpR)
+        self.table.simulation.g8.setText(L_WF)
+        self.table.simulation.g9.setText(R_WF)
         self.table.simulation.algoPrecision.setText(precision)
         self.table.simulation.algoSteps.setText(maxSteps)
         if useMumps:
@@ -287,14 +302,18 @@ class Window(QMainWindow):
             ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
             ScnR = config.get('Simulation', 'Electron recombination velocity in L')
             ScpR = config.get('Simulation', 'Hole recombination velocity in L')
+            L_contact = config.get('Simulation', 'Contact boundary condition in 0')
+            R_contact = config.get('Simulation', 'Contact boundary condition in L')
+            L_WF = config.get('Simulation', 'Contact work function in 0')
+            R_WF = config.get('Simulation', 'Contact work function in L')
             precision = config.get('Simulation', 'Newton precision')
             maxSteps = config.get('Simulation', 'Maximum steps')
             useMumps = config.getboolean('Simulation', 'Use Mumps')
             iterative = config.getboolean('Simulation', 'Iterative solver')
             self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
-                               ext, BCs, ScnL, ScpL, ScnR, ScpR, precision,\
+                               ext, BCs, L_contact, R_contact, L_WF, R_WF,\
+                               ScnL, ScpL, ScnR, ScpR, precision,\
                                maxSteps, useMumps, iterative)
-
             f.close()
 
     def saveAsConfig(self):
@@ -327,6 +346,23 @@ class Window(QMainWindow):
             defects = build.defects_list
             gen, param = build.gen.text(), build.paramName.text()
 
+            L_WF, R_WF = '', ''
+            if simu.L_Ohmic.isChecked():
+                L_contact = "Ohmic"
+            elif simu.L_Schottky.isChecked():
+                L_contact = "Schottky"
+                L_WF = simu.g8.text()
+            elif simu.L_Neutral.isChecked():
+                L_contact = "Neutral"
+
+            if simu.R_Ohmic.isChecked():
+                R_contact = "Ohmic"
+            elif simu.R_Schottky.isChecked():
+                R_contact = "Schottky"
+                R_WF = self.g9.text()
+            elif simu.R_Neutral.isChecked():
+                R_contact = "Neutral"
+
             with open(self.cfgFile, 'w') as f:
                 config.set('System', 'Grid', str(grid))
                 config.set('System', 'Doping', str(d))
@@ -335,14 +371,20 @@ class Window(QMainWindow):
                 config.set('System', 'Generation rate', gen)
                 config.set('System', 'Generation parameter', param)
 
+                # basic settings
                 config.set('Simulation', 'Voltage loop',\
                                             str(simu.voltage.isChecked()))
                 config.set('Simulation', 'Loop values', simu.loopValues.text())
                 config.set('Simulation', 'Working directory', simu.workDirName.text())
                 config.set('Simulation', 'Simulation name', simu.fileName.text())
                 config.set('Simulation', 'Extension', simu.fbox.currentText())
+                # boundary conditions
                 config.set('Simulation', 'Transverse boundary conditions',\
-                                                str(simu.periodic.isChecked()))
+                            str(simu.periodic.isChecked()))
+                config.set('Simulation', 'Contact boundary condition in 0', L_contact)
+                config.set('Simulation', 'Contact boundary condition in L', R_contact)
+                config.set('Simulation', 'Contact work function in 0', L_WF)
+                config.set('Simulation', 'Contact work function in L', R_WF)
                 config.set('Simulation', 'Electron recombination velocity in 0',\
                                             simu.g4.text())
                 config.set('Simulation', 'Hole recombination velocity in 0',\
@@ -351,11 +393,12 @@ class Window(QMainWindow):
                                             simu.g6.text())
                 config.set('Simulation', 'Hole recombination velocity in L',\
                                             simu.g7.text())
-                config.set('Simulation', 'Newton precision', simu.algoPrecision.text())
-                config.set('Simulation', 'Maximum steps', simu.algoSteps.text())
+                config.set('Simulation', 'Newton precision',\
+                            str(simu.algoPrecision.text()))
+                config.set('Simulation', 'Maximum steps', str(simu.algoSteps.text()))
                 config.set('Simulation', 'Use Mumps', str(simu.yesMumps.isChecked()))
                 config.set('Simulation', 'Iterative solver',\
-                                            str(simu.yesIterative.isChecked()))
+                            str(simu.yesIterative.isChecked()))
 
                 config.write(f)
                 f.close()

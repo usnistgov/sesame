@@ -61,10 +61,12 @@ class SimulationWorker(QObject):
         nx = system.nx
 
         # Equilibrium guess
-        guess = solver.make_guess(system, contacts_bcs=contacts_bcs, contacts_WF=contacts_WF)
+        guess = solver.make_guess(system, contacts_bcs=contacts_bcs,\
+                                  contacts_WF=contacts_WF)
         # Solve Poisson equation
-        solver.default_solver('Poisson', system, guess, tol, BCs, contacts_bcs, contacts_WF,\
-                              maxiter, True, useMumps, iterative, 1e-6, 1, False)
+        solver.default_solver('Poisson', system, guess, tol, BCs, contacts_bcs,\
+                              contacts_WF, maxiter, True, useMumps, iterative,\
+                              1e-6, 1)
 
         if solver.equilibrium is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
@@ -104,7 +106,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
                     solution = solver.default_solver('all', system, solution,\
-                                    tol, BCs, contacts, maxiter, True,\
+                                    tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
                                     useMumps, iterative, 1e-6, 1)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")
@@ -135,11 +137,9 @@ class SimulationWorker(QObject):
                 solution['v'][s] = solver.equilibrium[s] + q*vapp
 
                 # Call the Drift Diffusion Poisson solver
-                QtCore.QCoreApplication.processEvents()    
                 solution = solver.default_solver('all', system, solution,\
                                 tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
-                                useMumps, iterative, 1e-6, 1, False)
-
+                                useMumps, iterative, 1e-6, 1)
                 if self.abort:
                     self.simuDone.emit()
                     return
@@ -193,7 +193,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
                     solution = solver.default_solver('all', system, solution,\
-                                    tol, BCs, contacts, maxiter, True,\
+                                    tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
                                     useMumps, iterative, 1e-6, 1)
                     if solution is None:
                         self.logger.info("The solver diverged. Aborting now.")

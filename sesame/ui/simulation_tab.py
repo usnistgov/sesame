@@ -134,13 +134,13 @@ class Simulation(QWidget):
         self.g5 = QLineEdit("1e5", self)
         self.g6 = QLineEdit("1e5", self)
         self.g7 = QLineEdit("1e5", self)
-        self.g8 = QLineEdit("4.0", self)
-        self.g9 = QLineEdit("4.0", self)
+        self.g8 = QLineEdit("", self)
+        self.g9 = QLineEdit("", self)
         self.g8.setDisabled(True)
         self.g9.setDisabled(True)
         BCform.addRow("Electron recombination velocity in x=0 [cm/s]", self.g4)
         BCform.addRow("Hole recombination velocity in x=0 [cm/s]", self.g5)
-        BCform.addRow("Metal work function", self.g8)
+        BCform.addRow("Metal work function [eV]", self.g8)
 
         contactLayoutR = QHBoxLayout()
         contactR = QButtonGroup(contactLayoutR)
@@ -157,7 +157,7 @@ class Simulation(QWidget):
         BCform.addRow("Contact boundary conditions at x=L", contactLayoutR)
         BCform.addRow("Electron recombination velocity in x=L [cm/s]", self.g6)
         BCform.addRow("Hole recombination velocity in x=L [cm/s]", self.g7)
-        BCform.addRow("Metal work function", self.g9)
+        BCform.addRow("Metal work function [eV]", self.g9)
 
         self.R_Schottky.toggled.connect(self.R_Schottky_toggled)
         self.R_Ohmic.toggled.connect(self.R_Ohmic_toggled)
@@ -261,7 +261,6 @@ class Simulation(QWidget):
         # diable metal work function input
         self.g9.setDisabled(True)
 
-
     def browse(self):
         dialog = QFileDialog()
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
@@ -292,23 +291,23 @@ class Simulation(QWidget):
         # contacts BCs
         if self.L_Ohmic.isChecked():
             contactL = "Ohmic"
-            phiL = []
+            phiL = ''
         elif self.L_Schottky.isChecked():
             contactL = "Schottky"
             phiL = float(self.g8.text())
         elif self.L_Neutral.isChecked():
             contactL = "Neutral"
-            phiL = []
+            phiL = ''
 
         if self.R_Ohmic.isChecked():
             contactR = "Ohmic"
-            phiR = []
+            phiR = ''
         elif self.R_Schottky.isChecked():
             contactR = "Schottky"
             phiR = float(self.g9.text())
         elif self.R_Neutral.isChecked():
             contactR = "Neutral"
-            phiR = []
+            phiR = ''
 
         # transverse BCs
         if self.periodic.isChecked():
