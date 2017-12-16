@@ -7,6 +7,7 @@ import numpy as np
 from itertools import chain
 
 from .observables import *
+from .defects  import defectsJ
 
 def getJ(sys, v, efn, efp):
     ###########################################################################
@@ -58,6 +59,11 @@ def getJ(sys, v, efn, efp):
 
     # derivatives of the bulk recombination rates
     dr_defn_s, dr_defp_s, dr_dv_s = get_bulk_rr_derivs(sys, n, p)
+
+    # charge defects
+    if len(sys.defects_list) != 0:
+        defectsJ(sys, sys.defects_list, n, p, drho_dv_s, drho_defn_s, \
+                 drho_defp_s, dr_defn_s, dr_defp_s, dr_dv_s)
 
     ###########################################################################
     #                  inside the system: 0 < i < Nx-1                        #

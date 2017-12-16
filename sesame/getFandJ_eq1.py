@@ -103,7 +103,7 @@ def getFandJ_eq(sys, v, contacts_bcs):
     ###########################################################################
     #                          left boundary: i = 0                           #
     ###########################################################################
-    if contacts_bcs == "Neumann":
+    if contacts_bcs[0] == "Neutral":
         # update vector with surface charges to zero => dV/dx = 0
         vec[0] = v[1]-v[0]
         # update Jacobian
@@ -113,7 +113,7 @@ def getFandJ_eq(sys, v, contacts_bcs):
         dav_cols = [0, 1]
         dav_data = [dv_s, dv_sp1]
 
-    if contacts_bcs == "Dirichlet":
+    if contacts_bcs[0] == "Ohmic" or contacts_bcs[0] == "Schottky":
         # update vector with zeros
         vec[0] = 0
         # update Jacobian
@@ -128,7 +128,7 @@ def getFandJ_eq(sys, v, contacts_bcs):
     ###########################################################################
     #                         right boundary: i = Nx-1                        #
     ###########################################################################
-    if contacts_bcs == "Neumann":
+    if contacts_bcs[1] == "Neutral":
         # update vector with surface charges to zero => dV/dx = 0
         vec[Nx-1] = v[-1] - v[-2]
         # update Jacobian
@@ -138,7 +138,7 @@ def getFandJ_eq(sys, v, contacts_bcs):
         dbv_cols = [Nx-2, Nx-1]
         dbv_data = [dv_sm1, dv_s]
 
-    if contacts_bcs == "Dirichlet":
+    if contacts_bcs[1] == "Ohmic" or contacts_bcs[1] == "Schottky":
         # update vector with zeros
         vec[Nx-1] = 0
         # update Jacobian

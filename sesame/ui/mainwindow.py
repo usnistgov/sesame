@@ -176,7 +176,7 @@ class Window(QMainWindow):
         if len(build.materials_list) > 1:
             build.removeButton.setEnabled(True)
         build.newButton.setEnabled(True)
-        build.saveButton.setEnabled(False)
+        build.saveButton.setEnabled(True)
 
         # set defects properties 
         build.defects_list = defects
@@ -202,11 +202,10 @@ class Window(QMainWindow):
             build.ctable.show()
             build.cloc.show()
             build.clbl.show()
-        # Disable remove and new buttons, enable save button
+        # Disable save button, enable remove and new buttons
         build.removeButton2.setEnabled(True)
         build.defectButton.setEnabled(True)
         build.saveButton2.setEnabled(False)
-
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\

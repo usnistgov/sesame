@@ -493,6 +493,7 @@ class BuilderBox(QWidget):
         if len(self.defects_list) == 0:
             self.removeButton2.setEnabled(False)
             self.saveButton2.setEnabled(False)
+            self.clbl.hide()
 
     def getSystemSettings(self):
         settings = {}

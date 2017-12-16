@@ -39,7 +39,7 @@ class BCsError(Exception):
               "\n*  Unknown contacts boundary conditions     *" +\
               "\n*********************************************"
         logging.error(msg)
-        logging.error("Contacts boundary conditions: '{0}' is different from 'Dirichlet' or 'Neumann'.\n".format(BCs))
+        logging.error("Contacts boundary conditions: '{0}' is different from 'Ohmic', 'Schottky', or 'Neumann'.\n".format(BCs))
 
 
 class NoSolution(Exception):
@@ -56,7 +56,7 @@ class Solver():
         self.equilibrium = None
 
     def solve_equilibrium(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          contacts_bcs='Dirichlet', maxiter=300, verbose=True, use_mumps=False,\
+          contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300, verbose=True, use_mumps=False,\
           iterative=False, inner_tol=1e-6, htp=1):
         
         """
@@ -73,10 +73,14 @@ class Solver():
         periodic_bcs: boolean
             Defines the choice of boundary conditions in the y-direction. True
             (False) corresponds to periodic (abrupt) boundary conditions.
-        contacts_bcs: string
+        contacts_bcs: array of string
             Defines the choice of boundary conditions for the equilibrium electrostatic
-            potential at the contact. 'Dirichlet' imposes the value of the potential
-            given is the guess, 'Neumann' imposes a zero potential derivative.
+            potential at the contact. 'Ohmic' or 'Schottky' imposes the value of the potential
+            given is the guess, 'Neutral' imposes a zero potential derivative.  First
+            string describes left contact, second string describes right contacts
+        contacts_WFS: tuple of floats
+            Specifies the metal work function.  First number applies to left contact, second
+            number applies to right contact.
         maxiter: integer
             Maximum number of steps taken by the Newton-Raphson scheme.
         verbose: boolean
@@ -104,12 +108,12 @@ class Solver():
         """
 
         res = self.default_solver('Poisson', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, maxiter, verbose, use_mumps, iterative,\
+                    contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
                     inner_tol, htp, False)
         return res
 
     def solve(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          contacts_bcs='Dirichlet', maxiter=300, verbose=True, use_mumps=False,\
+          contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300, verbose=True, use_mumps=False,\
           iterative=False, inner_tol=1e-6, htp=1):
 
         """
@@ -131,10 +135,14 @@ class Solver():
         periodic_bcs: boolean
             Defines the choice of boundary conditions in the y-direction. True
             (False) corresponds to periodic (abrupt) boundary conditions.
-        contacts_bcs: string
+        contacts_bcs: array of strings
             Defines the choice of boundary conditions for the equilibrium electrostatic
-            potential at the contact. 'Dirichlet' imposes the value of the potential
-            given is the guess, 'Neumann' imposes a zero potential derivative.
+            potential at the contact. 'Ohmic' or 'Schottky' imposes the value of the potential
+            given is the guess, 'Neutral' imposes a zero potential derivative.  First string
+            describes left contact, second string described right contact
+        contacts_WFS: tuple of floats
+            Specifies the metal work function.  First number applies to left contact, second
+            number applies to right contact.
         maxiter: integer
             Maximum number of steps taken by the Newton-Raphson scheme.
         verbose: boolean
@@ -161,26 +169,33 @@ class Solver():
         """
 
         res = self.default_solver('all', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, maxiter, verbose, use_mumps, iterative,\
+                    contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
                     inner_tol, htp, False)
         return res
     
-    def make_guess(self, system):
+    def make_guess(self, system, contacts_bcs, contacts_WF):
         # Make a linear assumption based on Dirichlet contacts
         nx = system.nx
         # determine what the potential on the left and right might be
-        if system.rho[0] < 0: # p-doped
-            v_left = -system.Eg[0]\
-                     - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
-        else: # n-doped
-            v_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
+        if contacts_bcs[0]=='Ohmic' or contacts_bcs[0]=='Neutral':
+            if system.rho[0] < 0: # p-doped
+                v_left = -system.Eg[0]\
+                         - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
+            else: # n-doped
+                v_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
+        if contacts_bcs[0]=='Schottky':
+            v_left = -contacts_WF[0]/system.scaling.energy
 
-        if system.rho[nx-1] < 0:
-            v_right = -system.Eg[nx-1]\
-                      - np.log(abs(system.rho[nx-1])/system.Nv[nx-1])\
-                      - system.bl[nx-1]
-        else:
-            v_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
+        if contacts_bcs[1]=='Ohmic' or contacts_bcs[1]=='Neutral':
+            if system.rho[nx-1] < 0:
+                v_right = -system.Eg[nx-1]\
+                          - np.log(abs(system.rho[nx-1])/system.Nv[nx-1])\
+                          - system.bl[nx-1]
+            else:
+                v_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
+        if contacts_bcs[1]=='Schottky':
+            v_right = -contacts_WF[1]/system.scaling.energy
+
 
         # Make a linear guess for the equilibrium potential
         v = np.linspace(v_left, v_right, system.nx)
@@ -194,7 +209,7 @@ class Solver():
         return v
 
     def default_solver(self, compute, system, guess, tol, periodic_bcs,\
-          contacts_bcs, maxiter, verbose, use_mumps, iterative, inner_tol,\
+          contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative, inner_tol,\
           htp, stop):
 
         # Check if we only want the electrostatic potential
@@ -205,7 +220,11 @@ class Solver():
             logging.info("Solving for the equilibrium electrostatic potential")
 
             if guess==None:
-                guess = self.make_guess(system)
+                guess = self.make_guess(system, contacts_bcs, contacts_WF)
+            else:
+               # testing of the data type of guess.
+               if type(guess) is dict:
+                   guess = guess['v']
 
             # Compute the potential (Newton returns an array)
             self.equilibrium = self.newton(system, guess, tol=tol,\
@@ -310,7 +329,7 @@ class Solver():
         return f, J
 
     def newton(self, system, x, tol=1e-6, periodic_bcs=True,\
-               contacts_bcs='Dirichlet',
+               contacts_bcs=['Ohmic','Ohmic'],
                maxiter=300, verbose=True, use_mumps=False,\
                iterative=False, inner_tol=1e-6, htp=1, stopFlag=False):
 

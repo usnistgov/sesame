@@ -210,7 +210,7 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
     # list of the sites on the left side
     sites = _sites[:, :, 0].flatten()
 
-    if contacts_bcs == "Neumann":
+    if contacts_bcs[0] == "Neutral":
         # update vector with no surface charges
         vec[sites] = v[sites+1]-v[sites]
         # update Jacobian
@@ -220,7 +220,7 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         dav_cols = zip(sites, sites+1)
         dav_data = zip(dv, dvp1)
 
-    if contacts_bcs == "Dirichlet":
+    if contacts_bcs[0] == "Ohmic" or contacts_bc[0] == 'Schottky'
         # update vector with zeros
         vec[sites] = 0
         # update Jacobian
@@ -238,7 +238,7 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
     # list of the sites on the right side
     sites = _sites[:, :, Nx-1].flatten()
 
-    if contacts_bcs == "Neumann":
+    if contacts_bcs[1] == "Neutral":
         # update vector with no surface charges
         vec[sites] = v[sites-1]-v[sites-2]
         # update Jacobian
@@ -248,7 +248,7 @@ def getFandJ_eq(sys, v, periodic_bcs, contacts_bcs):
         dbv_cols = zip(sites-1, sites)
         dbv_data = zip(dvm1, dv)
 
-    if contacts_bcs == "Dirichlet":
+    if contacts_bcs[1] == "Ohmic" or contacts_bcs[1] == "Schottky":
         # update vector with zeros
         vec[sites] = 0
         # update Jacobian

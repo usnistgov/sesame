@@ -111,30 +111,61 @@ class Simulation(QWidget):
         self.hlayout.addWidget(self.BCbox)
 
         # contacts BCs
-        contactLayout = QHBoxLayout()
-        contact = QButtonGroup(contactLayout)
-        self.dirichlet = QRadioButton("Dirichlet")
-        self.dirichlet.setChecked(True)
-        self.neumann = QRadioButton("Neumann")
-        contact.addButton(self.dirichlet)
-        contact.addButton(self.neumann)
-        contactLayout.addWidget(self.dirichlet)
-        contactLayout.addWidget(self.neumann)
-        BCform.addRow("Contacts boundary conditions", contactLayout)
+        contactLayoutL = QHBoxLayout()
+        contactL = QButtonGroup(contactLayoutL)
+        self.L_Ohmic = QRadioButton("Ohmic")
+        self.L_Ohmic.setChecked(True)
+        self.L_Schottky = QRadioButton("Schottky")
+        self.L_Neutral = QRadioButton("Neutral")
+        contactL.addButton(self.L_Ohmic)
+        contactL.addButton(self.L_Schottky)
+        contactL.addButton(self.L_Neutral)
+        contactLayoutL.addWidget(self.L_Ohmic)
+        contactLayoutL.addWidget(self.L_Schottky)
+        contactLayoutL.addWidget(self.L_Neutral)
+        BCform.addRow("Contact boundary conditions at x=0", contactLayoutL)
+
+        self.L_Schottky.toggled.connect(self.L_Schottky_toggled)
+        self.L_Ohmic.toggled.connect(self.L_Ohmic_toggled)
+        self.L_Neutral.toggled.connect(self.L_Ohmic_toggled)
 
         # contacts surface recombination velocities
         self.g4 = QLineEdit("1e5", self)
         self.g5 = QLineEdit("1e5", self)
         self.g6 = QLineEdit("1e5", self)
         self.g7 = QLineEdit("1e5", self)
+        self.g8 = QLineEdit("4.0", self)
+        self.g9 = QLineEdit("4.0", self)
+        self.g8.setDisabled(True)
+        self.g9.setDisabled(True)
         BCform.addRow("Electron recombination velocity in x=0 [cm/s]", self.g4)
         BCform.addRow("Hole recombination velocity in x=0 [cm/s]", self.g5)
+        BCform.addRow("Metal work function", self.g8)
+
+        contactLayoutR = QHBoxLayout()
+        contactR = QButtonGroup(contactLayoutR)
+        self.R_Ohmic = QRadioButton("Ohmic")
+        self.R_Ohmic.setChecked(True)
+        self.R_Schottky = QRadioButton("Schottky")
+        self.R_Neutral = QRadioButton("Neutral")
+        contactR.addButton(self.R_Ohmic)
+        contactR.addButton(self.R_Schottky)
+        contactR.addButton(self.R_Neutral)
+        contactLayoutR.addWidget(self.R_Ohmic)
+        contactLayoutR.addWidget(self.R_Schottky)
+        contactLayoutR.addWidget(self.R_Neutral)
+        BCform.addRow("Contact boundary conditions at x=L", contactLayoutR)
         BCform.addRow("Electron recombination velocity in x=L [cm/s]", self.g6)
         BCform.addRow("Hole recombination velocity in x=L [cm/s]", self.g7)
+        BCform.addRow("Metal work function", self.g9)
+
+        self.R_Schottky.toggled.connect(self.R_Schottky_toggled)
+        self.R_Ohmic.toggled.connect(self.R_Ohmic_toggled)
+        self.R_Neutral.toggled.connect(self.R_Ohmic_toggled)
 
         # transverse BC
         tbcLayout = QHBoxLayout()
-        tbc = QButtonGroup(contactLayout)
+        tbc = QButtonGroup(contactLayoutL)
         self.periodic = QRadioButton("Periodic")
         self.hardwall = QRadioButton("Hardwall")
         tbc.addButton(self.periodic)
@@ -213,7 +244,24 @@ class Simulation(QWidget):
 
         self.tabLayout.addLayout(self.vlayout2)
         self.setLayout(self.tabLayout)
-    
+
+    def L_Schottky_toggled(self):
+        #  enable Metal work function input
+        self.g8.setEnabled(True)
+
+    def L_Ohmic_toggled(self):
+        # diable metal work function input
+        self.g8.setDisabled(True)
+
+    def R_Schottky_toggled(self):
+        #  enable Metal work function input
+        self.g9.setEnabled(True)
+
+    def R_Ohmic_toggled(self):
+        # diable metal work function input
+        self.g9.setDisabled(True)
+
+
     def browse(self):
         dialog = QFileDialog()
         folder_path = dialog.getExistingDirectory(None, "Select Folder")
@@ -242,10 +290,26 @@ class Simulation(QWidget):
         extension = self.fbox.currentText()
 
         # contacts BCs
-        if self.dirichlet.isChecked():
-            contacts = "Dirichlet"
-        else:
-            contacts = "Neumann"
+        if self.L_Ohmic.isChecked():
+            contactL = "Ohmic"
+            phiL = []
+        elif self.L_Schottky.isChecked():
+            contactL = "Schottky"
+            phiL = float(self.g8.text())
+        elif self.L_Neutral.isChecked():
+            contactL = "Neutral"
+            phiL = []
+
+        if self.R_Ohmic.isChecked():
+            contactR = "Ohmic"
+            phiR = []
+        elif self.R_Schottky.isChecked():
+            contactR = "Schottky"
+            phiR = float(self.g9.text())
+        elif self.R_Neutral.isChecked():
+            contactR = "Neutral"
+            phiR = []
+
         # transverse BCs
         if self.periodic.isChecked():
             BCs = True
@@ -264,8 +328,9 @@ class Simulation(QWidget):
         # internal iterative solver
         iterative = self.yesIterative.isChecked()
 
-        settings = [loopValues, simName, extension, BCs, contacts, \
-                    [ScnL, ScpL, ScnR, ScpR], precision, steps,\
+        contacts_bcs = [contactL, contactR]
+        settings = [loopValues, simName, extension, BCs, contacts_bcs,\
+                    [phiL, phiR], [ScnL, ScpL, ScnR, ScpR], precision, steps,\
                     useMumps, iterative]
         return settings
 

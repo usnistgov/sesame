@@ -431,11 +431,11 @@ class Analysis(QWidget):
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
             if txt == "Integrated defects recombination":
                 if system.dimension == 1:
-                    Ydata.append(G * x0 * sum(az.defect_recombination_current(d)\
+                    Ydata.append(G * x0 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
                     YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-2}\cdot s^{-1}}$]'
                 if system.dimension == 2:
-                    Ydata.append(G * x0**2 * sum(az.defect_recombination_current(d)\
+                    Ydata.append(G * x0**2 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
                     YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-1}\cdot s^{-1}}$]'
             if txt == "Integrated total recombination":
