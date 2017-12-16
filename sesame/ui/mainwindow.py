@@ -442,7 +442,6 @@ class QIPythonWidget(RichJupyterWidget):
         kernel_manager.start_kernel()
         kernel_manager.kernel.shell.banner1 = banner1
         kernel_manager.kernel.shell.banner2 = banner2
-        kernel_manager.kernel.gui = 'qt'
         self.kernel_client = kernel_client = self._kernel_manager.client()
         kernel_client.start_channels()
 

@@ -224,7 +224,7 @@ class Solver():
         if self.equilibrium is None:
             logging.info("Solving for the equilibrium electrostatic potential")
 
-            if guess==None:
+            if guess is None:
                 guess = self.make_guess(system, contacts_bcs, contacts_WF)
             else:
                 # testing of the data type of guess.
