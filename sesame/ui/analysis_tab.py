@@ -10,6 +10,7 @@ from PyQt5.QtCore import *
 import os
 from ast import literal_eval as ev
 import numpy as np 
+from scipy.io import savemat
 import logging
 
 from .plotbox import *
@@ -129,8 +130,11 @@ class Analysis(QWidget):
         self.plotBtn.clicked.connect(self.linearPlot)
         self.clearBtn = QPushButton("Clear")
         self.clearBtn.clicked.connect(self.clearPlot)
+        self.exportBtn = QPushButton("Export")
+        self.exportBtn.clicked.connect(lambda: self.export(self.linearFig.figure))
         btnLayout.addWidget(self.clearBtn)
         btnLayout.addWidget(self.plotBtn)
+        btnLayout.addWidget(self.exportBtn)
         oneDLayout.addLayout(btnLayout)
         prepare.addWidget(oneDBox)
  
@@ -486,3 +490,90 @@ class Analysis(QWidget):
        
         self.linearFig.canvas.figure.tight_layout()
         self.linearFig.canvas.draw()
+
+    def export(self, figure):
+        saveSettings = Export(self, figure)
+        saveSettings.show()
+
+class Export(QDialog):
+    def __init__(self, parent, figure):
+        super(Export, self).__init__(parent)
+
+        self.analysis = parent
+
+        self.setWindowTitle('Export data sets')
+
+        x, y, w, h = 0, 0, 300, 350
+        self.setGeometry(x, y, w, h)
+        windowFrame = self.frameGeometry()
+        screenCenter = QDesktopWidget().availableGeometry().center()
+        windowFrame.moveCenter(screenCenter)
+        self.move(windowFrame.topLeft())
+
+        self.vlayout = QVBoxLayout()
+        self.setLayout(self.vlayout)
+
+        # file name
+        self.vlayout.addWidget(QLabel("File name"))
+        self.fileLayout = QHBoxLayout()
+        self.fileName = QLineEdit()
+        self.extBox = QComboBox()
+        self.extBox.addItems([".npz", ".mat", ".dat"])
+        self.fileLayout.addWidget(self.fileName)
+        self.fileLayout.addWidget(self.extBox)
+        self.vlayout.addLayout(self.fileLayout)
+        # folder name
+        self.vlayout.addWidget(QLabel("Save in folder"))
+        self.dirBox = QComboBox()
+        self.dirBox.addItems([os.getcwd(), "Other..."])
+        self.dirBox.activated.connect(self.browse)
+        self.dirName = os.getcwd()
+        self.vlayout.addWidget(self.dirBox)
+
+        # list of plotted sets
+        self.vlayout.addWidget(QLabel("Choose set(s)"))
+        self.setsList = QListWidget()
+        self.setsList.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.vlayout.addWidget(self.setsList)
+
+        # cancel | ok buttons
+        btnBox = QDialogButtonBox(QDialogButtonBox.Cancel | QDialogButtonBox.Ok)
+        btnBox.accepted.connect(self.save)
+        btnBox.rejected.connect(self.reject)
+        self.vlayout.addWidget(btnBox)
+
+        # fill in the list
+        self.ax = figure.axes[0]
+        for i in range(len(self.ax.lines)):
+            name = 'set {0}'.format(i+1)
+            self.setsList.addItem(name)
+
+    def browse(self):
+        if self.dirBox.currentText() == 'Other...':
+            self.dirName = QFileDialog.getExistingDirectory()
+            self.dirBox.insertItem(1, self.dirName)
+            self.dirBox.setCurrentIndex(1)
+
+    def save(self):
+        # get the indices of the data sets to save
+        indices = [idx for idx, _ in enumerate(self.setsList.selectedItems())]
+        # put these data sets into a dictionary for mat and npz, list for dat
+        sets = {}
+        setText = []
+        for i, setIdx in enumerate(indices):
+            x = self.ax.lines[setIdx].get_xdata()
+            y = self.ax.lines[setIdx].get_ydata()
+            sets['set '.format(i+1)] = [x, y]
+            setText.append(x)
+            setText.append(y)
+        # save everything
+        ext = self.extBox.currentText()
+        fileName = self.dirName + '/' + self.fileName.text() + ext
+        if ext == '.npz':
+            np.savez_compressed(fileName, **sets)
+        elif ext == '.mat':
+            savemat(fileName, sets)
+        elif ext == '.dat':
+            np.savetxt(fileName, np.column_stack(setText))
+        # exit the window
+        self.accept()

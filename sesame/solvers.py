@@ -5,7 +5,6 @@
 
 import numpy as np
 import importlib
-import warnings
 from scipy.io import savemat
 
 import scipy.sparse.linalg as lg
@@ -23,7 +22,6 @@ try:
 except:
     pass
 
-import pdb;
         
 class NewtonError(Exception):
     pass
