@@ -64,7 +64,7 @@ class SimulationWorker(QObject):
         guess = solver.make_guess(system, contacts_bcs=contacts_bcs,\
                                   contacts_WF=contacts_WF)
         # Solve Poisson equation
-        solver.default_solver('Poisson', system, guess, tol, BCs, contacts_bcs,\
+        solver.common_solver('Poisson', system, guess, tol, BCs, contacts_bcs,\
                               contacts_WF, maxiter, True, useMumps, iterative,\
                               1e-6, 1)
 
@@ -105,7 +105,7 @@ class SimulationWorker(QObject):
                 for a in range(10):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
-                    solution = solver.default_solver('all', system, solution,\
+                    solution = solver.common_solver('all', system, solution,\
                                     tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
                                     useMumps, iterative, 1e-6, 1)
                     if solution is None:
@@ -137,7 +137,7 @@ class SimulationWorker(QObject):
                 solution['v'][s] = solver.equilibrium[s] + q*vapp
 
                 # Call the Drift Diffusion Poisson solver
-                solution = solver.default_solver('all', system, solution,\
+                solution = solver.common_solver('all', system, solution,\
                                 tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
                                 useMumps, iterative, 1e-6, 1)
                 if self.abort:
@@ -192,7 +192,7 @@ class SimulationWorker(QObject):
                 for a in range(11):
                     self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
                     system.g *= 10
-                    solution = solver.default_solver('all', system, solution,\
+                    solution = solver.common_solver('all', system, solution,\
                                     tol, BCs, contacts_bcs, contacts_WF, maxiter, True,\
                                     useMumps, iterative, 1e-6, 1)
                     if solution is None:

@@ -14,6 +14,8 @@ from scipy.sparse import coo_matrix, csr_matrix
 import logging
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
+__all__ = ['solve_equilibrium', 'solve', 'IVcurve']
+
 # check if MUMPS is available
 mumps_available = False
 try:
@@ -72,7 +74,7 @@ class Solver():
         periodic_bcs: boolean
             Defines the choice of boundary conditions in the y-direction. True
             (False) corresponds to periodic (abrupt) boundary conditions.
-        contacts_bcs: list of string
+        contacts_bcs: list of strings
             Defines the choice of boundary conditions for the equilibrium
             electrostatic potential at the contacts. 'Ohmic' or 'Schottky'
             imposes the value of the potential given in the guess, 'Neutral'
@@ -107,7 +109,7 @@ class Solver():
             'v'.  An exception is raised if no solution could be found.
         """
 
-        res = self.default_solver('Poisson', system, guess, tol, periodic_bcs,\
+        res = self.common_solver('Poisson', system, guess, tol, periodic_bcs,\
                     contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
                     inner_tol, htp)
         return res
@@ -170,7 +172,7 @@ class Solver():
             if no solution could be found.
         """
 
-        res = self.default_solver('all', system, guess, tol, periodic_bcs,\
+        res = self.common_solver('all', system, guess, tol, periodic_bcs,\
                     contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
                     inner_tol, htp)
         return res
@@ -211,7 +213,7 @@ class Solver():
 
         return v
 
-    def default_solver(self, compute, system, guess, tol, periodic_bcs,\
+    def common_solver(self, compute, system, guess, tol, periodic_bcs,\
           contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative, inner_tol,\
           htp):
 
@@ -519,7 +521,7 @@ class Solver():
                       + " {0} V (index {1}).".format(voltages[idx], idx))
                 break
 
-solver = Solver()
-solve = solver.solve
-solve_equilibrium = solver.solve_equilibrium
-IVcurve = solver.IVcurve
+default = Solver()
+solve = default.solve
+solve_equilibrium = default.solve_equilibrium
+IVcurve = default.IVcurve

@@ -21,9 +21,10 @@ defect = namedtuple('defect', ['sites', 'location', \
 
 class Scaling():
     """
-    An object defining the scalings of the drift-difusion-Poisson equation. The
-    temperature of the system is specified when an instance is created. The
-    default is 300 K.
+    An object defining the scalings of the drift-diffusion-Poisson equation. The
+    temperature of the system and the reference unit for lengths are specified
+    when an instance is created. The default unit for length is cm, and the
+    default temperature is 300 K.
 
     Parameters
     ----------

@@ -28,14 +28,15 @@ From `sesame.plotter`
    plot_line_defects
    plot_plane_defects
 
-.. currentmodule:: sesame.solvers
+.. currentmodule:: sesame.solvers.default
 
-From `sesame.solvers`
----------------------
+From `sesame.solvers.default`
+-----------------------------
 .. autosummary::
 
-    solve
-    IVcurve
+   solve_equilibrium
+   solve
+   IVcurve
 
 .. currentmodule:: sesame.analyzer
 
