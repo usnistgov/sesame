@@ -51,14 +51,31 @@ class NoSolution(Exception):
 
 
 class Solver():
-    def __init__(self):
+    """
+    An object that creates an interface for the equilibrium and nonequilibrium
+    solvers of Sesame, and stores the equilibrium electrostatic potential once
+    computed.
+
+    Parameters
+    ----------
+    use_mumps: boolean
+        Flag for the use of the MUMPS library if available. The flag is set to
+        True by default. If the MUMPS library is absent, the flag has no effect.
+
+    Attributes
+    ----------
+    equilibrium: numpy array of floats
+        Electrostatic potential computed at thermal equilibrium.
+    """
+
+    def __init__(self, use_mumps=True):
 
         self.equilibrium = None
+        self.use_mumps = use_mumps
 
     def solve_equilibrium(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
           contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300,\
-          verbose=True, use_mumps=False,\
-          iterative=False, inner_tol=1e-6, htp=1):
+          verbose=True, iterative=False, inner_tol=1e-6, htp=1):
         
         """
         Solve the Poisson equation.
@@ -88,9 +105,6 @@ class Solver():
         verbose: boolean
             The solver returns the step number and the associated error at every
             step if set to True (default).
-        use_mumps: boolean
-            Defines if the MUMPS library should be used to solve for the Newton
-            correction. Default is False.
         iterative: boolean
             Defines if an iterative method should be used to solve for the Newton
             correction instead of a direct method. Default is False.
@@ -110,14 +124,13 @@ class Solver():
         """
 
         res = self.common_solver('Poisson', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
+                    contacts_bcs, contacts_WF, maxiter, verbose, iterative,\
                     inner_tol, htp)
         return res
 
     def solve(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
           contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300,\
-          verbose=True, use_mumps=False,\
-          iterative=False, inner_tol=1e-6, htp=1):
+          verbose=True, iterative=False, inner_tol=1e-6, htp=1):
 
         """
         Solve the drift diffusion Poisson equation on a given discretized
@@ -152,9 +165,6 @@ class Solver():
         verbose: boolean
             The solver returns the step number and the associated error at every
             step if set to True (default).
-        use_mumps: boolean
-            Defines if the MUMPS library should be used to solve for the Newton
-            correction. Default is False.
         iterative: boolean
             Defines if an iterative method should be used to solve for the Newton
             correction instead of a direct method. Default is False.
@@ -173,7 +183,7 @@ class Solver():
         """
 
         res = self.common_solver('all', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative,\
+                    contacts_bcs, contacts_WF, maxiter, verbose, iterative,\
                     inner_tol, htp)
         return res
     
@@ -214,7 +224,7 @@ class Solver():
         return v
 
     def common_solver(self, compute, system, guess, tol, periodic_bcs,\
-          contacts_bcs, contacts_WF, maxiter, verbose, use_mumps, iterative, inner_tol,\
+          contacts_bcs, contacts_WF, maxiter, verbose, iterative, inner_tol,\
           htp):
 
         # Check if we only want the electrostatic potential
@@ -232,12 +242,11 @@ class Solver():
                     guess = guess['v']
 
             # Compute the potential (Newton returns an array)
-            self.equilibrium = self.newton(system, guess, tol=tol,\
+            self.equilibrium = self._newton(system, guess, tol=tol,\
                               periodic_bcs=periodic_bcs,\
                               contacts_bcs=contacts_bcs,\
                               maxiter=maxiter, verbose=verbose,\
-                              use_mumps=use_mumps, iterative=iterative,\
-                              inner_tol=inner_tol, htp=htp)
+                              iterative=iterative, inner_tol=inner_tol, htp=htp)
 
             if self.equilibrium is None:
                 raise NoSolution
@@ -260,16 +269,15 @@ class Solver():
                 x[2::3] = guess['v']
 
             # Compute solution (Newton returns an array)
-            x = self.newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
+            x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
                        maxiter=maxiter, verbose=verbose,\
-                       use_mumps=use_mumps, iterative=iterative,\
-                       inner_tol=inner_tol, htp=htp)
+                       iterative=iterative, inner_tol=inner_tol, htp=htp)
             if x is not None:
                 return {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
             else:
                 raise NoSolution
 
-    def damping(self, dx):
+    def _damping(self, dx):
         # This damping procedure is inspired from Solid-State Electronics, vol. 19,
         # pp. 991-992 (1976).
 
@@ -277,10 +285,10 @@ class Solver():
         dx[b] = np.log(1+np.abs(dx[b])*1.72)*np.sign(dx[b])
 
 
-    def sparse_solver(self, J, f, iterative, use_mumps, inner_tol):
+    def _sparse_solver(self, J, f, iterative, inner_tol):
         if not iterative:
             spsolve = lg.spsolve
-            if use_mumps and mumps_available: 
+            if self.use_mumps and mumps_available: 
                 spsolve = mumps.spsolve
             else:
                 J = J.tocsr()
@@ -295,7 +303,7 @@ class Solver():
             else:
                 logging.info("Iterative sparse solver failed with output info: ".format(info))
 
-    def get_system(self, x, system, periodic_bcs, contacts_bcs, use_mumps):
+    def _get_system(self, x, system, periodic_bcs, contacts_bcs):
         # Compute the right hand side of J * x = f
         if self.equilibrium is None:
             size = system.nx * system.ny * system.nz
@@ -326,16 +334,15 @@ class Solver():
             rows, columns, data = lhs.getJ(system, x[2::3], x[0::3], x[1::3])
 
         # form the Jacobian
-        if use_mumps:
+        if self.use_mumps and mumps_available:
             J = coo_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
         else:
             J = csr_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
 
         return f, J
 
-    def newton(self, system, x, tol=1e-6, periodic_bcs=True,\
-               contacts_bcs=['Ohmic','Ohmic'],
-               maxiter=300, verbose=True, use_mumps=False,\
+    def _newton(self, system, x, tol=1e-6, periodic_bcs=True,\
+               contacts_bcs=['Ohmic','Ohmic'], maxiter=300, verbose=True,\
                iterative=False, inner_tol=1e-6, htp=1):
 
         htpy = np.linspace(1./htp, 1, htp)
@@ -352,7 +359,7 @@ class Solver():
             cc = 0
             converged = False
             if gamma != 1:
-                f0, _ = self.get_system(x, system, periodic_bcs, contacts_bcs, use_mumps)
+                f0, _ = self._get_system(x, system, periodic_bcs, contacts_bcs)
             while not converged:
                 cc = cc + 1
                 # break if no solution found after maxiterations
@@ -361,12 +368,12 @@ class Solver():
                     break
 
                 # solve linear system
-                f, J = self.get_system(x, system, periodic_bcs, contacts_bcs, use_mumps)
+                f, J = self._get_system(x, system, periodic_bcs, contacts_bcs)
                 if gamma != 1:
                     f -= (1-gamma)*f0
 
                 try:
-                    dx = self.sparse_solver(J, -f, iterative, use_mumps, inner_tol)
+                    dx = self._sparse_solver(J, -f, iterative, inner_tol)
                     if dx is None:
                         raise SparseSolverError
                         break
@@ -381,7 +388,7 @@ class Solver():
                             converged = True
                         else: 
                             # damping and new value of x
-                            self.damping(dx)
+                            self._damping(dx)
                             x += dx
                             # print status of solution procedure every so often
                             if verbose:
@@ -406,7 +413,7 @@ class Solver():
             return None
 
     def IVcurve(self, system, voltages, guess, file_name, tol=1e-6,\
-                periodic_bcs=True, maxiter=300, verbose=True, use_mumps=False,\
+                periodic_bcs=True, maxiter=300, verbose=True,\
                 iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -437,9 +444,6 @@ class Solver():
         verbose: boolean
             The solver returns the step number and the associated error at every
             step, and this function prints the current applied voltage if set to True (default).
-        use_mumps: boolean
-            Defines if the MUMPS library should be used to solve for the Newton
-            correction. Default is False.
         iterative: boolean
             Defines if an iterative method should be used to solve for the Newton
             correction instead of a direct method. Default is False.
@@ -483,8 +487,7 @@ class Solver():
         else:
             self.solve_equilibrium(system, tol=tol, periodic_bcs=periodic_bcs,\
                            maxiter=maxiter, verbose=verbose,\
-                           use_mumps=use_mumps, iterative=iterative,\
-                           inner_tol=inner_tol, htp=htp)
+                           iterative=iterative, inner_tol=inner_tol, htp=htp)
 
 
         # Loop over the applied potentials made dimensionless
@@ -500,8 +503,7 @@ class Solver():
             # Call the Drift Diffusion Poisson solver
             result = self.solve(system, result, tol=tol, periodic_bcs=periodic_bcs,\
                            maxiter=maxiter, verbose=verbose,\
-                           use_mumps=use_mumps, iterative=iterative,\
-                           inner_tol=inner_tol, htp=htp)
+                           iterative=iterative, inner_tol=inner_tol, htp=htp)
 
             if result is not None:
                 name = file_name + "_{0}".format(idx)

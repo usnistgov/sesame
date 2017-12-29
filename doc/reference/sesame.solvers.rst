@@ -31,4 +31,11 @@ Creating  another solver
 ------------------------
 
 Making another solver is done by creating an instance of the
-`sesame.solvers.Solver` class. 
+`sesame.solvers.Solver` class. This can be used to turn off the use of the MUMPS
+library even when the library is available.
+
+.. toctree::
+   :maxdepth: 1
+
+   sesame.solvers.solver
+

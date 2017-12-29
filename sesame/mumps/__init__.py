@@ -1,3 +1,12 @@
+# Copyright 2017 University of Maryland.
+#
+# This file is part of Sesame. It is subject to the license terms in the file
+# LICENSE.rst found in the top-level directory of this distribution.
+
+# ----------------------------------------------------------------------------- 
+# This file is a modified version of PyMUMPS written by Bradley Froehle. The
+# licence and conditions of use of PyMUMPS are reproduced below.
+# ----------------------------------------------------------------------------- 
 # Copyright (c) 2013, Bradley Froehle <brad.froehle@gmail.com>
 # All rights reserved.
 #
@@ -26,7 +35,6 @@
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-
 import warnings
 from . import _dmumps
 
@@ -54,40 +62,28 @@ class _MumpsBaseContext(object):
     `run` to execute the various MUMPS phases.
 
         ctx = MumpsContext()
-        if rank == 0:
-            ctx.set_centralized_sparse(A)
-            x = b.copy() # MUMPS modifies rhs in place, so make copy
-            ctx.set_rhs(x)
+        ctx.set_sparse(A)
+        x = b.copy() # MUMPS modifies rhs in place, so make copy
+        ctx.set_rhs(x)
         ctx.run(6) # Symbolic + Numeric + Solve
         ctx.destroy() # Free internal data structures
 
         assert abs(A.dot(x) - b).max() < 1e-10
     """
 
-    def __init__(self, par=1, sym=0, comm=None):
+    def __init__(self, sym=0):
         """Create a MUMPS solver context.
 
         Parameters
         ----------
-        par : int
-            1 if rank 0 participates
-            0 if rank 0 does not participate
         sym : int
             0 if unsymmetric
-        comm : MPI Communicator or None
-            If None, use MPI_COMM_WORLD
         """
-        if comm is None:
-            from mpi4py import MPI
-            comm = MPI.COMM_WORLD
-        self.comm = comm
-
         self.id = self._MUMPS_STRUC_C()
-        self.id.par = par
+        self.id.par = 1
         self.id.sym = sym
-        self.id.comm_fortran = comm.py2f()
+        self.id.comm_fortran = -987654
         self.run(job = -1) # JOB_INIT
-        self.myid = comm.rank
         self._refs = {} # References to matrices
 
     def __enter__(self):
@@ -100,7 +96,7 @@ class _MumpsBaseContext(object):
         """Set the matrix shape."""
         self.id.n = n
 
-    def set_centralized_sparse(self, A):
+    def set_sparse(self, A):
         """Set assembled matrix on processor 0.
 
         Parameters
@@ -109,83 +105,44 @@ class _MumpsBaseContext(object):
             Sparse matrices of other formats will be converted to
             COOrdinate form.
         """
-        if self.myid != 0:
-            return
+        # if self.myid != 0:
+        #     return
 
         A = A.tocoo()
         n = A.shape[0]
         assert A.shape == (n, n), "Expected a square matrix."
         self.set_shape(n)
-        self.set_centralized_assembled(A.row+1, A.col+1, A.data)
+        self.set_assembled(A.row+1, A.col+1, A.data)
 
 
     ####################################################################
-    # Centralized (the rank 0 process supplies the entire matrix)
+    # Supplies the matrix
     ####################################################################
 
-    def set_centralized_assembled(self, irn, jcn, a):
-        """Set assembled matrix on processor 0.
+    def set_assembled(self, irn, jcn, a):
+        """Set assembled matrix.
 
         The row and column indices (irn & jcn) should be one based.
         """
-        self.set_centralized_assembled_rows_cols(irn, jcn)
-        self.set_centralized_assembled_values(a)
+        self.set_assembled_rows_cols(irn, jcn)
+        self.set_assembled_values(a)
 
-    def set_centralized_assembled_rows_cols(self, irn, jcn):
-        """Set assembled matrix indices on processor 0.
+    def set_assembled_rows_cols(self, irn, jcn):
+        """Set assembled matrix indices.
 
         The row and column indices (irn & jcn) should be one based.
         """
-        if self.myid != 0:
-            return
         assert irn.size == jcn.size
         self._refs.update(irn=irn, jcn=jcn)
         self.id.nz = irn.size
         self.id.irn = self.cast_array(irn)
         self.id.jcn = self.cast_array(jcn)
 
-    def set_centralized_assembled_values(self, a):
-        """Set assembled matrix values on processor 0."""
-        if self.myid != 0:
-            return
+    def set_assembled_values(self, a):
+        """Set assembled matrix values."""
         assert a.size == self.id.nz
         self._refs.update(a=a)
         self.id.a = self.cast_array(a)
-
-
-    ####################################################################
-    # Distributed (each process enters some portion of the matrix)
-    ####################################################################
-
-    def set_distributed_assembled(self, irn_loc, jcn_loc, a_loc):
-        """Set the distributed assembled matrix.
-
-        Distributed assembled matrices require setting icntl(18) != 0.
-        """
-        self.set_distributed_assembled_rows_cols(irn_loc, jcn_loc)
-        self.set_distributed_assembled_values(a_loc)
-
-    def set_distributed_assembled_rows_cols(self, irn_loc, jcn_loc):
-        """Set the distributed assembled matrix row & column numbers.
-
-        Distributed assembled matrices require setting icntl(18) != 0.
-        """
-        assert irn_loc.size == jcn_loc.size
-
-        self._refs.update(irn_loc=irn_loc, jcn_loc=jcn_loc)
-        self.id.nz_loc = irn_loc.size
-        self.id.irn_loc = self.cast_array(irn_loc)
-        self.id.jcn_loc = self.cast_array(jcn_loc)
-
-    def set_distributed_assembled_values(self, a_loc):
-        """Set the distributed assembled matrix values.
-
-        Distributed assembled matrices require setting icntl(18) != 0.
-        """
-        assert a_loc.size == self._refs['irn_loc'].size
-        self._refs.update(a_loc=a_loc)
-        self.id.a_loc = self.cast_array(a_loc)
-
 
     ####################################################################
     # Right hand side entry
@@ -270,15 +227,14 @@ class DMumpsContext(_MumpsBaseContext):
 # Functions
 ########################################################################
 
-def spsolve(A, b, comm=None):
+def spsolve(A, b):
     """Sparse solve A\b."""
     assert A.dtype == 'd' and b.dtype == 'd', "Only double precision supported."
-    with DMumpsContext(par=1, sym=0, comm=comm) as ctx:
-        if ctx.myid == 0:
-            # Set the sparse matrix -- only necessary on
-            ctx.set_centralized_sparse(A.tocoo())
-            x = b.copy()
-            ctx.set_rhs(x)
+    with DMumpsContext(sym=0) as ctx:
+        # Set the sparse matrix
+        ctx.set_sparse(A.tocoo())
+        x = b.copy()
+        ctx.set_rhs(x)
 
         # Silence most messages
         ctx.set_silent()
@@ -292,5 +248,4 @@ def spsolve(A, b, comm=None):
         # Analysis + Factorization + Solve
         ctx.run(job=6)
 
-        if ctx.myid == 0:
-            return x
+        return x
