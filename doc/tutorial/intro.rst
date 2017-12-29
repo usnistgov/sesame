@@ -8,7 +8,7 @@ Geometry and governing equations
 .................................
 
 Our model system is shown below. It is a semiconductor device connected to two
-contacts in :math:`x=0` and :math:`x=L` (where :math:`L` is the length of
+contacts at :math:`x=0` and :math:`x=L` (where :math:`L` is the length of
 the device in the :math:`x`-direction). The doped regions are drawn for the
 example only, any doping profile can be considered.
 
@@ -22,7 +22,7 @@ the drift-diffusion-Poisson equations
 .. math:: 
    \vec{\nabla}\cdot \vec{J}_n &= -q(G-R)\\
    \vec{\nabla}\cdot \vec{J}_p &= q(G-R)\\
-   \Delta \phi &= \frac{\rho}{\epsilon\epsilon_0}
+   \vec{\nabla}\cdot (\vec{\nabla} \epsilon\epsilon_0 \phi) &= \rho
    :label: ddp
 
 with the currents
@@ -50,21 +50,25 @@ the following system
 
    \widetilde{\vec{\nabla}} \cdot \left(-\bar p \widetilde{\vec{\nabla}}\bar \phi - \widetilde{\vec{\nabla}}\bar p \right) &= -\bar U
 
-   \widetilde{\Delta} \bar \phi &= \frac{\bar n - \bar p}{\epsilon}
+   \widetilde{\vec{\nabla}} \cdot (\epsilon \vec{\nabla} \bar \phi) &= \bar n - \bar p
 
-where :math:`\widetilde{\vec{\nabla}}` is the dimensionless spatial first derivative
-operator, :math:`\widetilde{\Delta}` is the dimensionless Laplacian and 
-the dimensionless variables are
+where :math:`\widetilde{\vec{\nabla}}` is the dimensionless spatial first
+derivative operator, and the dimensionless variables are
 
 .. math::
-   \bar \phi &= \frac{e\phi}{k_BT}\\
+   \bar \phi &= \frac{q\phi}{k_BT}\\
    \bar n &= n/N \\
    \bar p &= p/N \\
    \bar U &= \frac{U \lambda^2}{ND} \\
    \bar t &= t \frac{q\mu N}{\epsilon_0} \\
-   \bar J_{n,p} &= J_{n,p} \frac{qD_{n,p}N}{\lambda} 
+   \bar J_{n,p} &= J_{n,p} \frac{qDN}{\lambda} 
 
-We suppose that the recombination is through three mechanisms:
+with :math:`D=k_BT\mu/q` a diffusion coefficient corresponding to our choice of
+scaling for the mobility :math:`\mu=1~\mathrm{cm^2/(V\cdot s)}`. See the 
+:func:`~sesame.builder.Scaling` class for the implementation of these scalings.
+
+
+We suppose that the bulk recombination is through three mechanisms:
 Shockley-Read-Hall, radiative and Auger.  Unlike the defect-mediated
 recombination, radiative and Auger processes are respectively second and third
 order in charge density. For this reason they become more important at higher
@@ -77,9 +81,12 @@ The Shockley-Read-Hall takes the form
 .. math::
    R_{\rm SRH} = \frac{np - n_i^2}{\tau_p(n+n_1) + \tau_n(p+p_1)}
    
-where :math:`n^2_i = N_C N_V e^{-E_g/k_BT}, n_1 = N_C e^{-(E_C - E_T) /k_BT} ,
-p_1 = N_V e^{- (E_T - E_V) /k_BT}`, where :math:`E_T` is the
-energy level of the trap state. The above can be derived on very general grounds
+where :math:`n^2_i = N_C N_V e^{-E_g/k_BT}, n_1 = n_i e^{E_T /k_BT} ,
+p_1 = n_i e^{- E_T /k_BT}`, where :math:`E_T` is the
+energy level of the trap state, :math:`N_C` (:math:`N_V`) is the conduction (valence) band effective density of
+states. The equilibrium Fermi energy at which
+:math:`n=p=n_i` is the intrinsic energy level :math:`E_i`.
+The above can be derived on very general grounds
 (see Ref. [1]_, page 34). :math:`\tau_{n,(p)}` is the bulk lifetime for
 electrons (holes). It is given by
 
@@ -105,122 +112,79 @@ Auger mechanism has the form
 
 where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 
-Boundary conditions at the contacts
-...................................
-In thermal equilibrium, the electroneutrality of the system imposes that no
-charge accumulates at the contacts located at :math:`x=0` and `x = L`, which
-implies the following boundary conditions 
-
-.. math::
-   \frac{\partial \phi}{\partial x}(0, y, z) = \frac{\partial \phi}{\partial x}(L, y, z) = 0
-   :label: bc1
-
-Out of thermal equilibrium, we impose Dirichlet boundary conditions on the
-electrostatic potential. For example, in the presence of an applied bias
-:math:`V` at :math:`x=L`, the boundary conditions are
-
-.. math::
-   \phi(0, y, z) &= \phi^{eq}(0,y,z)\\
-   \phi(L, y, z) &= \phi^{eq}(L,y,z) + qV
-
-where :math:`\phi^{eq}` is the equilibrium electrostatic potential subject to
-the boundary conditions Eq. :eq:`bc1`.
-For the drift-diffusion equations, the boundary conditions for carriers at
-charge-collecting contacts are typically parameterized with the
-surface recombination velocities for electrons and holes at the contacts,
-denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
-
-.. math::
-   \vec{J}_n(0,y,z) \cdot \vec{u}_x &= qS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
-   \vec{J}_p(0,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(0,y,z) - p_{\rm eq}(0,y,z))\\
-   \vec{J}_n(L,y,z) \cdot \vec{u}_x &= -qS_{c_n} (n(L,y,z) - n_{\rm eq}(L,y,z))\\
-   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
-   :label: BCs
-
-where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.
-In being collected by a contact, a carrier in the valence or conduction band
-loses its energy and relaxes to the chemical potential of the bulk contact.
-This is essentially a recombination process. The recombination velocity may be
-thought of identically as a carrier lifetime in two dimension (considering
-Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
-velocity).  
-
 Additional charges: line and plane defects
 ............................................
+
 Additional charged defects can be added to the system to simulate, for example,
-grain boundaries in a semiconductor. Grain boundaries separate crystallites of
-different orientation. They occupy a reduced dimensionality space (e.g. 2D
-planes embedded in a 3D material), and typically possess a high density of
-defects (dangling bonds, wrong bonds). These lead to localized states
-within the gap, which may lead to charging of the grain boundary, and increased
-recombination at the grain boundary.
-
-Considering energy levels with charge transitions :math:`\alpha_j/\beta_j`, the
-charge density at the defect sites reads
+grain boundaries or sample surfaces in a semiconductor. These extended planar
+defects occupy a reduced dimensionality space: a point in a 1D model, a line in
+a 2D model, a plane in a 3D model). The extended defect energy level spectrum
+can be discrete or continuous. For a discrete spectrum, we label the defect with
+the subscript :math:`d`. The occupancy of the defect level :math:`f_d` is given
+by [2]_
 
 .. math::
-    Q = q\sum_j \rho_j (\mathrm{max}(\alpha_j, \beta_j) (1-f_j) + \mathrm{min}(\alpha_j, \beta_j) f_j)
+    f_d = \frac{S_n n + S_p p_d}{S_n(n+n_d) + S_p(p+p_d)} 
 
-where :math:`\rho_j` is the 2D defect density of state at energy :math:`E_j`.
-The occupancy of the `j`-th defect level :math:`f_j` is given by [2]_
-
-.. math::
-    f_j = \frac{S_n n_{\rm GB} + S_p \bar p_j}{S_n(n_{\rm GB}+\bar n_j) + S_p(p_{\rm GB}+\bar p_j)} 
-
-where :math:`n_{\rm GB}` (:math:`p_{\rm GB}`) is the electron (hole) density at the
-grain boundary, :math:`S_n`, :math:`S_p` are recombination velocity parameters for electrons
-and holes respectively. :math:`\bar n_j` and :math:`\bar p_j` are
+where :math:`n` (:math:`p`) is the electron (hole) density at the
+defect location, :math:`S_n`, :math:`S_p` are recombination velocity parameters
+for electrons and holes respectively. :math:`n_d` and :math:`p_d` are
 
 .. math::
-   \bar n_j &= N_C e^{\left(-E_g/2 + E_j\right)/k_BT}\\
-   \bar p_j &= N_V e^{(-E_g/2 - E_j)/k_BT}
+   \bar n_j &= N_C e^{E_d/k_BT}\\
+   \bar p_j &= N_V e^{- E_d/k_BT}
 
-where :math:`E_j` is calculated from midgap, :math:`N_C`
-(:math:`N_V`) is the conduction (valence) band effective density of states.
-
-
-The increased recombination at the grain boundary is included by an additional
-recombination term :math:`R_{\rm GB}` at the grain boundary core
+where :math:`E_d` is calculated from the intrinsic Fermi level :math:`E_i`.
+The defect recombination is of Shockley-Read-Hall form:
 
 .. math::
-   R_{\rm GB} = \sum_j \frac{S_nS_p(n_{\rm GB} p_{\rm GB} - n_i^2)}
-   {S_n(n_{\rm GB} + \bar n_j) + S_p(p_{\rm GB} + \bar p_j)}
+   R_d = \frac{S_nS_p(n p - n_i^2)}{S_n(n + n_d) + S_p(p + p_d)}.
 
-Embedding a two-dimensional density into the three-dimensional model is formally
-accomplished with the use of a delta function. Numerically, the two-dimensional
-defect densities of states and the surface recombination velocities are divided
-by the size of the discretized grid :math:`dl` at the position of the plane, and along
-the direction normal to the plane.
+The charge density given by a single defect depends on the defect type (acceptor
+or donor)
+
+.. math::
+   q = q\rho_d \times \left\{
+    \begin{array}{ll}
+        (1-f_d) & \mbox{donor} \\
+        (-f_d) & \mbox{acceptor}
+    \end{array}
+    \right.
+
+where :math:`\rho_d` is the defect density of state at energy :math:`E_d`.
+:math:`S_n, S_p` and :math:`\rho_d` are related to the electron and hole capture
+cross sections :math:`\sigma_n, \sigma_p` of the defect level by :math:`S_{n,p}
+= \sigma_{n,p}v^{\rm th}_{n,p}\rho_d`, where :math:`v^{\rm th}_{n,p}` is the
+electron (hole) thermal velocity.
+Multiple defects are described by summing over defect label :math:`d`, or
+performing an integral over a continuous defect spectrum.
+
 
 
 Carrier densities and quasi-Fermi levels
 ........................................
-
-Despite their apparent simplicity, Eqs. :eq:`ddp`, and the set of boundary
-conditions of the form of Eq. :eq:`BCs` are
-numerically challenging to solve. This is due in part to the fact that the
-carrier densities vary by many orders of
-magnitude throughout the sample, and because drift and diffusion currents often
-nearly cancel each other, and the
-entire solution depends on the small residual current left over. We next discuss
-a slightly different form of these
-same equations which is convenient to use for numerical solutions. We introduce
-the concept of quasi-Fermi level for
-electrons and holes (denoted by :math:`E_{F_n}` and :math:`E_{F_p}`  respectively). The carrier
-density is related to these quantities as 
+Despite their apparent simplicity, Eqs. :eq:`ddp` are numerically challenging to
+solve. This is due in part to the fact that the carrier densities vary by many
+orders of magnitude throughout the sample, and because drift and diffusion
+currents often nearly cancel each other, and the entire solution depends on the
+small residual current left over. We next discuss a slightly different form of
+these same equations which is convenient to use for numerical solutions. We
+introduce the concept of quasi-Fermi level for electrons and holes (denoted by
+:math:`E_{F_n}` and :math:`E_{F_p}`  respectively). The carrier density is
+related to these quantities as 
 
 .. math::
-   n(x,y,z) &= N_C e^{\left(E_{F_n}(x,y,z) + q\phi(x,y,z) - b_l\right)/k_BT}\\
-   p(x,y,z) &= N_V e^{\left(E_{F_p}(x,y,z) - q\phi(x,y,z) - E g +b_l\right)/k_BT}
+   n(x,y,z) &= N_C e^{\left(E_{F_n}(x,y,z) + q\phi(x,y,z) - \chi(x,y,z)\right)/k_BT}\\
+   p(x,y,z) &= N_V e^{\left(E_{F_p}(x,y,z) - q\phi(x,y,z) - E_g+\chi(x,y,z)\right)/k_BT}
    :label: np
 
-where the term :math:`b_l` essentially sets (or is set by) the zero of energy
-for the electrostatic potential (the default value is 0).  Quasi-Fermi levels
-are convenient in part because they guarantee that carrier densities are always
-positive. While carrier densities vary by many orders of magnitude, quasi-Fermi
-levels require much less variation to describe the system. The signs in Eq.
-:eq:`np` can be confusing; they are such that the carrier density is larger if
-its quasi-Fermi level is more positive, see the figure below.
+where the term :math:`\chi` is the electron affinity, :math:`\phi` is the
+electrostatic potential. Quasi-Fermi levels are convenient in part because they
+guarantee that carrier densities are always positive. While carrier densities
+vary by many orders of magnitude, quasi-Fermi levels require much less variation
+to describe the system. The signs in Eq.  :eq:`np` can be confusing; they are
+such that the carrier density is larger if its quasi-Fermi level is more
+positive, see the figure below.
 
 .. figure:: bands.*
    :align: center
@@ -228,8 +192,8 @@ its quasi-Fermi level is more positive, see the figure below.
 
    Equilibrium energy level diagrams showing the electron quasi-Fermi
    level in an n-type (p-type) semiconductor on the left (right). We chose
-   :math:`q\phi = -E_g/2` to make electron and hole quasi-Fermi levels
-   symmetric. 
+   :math:`q\phi = -E_g/2` and :math:`\chi=0` to make electron and hole
+   quasi-Fermi levels symmetric. 
 
 On an energy diagram, this
 means that more positive electron quasi-Fermi levels are plotted closer to the
@@ -252,6 +216,93 @@ gradient of the quasi-Fermi level
 
 These relations for the currents will be used in the discretization of Eq.
 :eq:`ddp`.
+
+Boundary conditions at the contacts
+...................................
+
+Equilibrium boundary conditions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+For a given system, Sesame first solves the equilibrium problem. In equilibrium,
+the quasi-Fermi level of electrons and holes are equal and spatially
+constant.  We choose an energy reference such that in equilibrium,
+:math:`E_{F_p} = E_{F_n} = 0`. The equilibrium problem is therefore
+reduced to a single variable :math:`\phi`. Sesame employs both
+Dirichlet and Neumann equilibrium boundary conditions
+for :math:`\phi`, which we discuss next.
+
+
+Dirichlet boundary conditions 
+"""""""""""""""""""""""""""""
+Sesame uses Dirichlet boundary conditions as the
+default. This is the appropriate choice when the equilibrium charge
+density at the contacts is known *a priori*, and applies for Ohmic and ideal
+Schottky contacts. For Ohmic boundary conditions, the carrier density is assumed
+to be equal and opposite to the ionized dopant density at the contact. For an
+n-type contact with :math:`N_D` ionized donors at the :math:`x = 0` contact, Eq.
+:eq:`np` yields the expression for :math:`\phi^{eq}(x = 0)`:
+
+.. math::
+    \phi^{eq} (0,y,z) = k_BT Ln\left(N_D/N_C \right) -  \chi(0,y,z)
+
+Similar reasoning yields expressions for :math:`\phi^{eq}` for p-type doping and
+at the :math:`x = L` contact.  For Schottky contacts, we assume that the Fermi
+level at the contact is equal to the Fermi level of the metal.  This implies
+that the equilibrium electron density is :math:`N_C exp [-(\Phi_M-\chi)/k_BT]`
+where :math:`\Phi_M` is the work function of the metal contact. Eq. :eq:`np`
+then yields the expression for :math:`\phi^{eq}` (shown here for
+the :math:`x = 0` contact):
+
+.. math::
+    \phi^{eq} (0,y,z) = -\Phi_M|_{x=0 contact}
+
+An identical expression applies for the :math:`x = L` contact.
+
+Neumann boundary conditions
+"""""""""""""""""""""""""""
+Sesame also has an option for Neumann boundary conditions, where it is assumed
+that the electrostatic field at the contact vanishes:
+
+.. math::
+   \frac{\partial \phi^{eq}}{\partial x}(0, y, z) = \frac{\partial \phi^{eq}}{\partial x}(L, y, z) = 0
+   :label: bc1
+
+The equilibrium potential :math:`\phi^{eq}` determines the equilibrium
+densities :math:`n_{eq}, p_{eq}` according to Eqs. :eq:`np` with :math:`E_{F_n}
+= E_{F_p} = 0`.
+
+
+Out of equilibrium boundary conditions
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Out of thermal equilibrium, we impose Dirichlet boundary conditions on the
+electrostatic potential. For example, in the presence of an applied bias
+:math:`V` at :math:`x=L`, the boundary conditions are
+
+.. math::
+   \phi(0, y, z) &= \phi^{eq}(0,y,z)\\
+   \phi(L, y, z) &= \phi^{eq}(L,y,z) + qV
+
+
+For the drift-diffusion equations, the boundary conditions for carriers at
+charge-collecting contacts are typically parameterized with the
+surface recombination velocities for electrons and holes at the contacts,
+denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
+
+.. math::
+   \vec{J}_n(0,y,z) \cdot \vec{u}_x &= qS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
+   \vec{J}_p(0,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(0,y,z) - p_{\rm eq}(0,y,z))\\
+   \vec{J}_n(L,y,z) \cdot \vec{u}_x &= -qS_{c_n} (n(L,y,z) - n_{\rm eq}(L,y,z))\\
+   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
+   :label: BCs
+
+where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.
+In being collected by a contact, a carrier in the valence or conduction band
+loses its energy and relaxes to the chemical potential of the bulk contact.
+This is essentially a recombination process. The recombination velocity may be
+thought of identically as a carrier lifetime in two dimensions (considering
+Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
+velocity).  
+
+
 
 .. rubric:: References
 .. [1] S. J. Fonash, *Solar cell device physics*, Academic Press 1981.
