@@ -105,7 +105,9 @@ class Window(QMainWindow):
         #============================================
         # Basic settings
         self.setWindowTitle('Sesame')
-        # QApplication.setWindowIcon(QIcon('/home/bhg/Desktop/logo_sesame2.png'))
+        resources = os.path.join(os.path.dirname(__file__), 'resources')
+        icon = resources + os.path.sep + 'logo-icon_sesame.png'
+        QApplication.setWindowIcon(QIcon(icon))
         # Create geomtry and center the window
         self.setGeometry(0,0,1000,700)
         windowFrame = self.frameGeometry()
