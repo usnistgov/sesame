@@ -131,8 +131,8 @@ defect location, :math:`S_n`, :math:`S_p` are recombination velocity parameters
 for electrons and holes respectively. :math:`n_d` and :math:`p_d` are
 
 .. math::
-   \bar n_j &= N_C e^{E_d/k_BT}\\
-   \bar p_j &= N_V e^{- E_d/k_BT}
+   \bar n_d &= n_i e^{E_d/k_BT}\\
+   \bar p_d &= n_i e^{- E_d/k_BT}
 
 where :math:`E_d` is calculated from the intrinsic Fermi level :math:`E_i`.
 The defect recombination is of Shockley-Read-Hall form:

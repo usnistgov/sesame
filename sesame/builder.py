@@ -126,7 +126,7 @@ class Builder():
     n1, p1:  numpy arrays of floats
         Dimensionless equilibrium densities of electrons and holes at the bulk trap state.
     bl: numpy array of floats
-        Dimensionless band offset.
+        Electron affinity.
     g: numpy array of floats
         Dimensionless generation for each site of the
         system. This is defined only if a generation profile was provided when

@@ -16,7 +16,7 @@ def system(amp=1):
                         np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
                         np.linspace(2.75e-6, Ly, 50)))
 
-    sys = sesame.Builder(x, y)
+    sys = sesame.Builder(x, y, input_length='m')
 
     # Add the donors
     nD = 1e17 * 1e6 # [m^-3]
@@ -43,7 +43,7 @@ def system(amp=1):
     # gap state characteristics
     s = 1e-15 * 1e-4               # trap capture cross section [m^2]
     E = -0.25                      # energy of gap state (eV) from midgap
-    N = amp * 2e13 * 1e4           # defect density [1/m^2]
+    N = 2e13 * 1e4           # defect density [1/m^2]
 
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
@@ -51,7 +51,7 @@ def system(amp=1):
     sys.add_line_defects([p1, p2], N, s, E=E)
 
     # Define a function for the generation rate
-    phi = 1e21          # photon flux [1/(m^2 s)]
+    phi = amp * 1e21          # photon flux [1/(m^2 s)]
     alpha = 2.3e6       # absorption coefficient [1/m]
     f = lambda x, y: phi * alpha * np.exp(-alpha * x)
     sys.generation(f)
@@ -62,44 +62,16 @@ def system(amp=1):
 
 if __name__ == '__main__':
 
-    #---------------------------------------------------------------
-    #                           Step 1
-    #---------------------------------------------------------------
-    # Create the system with reduced defect density of states
-    sys = system(0.0001)
-
-    # Electrostatic potential
-    v_left  = np.log(sys.rho[0]/sys.Nc[0])
-    v_right = -sys.Eg[sys.nx-1] - np.log(-sys.rho[sys.nx-1]/sys.Nv[sys.nx-1])
-    v = np.linspace(v_left, v_right, sys.nx)
-    v = np.tile(v, sys.ny) # replicate the guess in the y-direction
-
-    # Call Poisson solver
-    solution = {'v':v}
-    solution = sesame.solve(sys, solution)
-
-    # Make a copy of the equilibrium potential
-    veq = np.copy(solution['v'])
-
-    #---------------------------------------------------------------
-    #                           Step 2
-    #---------------------------------------------------------------
-    # Initial arrays for the quasi-Fermi levels
-    efn = np.zeros((sys.nx*sys.ny,))
-    efp = np.zeros((sys.nx*sys.ny,))
-    solution.update({'efn': efn, 'efp': efp})
-
-    # Loop at zero bias with increasing defect density of states
-    for amp in [0.0001, 0.01]:
-        sys = system(amp)
-        solution = sesame.solve(sys, solution, equilibrium=veq)
-
-    #---------------------------------------------------------------
-    #                           Step 3
-    #---------------------------------------------------------------
-    # Create the system with the defect density of states we want
+    # Compute the equilibrium potential (just Poisson equation)
     sys = system()
+    solution = sesame.solve_equilibrium(sys)
 
-    # Loop over the applied potentials
+    # Loop at zero bias with increasing generation rate
+    for amp in [0.001, 0.01, 0.05, 0.1, 0.5]:
+        print("amplitude: ", amp)
+        asys = system(amp)
+        solution = sesame.solve(asys, solution)
+
+    # Loop over the applied potentials for the desired system
     voltages = np.linspace(0, 1, 40)
-    sesame.IVcurve(sys, voltages, solution, veq, '2dpnIV.vapp')
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')

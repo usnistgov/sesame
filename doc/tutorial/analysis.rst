@@ -1,48 +1,42 @@
 Tutorial 5: Analysis of simulation data
-------------------------------------------
+---------------------------------------
 In this tutorial we show how to extract the data computed by the solvers. We
-will use the system created in :doc:`tutorial 3 <tuto3>`.
-
-The data analysis requires to compute carrier densities, currents and plot data.
-In order to avoid having to deal with the folded discretized system, we provide
-a set of methods callable with real space coordinates. These methods are
-available via the :func:`~sesame.analyzer.Analyzer` class. In the code below we
-load a data file and create an instance of that class::
+will use the system created in :doc:`tutorial 3 <tuto3>`, so we start by
+importing the function that builds it after importing numpy and sesame::
 
     import numpy as np
-    from scipy.constants import m_e, epsilon_0
     import sesame
 
-    # import the system
     from jv_curve import system
+    syst = system()
 
-    results = np.load('data.vapp_0.npz')
-    sys = system()
-    az = sesame.Analyzer(sys, results)
+The Analyzer object
+^^^^^^^^^^^^^^^^^^^
+The data analysis requires to compute carrier densities, currents and plot data.
+In order to avoid having to deal with the folded discretized system, we provide
+a set of methods callable with real (continuous) space coordinates. In the
+code below we load a data file and create an instance of this class::
 
-In the table below we show the syntax used to get some attributes of the
-:func:`~sesame.builder.Builder`
+    results = np.load('2dpnIV.vapp_0.npz')
+    az = sesame.Analyzer(syst, results)
 
-=============================               =============================================
-Attribute                                   Syntax
-=============================               =============================================
-grid nodes                                   ``sys.xpts``, ``sys.ypts``, ``sys.zpts``
-number of grid nodes                         ``sys.nx``, ``sys.ny``, ``sys.nz``
-grid distances                               ``sys.dx``, ``sys.dy``, ``sys.dz``
-=============================               =============================================
+The ``Analyzer`` object is initialized with a system and a dictionary of
+results.  This dictionary must contain the key ``v``, and can include ``efn``,
+``efp`` when computed.
 
-The exhaustive list of all accessible attributes is in the
-documentation of the :func:`~sesame.builder.Builder` class itself.
-
-The descriptions of the methods available via the
+A summary and the descriptions of the methods available via the
 :func:`~sesame.analyzer.Analyzer` object are detailed in
-Sec. :ref:`label_code`. Our first example shows how to obtain integrated
-quantities like the current. In the code below we compute the current for all
-applied voltages of the IV curve::
+Sec. :ref:`label_code`.
+
+Computing densities, recombination and currents
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+We start with how to obtain integrated
+quantities like the steady stated current. In the code below we compute the
+current for all applied voltages of the IV curve::
 
     J = []
     for i in range(40):
-        results = np.load('data.vapp_{0}.npz'.format(i))
+        results = np.load('2dpnIV.vapp_{0}.npz'.format(i))
         az = sesame.Analyzer(system(), results)
         J.append(az.full_current())
 
@@ -54,7 +48,11 @@ abscissae along the line, and the grid sites::
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
 
-    X, sites = az.line(sys, p1, p2)
+    X, sites = az.line(syst, p1, p2)
+
+Note that the ``line`` method can be called without an instance of the
+``Analyzer`` class. Just use ``sesame.Analyzer.line(syst, p1, p2)`` to get the
+abscissae along a line and the sites indices.
 
 Scalar quantities like densities or recombination are obtained either for the
 entire system, or on a line::
@@ -70,76 +68,103 @@ discretized system.
 
 Vectorial quantities (i.e. currents) are computed either on a line or for the
 entire system, by component. For instance, to compute the electron current in
-the x-direction for all sites::
+the x-direction::
 
     # For the entire system
     jn = az.electron_current(component='x')
 
-or on a line::
-
     # On the previously defined line
     jn = az.electron_current(location=(p1, p2))
 
-We now turn to a full example that treats the line defects introduced in our
-system::
+Once these quantities are obtained, they can be plotted with ``matplotlib``, or
+written to a file and plotted using any external viewer. To make the
+visualization of two- and three-dimensional plots easy, ``sesame`` provides a
+few functions (requiring ``matplotblib``) that represent quantities in 2D or
+3D. For example, one can visualize the electrostatic potential at zero bias in
+3D with::
+
+    results = np.load('2dpnIV.vapp_0.npz')
+    az = sesame.Analyzer(syst, results)
+    az.map3D(results['v']) # units of kT/q
+
+.. image:: analysis_potential.*
+   :align: center
+
+or plot the electron current accross the system::
+
+    results = np.load('2dpnIV.vapp_10.npz')
+    az = sesame.Analyzer(syst, results)
+    az.electron_current_map()
+
+.. image:: analysis_currents.*
+   :align: center
+
+We now turn to the treatment of the line defects introduced in our system::
 
     # Get the abscissae of the line defects and the corresponding sites
     p1 = (20e-9, 2.5e-6)   #[m]
     p2 = (2.9e-6, 2.5e-6)  #[m]
-    X, sites = az.line(sys, p1, p2)
+    X, sites = az.line(syst, p1, p2)
 
     # raw data
     efn = results['efn'][sites]
     efp = result['efp'][sites]
     v   = result['v'][sites]
 
-    # Units
-    scaling = sesame.Scaling()  # dimensions of physical quantities
+    # Units of physical quantities for our system
+    scaling = syst.scaling
 
     # Get the defect state equilibrium densities
     vt = scaling.energy
     E = -0.25 # eV
-    nGB = sys.Nc[sites] * np.exp(-sys.Eg[sites]/2 + E/vt)
-    pGB = sys.Nv[sites] * np.exp(-sys.Eg[sites]/2 - E/vt)
+    nd = syst.ni[sites] * np.exp(+ E/vt)
+    pd = syst.ni[sites] * np.exp(- E/vt)
 
-    # Compute the carrier densities
+    # Compute the carrier densities the line defect
     n = az.electron_density((p1, p2))
     p = az.hole_density((p1, p2))
 
-    # Compute the thermal velocity
-    ct = np.sqrt(epsilon_0/scaling.density)/scaling.mobility
-    vth = ct * np.sqrt(3/(sys.mass_e[sites[0]]*m_e))
+    # Compute the defect recombination rate
+    defect = syst.defects_list[0]
+    R = az.defect_rr(defect)
 
-    # Compute the surface recombination velocity and the recombination
-    sigma = sys.defects_list[0].sigma_e
-    NGB = sys.defects_list[0].dos
-    S = sigma * NGB * vth
-    ni = np.sqrt(nGB*pGB)  # intrinsic density
-    R = S * (n*p - ni**2) / (n + nGB + p + pGB)
+    # Compute the integrated recombination along the line defect
+    J = az.integrated_defect_recombination(defect)
 
-    # R is a 1D array containing the recombination at all the defect sites. To
-    # obtain the recombination current we interpolate and integrate:
-    from scipy.interpolate import InterpolatedUnivariateSpline as spline
-    sp = spline(X, R)
-    JGB = sp.integral(X[0], X[-1])
-
-Observe how we accessed the dimensions of physical quantities. We created an
-object ``scaling`` from the class :func:`~sesame.builder.Scaling`, and called
-the desired attribute of that object. Available dimensions are:
-density, energy, mobility, time, length, and generation. Theses dimensions
-(except mobility) depend on the temperature given when creating an 
-instance of the class :func:`~sesame.builder.Scaling` (default is 300 K).
+Observe how we accessed the dimensions of physical quantities (and the energy
+scale). Available dimensions are: density, energy, mobility, time, length, and
+generation. These dimensions (except mobility) depend on the temperature and the
+unit length (meter or centimeter) given when creating an instance of the class
+:func:`~sesame.builder.Builder` (default is 300 K and centimeters).
 
 The attribute of Builder called ``defects_list`` is a list of named tuples. This
 list stores the parameters of each defect originally added to the system. The
-field names of the named tuples are ``sites``, ``location``, ``dos``, ``energy``,
-``sigma_e``, ``sigma_h``, ``transition``, ``perp_dl``. The last field contains
-the lattice distance perpendicular to the line of defects. It is necessary to
-normalize the recombination velocity in 2D.
+field names of the named tuples are ``sites``, ``location``, ``dos``,
+``energy``, ``sigma_e``, ``sigma_h``, ``transition``, ``perp_dl``. The last
+field contains the lattice distance perpendicular to the line of defects. It is
+necessary to normalize the recombination velocity and the density of states.
 
-.. seealso:: In case the methods available in the
-   :func:`~sesame.analyzer.Analyzer` are not enough (especially in 3D), the
-   module :func:`sesame.observables` gives
-   access to low-level routines that compute the carrier densities and the currents
-   for any given sites on the discretized system.
 
+Advanced possibilities
+^^^^^^^^^^^^^^^^^^^^^^
+
+In case the methods available in the :func:`~sesame.analyzer.Analyzer` are not
+enough (especially in 3D), the module :func:`sesame.observables` gives access to
+low-level routines that compute the carrier densities and the currents for any
+given sites on the discretized system.
+
+In the table below we show the syntax used to get some attributes of the
+:func:`~sesame.builder.Builder` that can then be useful:
+
+=============================    =============================================
+Attribute                        Syntax
+=============================    =============================================
+grid nodes                        ``syst.xpts``, ``syst.ypts``, ``syst.zpts``
+number of grid nodes              ``syst.nx``, ``syst.ny``, ``syst.nz``
+grid distances                    ``syst.dx``, ``syst.dy``, ``syst.dz``
+=============================    =============================================
+
+The exhaustive list of all accessible attributes is in the
+documentation of the :func:`~sesame.builder.Builder` class itself. Note that the
+grid nodes are in the units given in the system definition, while the grid
+distances are dimensionless.
