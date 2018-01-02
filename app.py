@@ -8,6 +8,11 @@ from sesame.ui import mainwindow
 from PyQt5.QtWidgets import QApplication
 from PyQt5 import QtGui
 import sys
+import ctypes
+
+if sys.platform == 'win32':
+    appID = 'sesameGUI'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(appID)
 
 app = QApplication(sys.argv)
 

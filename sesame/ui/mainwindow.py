@@ -32,6 +32,15 @@ config.add_section('Simulation')
 
 from ast import literal_eval as ev
 
+
+def absolute_path(relative_path):
+    # The absolute path depends on whether or not the package is frozen
+    if getattr(sys, 'frozen', False):
+        return os.path.join(sys._MEIPASS, relative_path)
+ 
+    return os.path.join(os.path.dirname(__file__), relative_path)
+
+
 class Window(QMainWindow): 
     """
     Class defining the main window of the GUI.
@@ -103,10 +112,9 @@ class Window(QMainWindow):
         #============================================
         # Window settings
         #============================================
-        # Basic settings
+        # Window title and icon
         self.setWindowTitle('Sesame')
-        resources = os.path.join(os.path.dirname(__file__), 'resources')
-        icon = resources + os.path.sep + 'logo-icon_sesame.png'
+        icon = absolute_path('resources'+os.path.sep+'logo-icon_sesame.png')
         QApplication.setWindowIcon(QIcon(icon))
         # Create geomtry and center the window
         self.setGeometry(0,0,1000,700)
