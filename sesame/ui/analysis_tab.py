@@ -321,7 +321,10 @@ class Analysis(QWidget):
         files = [self.filesList[self.dataList.row(i)]\
                 for i in self.dataList.selectedItems()
         ]
-        files.sort() # so that loop values coincide with file order
+        # sort ascii order first, then by length of the name so that files are
+        # in ascending order
+        files.sort()
+        files.sort(key='len')
         if len(files) == 0:
             msg = QMessageBox()
             msg.setWindowTitle("Processing error")
