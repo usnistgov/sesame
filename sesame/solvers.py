@@ -41,15 +41,7 @@ class BCsError(Exception):
         logging.error(msg)
         logging.error("Contacts boundary conditions: '{0}' is different from 'Ohmic', 'Schottky', or 'Neumann'.\n".format(BCs))
 
-
-class NoSolution(Exception):
-    def __init(self):
-        noSolutionMsg = "\n*********************************************" +\
-                        "\n*       No solution could be found          *" +\
-                        "\n*********************************************"
-        logging.error(noSolutionMsg)
-
-
+ 
 class Solver():
     """
     An object that creates an interface for the equilibrium and nonequilibrium
@@ -249,7 +241,7 @@ class Solver():
                               iterative=iterative, inner_tol=inner_tol, htp=htp)
 
             if self.equilibrium is None:
-                raise NoSolution
+                return None
 
         # Return now if the electrostatic potential is all we wanted
         if compute == 'Poisson':
@@ -272,10 +264,11 @@ class Solver():
             x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
                        maxiter=maxiter, verbose=verbose,\
                        iterative=iterative, inner_tol=inner_tol, htp=htp)
+
             if x is not None:
                 return {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
             else:
-                raise NoSolution
+                return None
 
     def _damping(self, dx):
         # This damping procedure is inspired from Solid-State Electronics, vol. 19,
@@ -301,7 +294,8 @@ class Solver():
             if info == 0:
                 return dx
             else:
-                logging.info("Iterative sparse solver failed with output info: ".format(info))
+                msg = "**  Iterative sparse solver failed with output info: {0}  **".format(info)
+                logging.error(msg)
 
     def _get_system(self, x, system, periodic_bcs, contacts_bcs):
         # Compute the right hand side of J * x = f
@@ -364,7 +358,8 @@ class Solver():
                 cc = cc + 1
                 # break if no solution found after maxiterations
                 if cc > maxiter:
-                    logging.info("Maximum number of iterations reached without solution: no solution found!")
+                    msg = "**  Maximum number of iterations reached  **"
+                    logging.error(msg)
                     break
 
                 # solve linear system
@@ -394,18 +389,14 @@ class Solver():
                             if verbose:
                                 logging.info('step {0}, error = {1}'.format(cc, error))
                 except SparseSolverError:
-                    msg = "\n********************************************"+\
-                          "\n*   The linear system could not be solved  *"+\
-                          "\n********************************************"
+                    msg = "**  The linear system could not be solved  **"
                     logging.error(msg)
-                    return None
+                    break
 
                 except NewtonError:
-                    msg = "\n********************************************"+\
-                          "\n*  The Newton-Raphson algorithm diverged   *"+\
-                          "\n********************************************"
+                    msg = "**  The Newton-Raphson algorithm diverged  **"
                     logging.error(msg)
-                    return None
+                    break
                         
         if converged:
             return x

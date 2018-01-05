@@ -46,8 +46,8 @@ class SimulationWorker(QObject):
         paramName = self.paramName
 
         # Solver settings
-        loopValues, simName, fmt, BCs, contacts_bcs, contacts_WF, Sc, tol, maxiter,\
-                        useMumps, iterative = solverSettings
+        loopValues, simName, fmt, BCs, contacts_bcs, contacts_WF, Sc,\
+        tol, maxiter, useMumps, iterative, ramp = solverSettings
 
         # Add contacts surface recombination velocities
         system.contacts(*Sc)
@@ -86,7 +86,7 @@ class SimulationWorker(QObject):
         # Loop over voltages
         #===========================================================
         if loop == "voltage":
-            self.logger.info("Voltage loop starting now")
+            self.logger.info("Nonequilibrium calculation starting now")
             if generation != "":
                 # create callable 
                 if system.dimension == 1:
@@ -99,16 +99,20 @@ class SimulationWorker(QObject):
                 system.generation(f)
 
                 # Loop at zero bias with increasing defect density of states
-                self.logger.info("A generation rate is used. We are going to solve drift-diffusion-Poisson with increasing amplitudes of the generation rate to find a proper guess at zero-bias")
-                system.g /= 1e10
-                for a in range(10):
-                    self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
-                    system.g *= 10
+                if ramp >  0:
+                    self.logger.info("A generation rate is used with a non-zero ramp.")
+                system.g /= 10**ramp
+                for a in range(ramp+1):
+                    self.logger.info("Amplitude divided by {0}"\
+                                                .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
                                     tol, BCs, contacts_bcs, contacts_WF,\
                                     maxiter, True, iterative, 1e-6, 1)
+                    system.g *= 10 # the last one will be computed as part of
+                                   # the voltage loop
                     if solution is None:
-                        self.logger.info("The solver diverged. Aborting now.")
+                        msg = "**  The calculations failed  **"
+                        self.logger.error(msg)
                         self.simuDone.emit()
                         return
                     if self.abort:
@@ -128,6 +132,7 @@ class SimulationWorker(QObject):
                 q = -1
 
             # Loop over the applied potentials made dimensionless
+            self.logger.info("Voltage loop starts now")
             Vapp = [i / system.scaling.energy for i in loopValues]
             for idx, vapp in enumerate(Vapp):
                 logging.info("Applied voltage: {0} V".format(loopValues[idx]))
@@ -166,7 +171,8 @@ class SimulationWorker(QObject):
                     return
 
             if solution is not None:
-                self.logger.info("********** Calculations completed **********")
+                msg = "** Calculations completed successfully **"
+                self.logger.info(msg)
 
         #===========================================================
         # Loop over generation rates
@@ -187,21 +193,23 @@ class SimulationWorker(QObject):
                 # update generation rate of the system
                 system.generation(f, args=(p,))
 
-                system.g /= 1e10
-                for a in range(11):
-                    self.logger.info("Amplitude divided by {0}".format(1e10 / 10**a))
-                    system.g *= 10
+                system.g /= 10**ramp
+                for a in range(ramp+1):
+                    self.logger.info("Amplitude divided by {0}"\
+                                                .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
                                     tol, BCs, contacts_bcs, contacts_WF,\
                                     maxiter, True, iterative, 1e-6, 1)
+                    system.g *= 10
                     if solution is None:
-                        self.logger.info("The solver diverged. Aborting now.")
+                        msg = "**  The calculations failed  **"
+                        self.logger.error(msg)
                         self.simuDone.emit()
                         return
                     if self.abort:
                         self.simuDone.emit()
                         return
-
+ 
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
                     # add some system settings to the saved results
@@ -225,7 +233,8 @@ class SimulationWorker(QObject):
                     self.simuDone.emit()
                     return
             if solution is not None:
-                self.logger.info("********** Calculations completed **********")
+                msg = "** Calculations completed successfully **"
+                self.logger.info(msg)
 
         # tell main thread to quit this thread
         self.simuDone.emit()

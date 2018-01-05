@@ -181,9 +181,12 @@ class Simulation(QWidget):
         self.algoBox = QGroupBox("Algorithm settings")
         self.form2 = QFormLayout()
 
-        # algo tol, maxiter, 
+        # G ramp, algo tol, maxiter, 
+        self.ramp = QSpinBox()
+        self.ramp.singleStep()
         self.algoPrecision = QLineEdit("1e-6", self)
         self.algoSteps = QLineEdit("100", self)
+        self.form2.addRow("Generation ramp", self.ramp)
         self.form2.addRow("Algorithm precision", self.algoPrecision)
         self.form2.addRow("Maximum steps", self.algoSteps)
 
@@ -318,6 +321,8 @@ class Simulation(QWidget):
         ScnL, ScpL = float(self.g4.text()), float(self.g5.text())
         ScnR, ScpR = float(self.g6.text()), float(self.g7.text())
 
+        # generation ramp
+        ramp = self.ramp.value()
         # precision
         precision = float(self.algoPrecision.text())
         # max steps
@@ -330,7 +335,7 @@ class Simulation(QWidget):
         contacts_bcs = [contactL, contactR]
         settings = [loopValues, simName, extension, BCs, contacts_bcs,\
                     [phiL, phiR], [ScnL, ScpL, ScnR, ScpR], precision, steps,\
-                    useMumps, iterative]
+                    useMumps, iterative, ramp]
         return settings
 
 

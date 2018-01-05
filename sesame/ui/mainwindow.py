@@ -221,7 +221,7 @@ class Window(QMainWindow):
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
                       BCs, L_contact, R_contact, L_WF, R_WF,\
                       ScnL, ScpL, ScnR, ScpR,\
-                      precision, maxSteps, useMumps, iterative):
+                      precision, maxSteps, useMumps, iterative, ramp):
         """
         Fill out all fields of the interface simulation tab with the settings
         from the configuration file.  
@@ -269,10 +269,11 @@ class Window(QMainWindow):
             self.table.simulation.yesIterative.setChecked(True)
         else:
             self.table.simulation.noIterative.setChecked(True)
+        self.table.simulation.ramp.setValue(int(ramp))
         
     def openConfig(self):
         """
-        Open and read the configuration of the interface system and analysis
+        Open and read the configuration of the interface system and simulation
         tabs. This file must end with extension .ini.
         """
         self.cfgFile = QFileDialog.getOpenFileName(self, 'Open File', '',\
@@ -320,10 +321,11 @@ class Window(QMainWindow):
             maxSteps = config.get('Simulation', 'Maximum steps')
             useMumps = config.getboolean('Simulation', 'Use Mumps')
             iterative = config.getboolean('Simulation', 'Iterative solver')
+            ramp = config.get('Simulation', 'Generation ramp')
             self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
                                ext, BCs, L_contact, R_contact, L_WF, R_WF,\
                                ScnL, ScpL, ScnR, ScpR, precision,\
-                               maxSteps, useMumps, iterative)
+                               maxSteps, useMumps, iterative, ramp)
             f.close()
 
     def saveAsConfig(self):
@@ -337,7 +339,7 @@ class Window(QMainWindow):
 
     def saveConfig(self):
         """
-        Save the configuration of the interface system and analysis
+        Save the configuration of the interface system and simulation
         tabs in a file with extension .ini.
         """
 
@@ -403,6 +405,8 @@ class Window(QMainWindow):
                                             simu.g6.text())
                 config.set('Simulation', 'Hole recombination velocity in L',\
                                             simu.g7.text())
+                config.set('Simulation', 'Generation ramp',
+                str(simu.ramp.value()))
                 config.set('Simulation', 'Newton precision',\
                             str(simu.algoPrecision.text()))
                 config.set('Simulation', 'Maximum steps', str(simu.algoSteps.text()))
