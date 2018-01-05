@@ -13,8 +13,9 @@ import numpy as np
 import logging
 from ast import literal_eval as ev
 from io import StringIO
+import traceback
 
-from .common import parseSettings, slotError
+from .common import parseSettings
 from .sim import SimulationWorker
 
 
@@ -338,8 +339,6 @@ class Simulation(QWidget):
                     useMumps, iterative, ramp]
         return settings
 
-
-    @slotError("bool")
     def run(self, checked):
         # Disable run button
         self.brun.setEnabled(False)
@@ -367,23 +366,38 @@ class Simulation(QWidget):
                 return
 
         # get system settings and build system without generation
-        settings = self.tabsTable.build.getSystemSettings()
-        system = parseSettings(settings)
-        generation, paramName = settings['gen']
+        try:
+            settings = self.tabsTable.build.getSystemSettings()
+            system = parseSettings(settings)
+            generation, paramName = settings['gen']
 
-        # get solver settings
-        solverSettings = self.getSolverSettings()
+            # get solver settings
+            solverSettings = self.getSolverSettings()
 
-        # define a thread in which to run the simulation
-        self.thread = QThread(self)
+            # define a thread in which to run the simulation
+            self.thread = QThread(self)
 
-        # add worker to thread and run simulation
-        self.simulation = SimulationWorker(loop, system, solverSettings, generation, paramName)
-        self.simulation.moveToThread(self.thread)
-        self.simulation.simuDone.connect(self.thread_cleanup)
-        self.simulation.newFile.connect(self.updateDataList)
-        self.thread.started.connect(self.simulation.run)
-        self.thread.start()
+            # add worker to thread and run simulation
+            self.simulation = SimulationWorker(loop, system, solverSettings,\
+                                                generation, paramName)
+            self.simulation.moveToThread(self.thread)
+            self.simulation.simuDone.connect(self.thread_cleanup)
+            self.simulation.newFile.connect(self.updateDataList)
+            self.thread.started.connect(self.simulation.run)
+            self.thread.start()
+        except Exception:
+            p = traceback.format_exc()
+            # Dialog box
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("An error occurred when processing your settings.")
+            msg.setDetailedText(p)
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            # re enable run button
+            self.brun.setEnabled(True)
+            return
 
     @pyqtSlot(str)
     def displayMessage(self, message):

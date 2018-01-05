@@ -11,7 +11,6 @@ from PyQt5.QtCore import *
 import numpy as np 
 
 from .plotbox import *
-from .common import parseSettings, slotError
 
 
 class BuilderBox(QWidget):
