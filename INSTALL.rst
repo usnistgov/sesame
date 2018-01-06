@@ -26,6 +26,8 @@ The following software is highly recommended though not strictly required:
  * An environment which allows to compile Python extensions written in C,
    C++ and Fortran.
 
+The graphical user interface requires `PyQt5
+<https://riverbankcomputing.com/software/pyqt/intro>`_.
 
 Generic instructions
 .....................
@@ -54,10 +56,14 @@ directory of the Sesame source distribution.
 Build configuration
 +++++++++++++++++++
 
-The setup script of Sesame is used to link Sesame against MUMPS. The name of the
-library installed and its location are configured by editing the file ``setup.cfg`` in the
-root directory of the Sesame distribution. By default the section regarding
-MUMPS is commented out.
+The setup script of Sesame parses the file ``setup.cfg`` in the root directory
+of the distribution to know if the graphical user interface should be installed,
+and whether or not to link Sesame against the MUMPS library.
+
+The graphical user interface will be installed if ``use = True`` in the ``GUI``
+section. The default is to install it (use ``use = False`` to avoid install).
+The ``mumps`` section provides the paths to relevant directories where MUMPS is
+installed.  By default this section is commented out and MUMPS is not used.
 
 Building the documentation
 +++++++++++++++++++++++++++

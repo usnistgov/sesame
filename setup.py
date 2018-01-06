@@ -84,6 +84,11 @@ try:
 except IOError:
     print("Could not open config file.")
 
+packages = ['sesame']
+if config.getboolean('GUI', 'use'):
+    packages.append('sesame.ui')
+if 'mumps' in config.sections():
+    packages.append('sesame.mumps')
 
 if 'mumps' in config.sections():
     kwrds = {}
@@ -97,8 +102,6 @@ if 'mumps' in config.sections():
         library_dirs=[kwrds['library_dirs']],
         include_dirs=[kwrds['include_dirs']])]
 
-    packages = ['sesame', 'sesame.mumps', 'sesame.ui']
-
     try:
         run_setup(packages, ext_modules)
         status_msgs("Done")
@@ -107,8 +110,9 @@ if 'mumps' in config.sections():
             exc.cause,
             "WARNING: The MUMPS extension could not be compiled. " +
             "Retrying the build without the MUMPS extension now.")
-        run_setup(['sesame'], [])
+        packages.remove('sesame.mumps')
+        run_setup(packages, [])
         status_msgs("Done")
 else:
-    run_setup(['sesame', 'sesame.ui'], [])
+    run_setup(packages, [])
     status_msgs( "Done")
