@@ -102,7 +102,7 @@ class SimulationWorker(QObject):
                 if ramp >  0:
                     self.logger.info("A generation rate is used with a non-zero ramp.")
                 system.g /= 10**ramp
-                for a in range(ramp+1):
+                for a in range(ramp):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
