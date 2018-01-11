@@ -213,7 +213,11 @@ def get_line_defects_sites(system, location):
             perp_dl.append((system.dx[i] + system.dx[i-1])/2.)  
         else:
             i += incx
-            perp_dl.append((system.dy[j] + system.dy[j-1])/2.)
+            if (len(system.dy) < j):
+                perp_dl.append((system.dy[j] + system.dy[j - 1]) / 2.)
+            else:
+                # we've assumed abrupt boundary conditions along y-direction!
+                perp_dl.append(system.dy[j - 1])
         sites.append(i + j*system.nx)
     perp_dl.append(perp_dl[-1])
     perp_dl = np.asarray(perp_dl)

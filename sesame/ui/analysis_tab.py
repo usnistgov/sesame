@@ -324,7 +324,7 @@ class Analysis(QWidget):
         # sort ascii order first, then by length of the name so that files are
         # in ascending order
         files.sort()
-        files.sort(key='len')
+        files.sort(key=len)
         if len(files) == 0:
             msg = QMessageBox()
             msg.setWindowTitle("Processing error")
