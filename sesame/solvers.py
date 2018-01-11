@@ -66,8 +66,7 @@ class Solver():
         self.use_mumps = use_mumps
 
     def solve_equilibrium(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300,\
-          verbose=True, iterative=False, inner_tol=1e-6, htp=1):
+          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
         
         """
         Solve the Poisson equation.
@@ -83,15 +82,6 @@ class Solver():
         periodic_bcs: boolean
             Defines the choice of boundary conditions in the y-direction. True
             (False) corresponds to periodic (abrupt) boundary conditions.
-        contacts_bcs: list of strings
-            Defines the choice of boundary conditions for the equilibrium
-            electrostatic potential at the contacts. 'Ohmic' or 'Schottky'
-            imposes the value of the potential given in the guess, 'Neutral'
-            imposes a zero potential derivative.  First string describes left
-            contact, second string describes right contact. 
-        contacts_WF: tuple of floats 
-            Specifies the metal work function.  First number applies
-            to left contact, second number applies to right contact.
         maxiter: integer
             Maximum number of steps taken by the Newton-Raphson scheme.
         verbose: boolean
@@ -116,13 +106,11 @@ class Solver():
         """
 
         res = self.common_solver('Poisson', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, contacts_WF, maxiter, verbose, iterative,\
-                    inner_tol, htp)
+                    maxiter, verbose, iterative, inner_tol, htp)
         return res
 
     def solve(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          contacts_bcs=['Ohmic','Ohmic'], contacts_WF=None, maxiter=300,\
-          verbose=True, iterative=False, inner_tol=1e-6, htp=1):
+          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
 
         """
         Solve the drift diffusion Poisson equation on a given discretized
@@ -143,15 +131,6 @@ class Solver():
         periodic_bcs: boolean
             Defines the choice of boundary conditions in the y-direction. True
             (False) corresponds to periodic (abrupt) boundary conditions.
-        contacts_bcs: list of strings
-            Defines the choice of boundary conditions for the equilibrium
-            electrostatic potential at the contact. 'Ohmic' or 'Schottky'
-            imposes the value of the potential given in the guess, 'Neutral'
-            imposes a zero potential derivative.  First string describes left
-            contact, second string describes right contact.
-        contacts_WF: tuple of floats
-            Specifies the metal work function.  First number applies to left
-            contact, second number applies to right contact.
         maxiter: integer
             Maximum number of steps taken by the Newton-Raphson scheme.
         verbose: boolean
@@ -175,33 +154,34 @@ class Solver():
         """
 
         res = self.common_solver('all', system, guess, tol, periodic_bcs,\
-                    contacts_bcs, contacts_WF, maxiter, verbose, iterative,\
-                    inner_tol, htp)
+                    maxiter, verbose, iterative, inner_tol, htp)
         return res
     
-    def make_guess(self, system, contacts_bcs, contacts_WF):
+    def make_guess(self, system):
         # Make a linear assumption based on Dirichlet contacts
         nx = system.nx
         # determine what the potential on the left might be
-        if contacts_bcs[0] == 'Ohmic' or contacts_bcs[0] == 'Neutral':
+        if system.contacts_bcs[0] == 'Ohmic' or\
+           system.contacts_bcs[0] == 'Neutral':
             if system.rho[0] < 0: # p-doped
                 v_left = -system.Eg[0]\
                          - np.log(abs(system.rho[0])/system.Nv[0]) - system.bl[0]
             else: # n-doped
                 v_left = np.log(system.rho[0]/system.Nc[0]) - system.bl[0]
-        if contacts_bcs[0] == 'Schottky':
-            v_left = -contacts_WF[0] / system.scaling.energy
+        if system.contacts_bcs[0] == 'Schottky':
+            v_left = -system.contacts_WF[0] / system.scaling.energy
 
         # determine what the potential on the right might be
-        if contacts_bcs[1] == 'Ohmic' or contacts_bcs[1] == 'Neutral':
+        if system.contacts_bcs[1] == 'Ohmic' or\
+           system.contacts_bcs[1] == 'Neutral':
             if system.rho[nx-1] < 0:
                 v_right = -system.Eg[nx-1]\
                           - np.log(abs(system.rho[nx-1])/system.Nv[nx-1])\
                           - system.bl[nx-1]
             else:
                 v_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
-        if contacts_bcs[1] == 'Schottky':
-            v_right = -contacts_WF[1] / system.scaling.energy
+        if system.contacts_bcs[1] == 'Schottky':
+            v_right = -system.contacts_WF[1] / system.scaling.energy
 
 
         # Make a linear guess for the equilibrium potential
@@ -216,8 +196,7 @@ class Solver():
         return v
 
     def common_solver(self, compute, system, guess, tol, periodic_bcs,\
-          contacts_bcs, contacts_WF, maxiter, verbose, iterative, inner_tol,\
-          htp):
+          maxiter, verbose, iterative, inner_tol, htp):
 
         # Check if we only want the electrostatic potential
         if compute == 'Poisson': # Only Poisson is solved
@@ -227,7 +206,7 @@ class Solver():
             logging.info("Solving for the equilibrium electrostatic potential")
 
             if guess is None:
-                guess = self.make_guess(system, contacts_bcs, contacts_WF)
+                guess = self.make_guess(system)
             else:
                 # testing of the data type of guess.
                 if type(guess) is dict:
@@ -236,7 +215,6 @@ class Solver():
             # Compute the potential (Newton returns an array)
             self.equilibrium = self._newton(system, guess, tol=tol,\
                               periodic_bcs=periodic_bcs,\
-                              contacts_bcs=contacts_bcs,\
                               maxiter=maxiter, verbose=verbose,\
                               iterative=iterative, inner_tol=inner_tol, htp=htp)
 
@@ -297,19 +275,18 @@ class Solver():
                 msg = "**  Iterative sparse solver failed with output info: {0}  **".format(info)
                 logging.error(msg)
 
-    def _get_system(self, x, system, periodic_bcs, contacts_bcs):
+    def _get_system(self, x, system, periodic_bcs):
         # Compute the right hand side of J * x = f
         if self.equilibrium is None:
             size = system.nx * system.ny * system.nz
             if system.dimension != 1:
                 rhs = importlib.import_module('.getFandJ_eq{0}'\
                                .format(system.dimension), 'sesame')
-                f, rows, columns, data = rhs.getFandJ_eq(system, x, periodic_bcs,\
-                                                         contacts_bcs)
+                f, rows, columns, data = rhs.getFandJ_eq(system, x, periodic_bcs)
             else:
                 rhs = importlib.import_module('.getFandJ_eq1'\
                                .format(system.dimension), 'sesame')
-                f, rows, columns, data = rhs.getFandJ_eq(system, x, contacts_bcs)
+                f, rows, columns, data = rhs.getFandJ_eq(system, x)
 
         else:
             size = 3 * system.nx * system.ny * system.nz
@@ -336,8 +313,7 @@ class Solver():
         return f, J
 
     def _newton(self, system, x, tol=1e-6, periodic_bcs=True,\
-               contacts_bcs=['Ohmic','Ohmic'], maxiter=300, verbose=True,\
-               iterative=False, inner_tol=1e-6, htp=1):
+            maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
 
         htpy = np.linspace(1./htp, 1, htp)
 
@@ -353,7 +329,7 @@ class Solver():
             cc = 0
             converged = False
             if gamma != 1:
-                f0, _ = self._get_system(x, system, periodic_bcs, contacts_bcs)
+                f0, _ = self._get_system(x, system, periodic_bcs)
             while not converged:
                 cc = cc + 1
                 # break if no solution found after maxiterations
@@ -363,7 +339,7 @@ class Solver():
                     break
 
                 # solve linear system
-                f, J = self._get_system(x, system, periodic_bcs, contacts_bcs)
+                f, J = self._get_system(x, system, periodic_bcs)
                 if gamma != 1:
                     f -= (1-gamma)*f0
 

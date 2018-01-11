@@ -492,10 +492,10 @@ class Builder():
             self.gtot = sp.integral(z[0], z[-1])
  
 
-    def contacts(self, Scn_left, Scp_left, Scn_right, Scp_right):
+    def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """
-        Create the lists of recombination velocities that define the contacts
-        boundary conditions.
+        Create the lists of recombination velocities that define the charge
+        collection at the contacts out of equilibrium.
 
         Parameters
         ----------
@@ -518,6 +518,37 @@ class Builder():
         self.Scp = [Scp_left / self.scaling.velocity, 
                     Scp_right / self.scaling.velocity]
 
+    def contact_type(self, left_contact, right_contact, left_wf=None, right_wf=None):
+        """
+        Define the boundary conditions for the contacts at thermal equilibrium.
+        'Ohmic' or 'Schottky' impose a value of the electrostatic potential,
+        'Neutral' imposes a zero potential derivative.  
+
+        Parameters
+        ----------
+        left_contact: string
+            Boundary conditions for the contact at x=0.
+        right_contact: string
+            Boundary conditions for the contact at x=L.
+        left_wf: float
+            Work function for a Schottky contact at x=0.
+        right_wf: float
+            Work function for a Schottky contact at x=L.
+
+        Notes
+        -----
+        Schottky contacts require work functions. If no values are given, an
+        error will be raised.
+        """
+
+        # Schottky requires work functions
+        if left_contact == 'Schottky' and left_wf is None:
+            raise ValueError("Shcottky contacts require work functions.")
+        if right_contact == 'Schottky' and right_wf is None:
+            raise ValueError("Shcottky contacts require work functions.")
+
+        self.contacts_bcs = [left_contact, right_contact]
+        self.contacts_WF = [left_wf, right_wf]
 
 def get_sites(sys, location):
     # find the sites which belongs to a region
