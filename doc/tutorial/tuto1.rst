@@ -36,7 +36,7 @@ contains more nodes in the pn junction depletion region::
 To make a system we need to create an instance of the
 :func:`~sesame.builder.Builder`::
 
-    sys = sesame.Builder(x)
+    sys = sesame.Builder(x, input_length='m')
 
 Note that  we accessed :func:`~sesame.builder.Builder` by the name
 ``sesame.Builder``. We could have written ``sesame.builder.Builder`` instead.
@@ -99,12 +99,15 @@ on the left (right) of the junction. The doping will be n-type for
 Note that we defined ``region2`` with an inline function with the keyword
 ``lambda``. This does the same thing as the function definition used for
 ``region``.  Now that we have the interior of the system, we specify the
-contacts boundary conditions. We choose to have perfectly selective contacts,
-which is parametrized by surface recombination velocities at the contacts::
+contacts boundary conditions. We choose to have perfectly Ohmic contacts, which
+are perfectly selective out of equilibrium::
+
+    # Define Ohmic contacts
+    sys.contact_type('Ohmic', 'Ohmic')
 
     # Define the surface recombination velocities for electrons and holes [m/s]
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
-    sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
+    sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 If we want to make a IV curve, we need a generation profile. This is defined
 as follows::
@@ -117,41 +120,11 @@ as follows::
     sys.generation(f)
 
 We can now use this system to solve the Poisson equation at thermal equilibrium
-and also compute the IV curve.  First, we set the boundary conditions for the
-electrostatic potential. Because of our geometry the potential on the left and
-right read
-
-.. math::
-   \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
-   \phi(L, y) &= -E_g - \frac{k_BT}{q}\ln\left(N_A/N_V \right)
-
-which is computed as follows::
-
-    sys = system()
-    v_left  = np.log(1e17/8e17)
-    v_right = -sys.Eg[sys.nx-1] - np.log(1e15/1.8e19)
-
-The Poisson equation is solved with an initial guess::
-
-    v = np.linspace(v_left, v_right, sys.nx)
-    solution = sesame.solve(sys, {'v':v})
-
-Note that :func:`~sesame.solve` is the multi-purpose solver of the package. When
-a single dictionary ``{'v': array}`` is passed to this function (the key needs
-to be 'v'), Sesame will understand that only the electrostatic potential of the
-system at thermal equilibrium needs to be solved for.
-
-Finally, the function `~sesame.solvers.IVcurve` loops over the applied voltages
-and saves the results in the designated file::
+and also compute the IV curve::
 
     voltages = np.linspace(0, 0.95, 40)
-    solution.update({'efn': np.zeros((sys.nx,)), 'efp': np.zeros((sys.nx,))})
+    solution = sesame.solve_equilibrium(sys)
     sesame.IVcurve(sys, voltages, solution, '1dpnIV')
-
-On the second line, the guess dictionary is updated with arrays for the
-quasi-Fermi levels. The keys for these entries need to be ``'efn'`` and ``efp``
-so that Sesame understands that the drift diffusion Poisson equations are to be
-solved.
 
 The data files will have names like ``1dpnIV.vapp_0.npz`` where the number 0
 is the index of of the array ``voltages``. We will see how to extract the data

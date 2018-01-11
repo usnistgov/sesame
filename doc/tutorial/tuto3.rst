@@ -29,7 +29,7 @@ we rewrite inside its own function::
                             np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
                             np.linspace(2.75e-6, Ly, 50)))
 
-        sys = sesame.Builder(x, y)
+        sys = sesame.Builder(x, y, input_length='m')
 
         # Add the donors
         nD = 1e17 * 1e6 # [m^-3]
@@ -39,9 +39,10 @@ we rewrite inside its own function::
         nA = 1e15 * 1e6 # [m^-3]
         sys.add_acceptor(nA, lambda pos: pos[0] >= junction)
 
-        # Use perfectly selective contacts
+        # Use perfectly selective Ohmic contacts
+        sys.contact_type('Ohmic', 'Ohmic')
         Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
-        sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
+        sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
         # Region 1
         reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
@@ -56,7 +57,7 @@ we rewrite inside its own function::
         # gap state characteristics
         s = 1e-15 * 1e-4               # trap capture cross section [m^2]
         E = -0.25                      # energy of gap state (eV) from midgap
-        N = amp * 2e13 * 1e4           # defect density [1/m^2]
+        N = 2e13 * 1e4           # defect density [1/m^2]
 
         p1 = (20e-9, 2.5e-6)   #[m]
         p2 = (2.9e-6, 2.5e-6)  #[m]
@@ -64,7 +65,7 @@ we rewrite inside its own function::
         sys.add_line_defects([p1, p2], N, S, E=E)
 
         # Define a function for the generation rate
-        phi = 1e21          # photon flux [1/(m^2 s)]
+        phi = amp * 1e21          # photon flux [1/(m^2 s)]
         alpha = 2.3e6       # absorption coefficient [1/m]
         f = lambda x, y: phi * alpha * np.exp(-alpha * x)
         sys.generation(f)
@@ -72,71 +73,38 @@ we rewrite inside its own function::
         return sys
 
 Note that we added the parameter ``amp`` that will allow us to turn on slowly
-the line defects density of states.
+the amplitude of the generation rate.
 
 In this example we show a procedure to start the drift diffusion Poisson solver
 with a good guess:
 
 1. Solve the Poisson equation to get the electrostatic potential of the system
-   with reduced line defects density of states.
-2. Solve the drift diffusion Poisson equation at zero bias for increasing values
-   of the line defects density of states.
+   with at thermal equilibrium.
+2. Solve the drift diffusion Poisson equation at zero bias for increasing
+   amplitudes of the generation rate.
 3. Use the last result of step 2. as the initial guess to compute the
    complete IV curve.
 
-First, we set the boundary conditions for the electrostatic potential. Because
-of our geometry the potential on the left and right read
+First, we make a system and solve the thermal equilibrium::
 
-.. math::
-   \phi(0, y) &= \frac{k_BT}{q}\ln\left(N_D/N_C \right)\\
-   \phi(L, y) &= -E_g - \frac{k_BT}{q}\ln\left(N_A/N_V \right)
-
-which is computed as follows::
-    
-    sys = system(0.0001)
-    v_left  = np.log(sys.rho[0]/sys.Nc[0])
-    v_right = -sys.Eg[sys.nx-1] - np.log(-sys.rho[sys.nx-1]/sys.Nv[sys.nx-1])
-
-In the code above you can see how we access the parameters of the discretized
-system (effective densities of states, band gap, charge).  In order to solve the
-Poisson equation we need an initial guess (linear here) and call the solver::
-
-    # Initial guess
-    v = np.linspace(v_left, v_right, sys.nx)
-    v = np.tile(v, sys.ny) # replicate the guess in the y-direction
-
-    # Call Poisson solver
-    solution = {'v':v}
-    solution = sesame.solve(sys, solution)
+    sys = system()
+    solution = sesame.solve_equilibrium(sys, solution)
 
 By default the solver assumes periodic boundary conditions in all directions
 parallel to the contacts. One can change this setting to abrupt boundary
 conditions by setting the flag ``periodic_bcs`` to ``False``. All options are in
 the :doc:`reference documentation <../reference/index>`.
 
-We now proceed to step 2. where we loop over increasing amplitudes of the line
-defects density of states at zero bias::
+We now proceed to step 2. where we loop over increasing amplitudes of the
+generation rate of an *ad hoc* system at zero bias::
 
-    # Initial arrays for the quasi-Fermi levels
-    efn = np.zeros((sys.nx*sys.ny,))
-    efp = np.zeros((sys.nx*sys.ny,))
+        for amp in [0.001, 0.01, 0.05, 0.1, 0.5]:
+            asys = system(amp)
+            solution = sesame.solve(asys, solution)
 
-    # Dictionary for the initial guess
-    solution.update({'efn': efn, 'efp': efp})
+Now we have a descent guess for the rest of the IV curve of our original
+system::
 
-    # Loop at zero bias with increasing defect density of states
-    for amp in [0.0001, 0.01]:
-        sys = system(amp)
-        solution = sesame.solve(sys, solution)
-
-Now we have a descent guess for the rest of the IV curve. We create the original
-system with the desired line defects density of states and loop over the applied
-voltages::
-
-    # Create the system with the defect density of states we want
-    sys = system()
-
-    # Loop over the applied potentials
     voltages = np.linspace(0, 1, 40)
     sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')
 
@@ -153,9 +121,9 @@ on) in :doc:`tutorial 5 <analysis>`.
 
 **Solvers options:** 
 
-* :func:`~sesame.solvers.solve` can use the MUMPS library if Sesame
-  was built against it. For that, pass the argument ``use_mumps=True`` to the
-  function. 
+* Sesame solvers can use the MUMPS library if Sesame was built against it. Once
+  this has been done, pass the argument ``use_mumps=True`` to the functions
+  ``solve_equilibrium``, ``solve`` and ``IVcurve``. 
 
 * For large systems where a direct computation of the Newton correction
   is impractical, we made possible to use an iterative solver. Use the argument
