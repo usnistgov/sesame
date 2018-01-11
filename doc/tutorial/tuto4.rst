@@ -21,7 +21,7 @@ the rectangle::
     ...
 
     # gap state characteristics
-    S = 1e5 * 1e-2           # trap recombination velocity [m/s]
+    s = 1e-15 * 1e-4         # trap capture cross section [m^2]
     E = -0.25                # energy of gap state (ev) from midgap
     N = 2e13 * 1e4           # defect density [1/m^2]
 
@@ -32,7 +32,7 @@ the rectangle::
     q2 = (2.9e-6, 4.5e-6, 1e-9)         # [m]
 
     # pass the information to the system
-    sys.add_plane_defects([p1, p2, q1, q2], E, N, S)
+    sys.add_plane_defects([p1, p2, q1, q2], N, S, E=E)
 
 We can visualize the plane to make sure it resembles what we expect::
 

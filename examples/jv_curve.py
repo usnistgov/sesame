@@ -26,9 +26,12 @@ def system(amp=1):
     nA = 1e15 * 1e6 # [m^-3]
     sys.add_acceptor(nA, lambda pos: pos[0] >= junction)
 
+    # Define Ohmic contacts
+    sys.contact_type('Ohmic', 'Ohmic')
+
     # Use perfectly selective contacts
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
-    sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
+    sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
     # Region 1
     reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,

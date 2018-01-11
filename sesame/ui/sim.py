@@ -49,8 +49,11 @@ class SimulationWorker(QObject):
         loopValues, simName, fmt, BCs, contacts_bcs, contacts_WF, Sc,\
         tol, maxiter, useMumps, iterative, ramp = solverSettings
 
-        # Add contacts surface recombination velocities
-        system.contacts(*Sc)
+        # Give contact type and add contacts surface recombination velocities
+        left_type, right_type = contacts_bcs
+        left_wf, right_wf = contacts_WF
+        system.contact_type(left_type, right_type, left_wf, right_wf)
+        system.contact_S(*Sc)
 
         # Create a Solver instance, I don't use the one already present
         solver = Solver(use_mumps=useMumps)
@@ -61,11 +64,10 @@ class SimulationWorker(QObject):
         nx = system.nx
 
         # Equilibrium guess
-        guess = solver.make_guess(system, contacts_bcs=contacts_bcs,\
-                                  contacts_WF=contacts_WF)
+        guess = solver.make_guess(system)
         # Solve Poisson equation
-        solver.common_solver('Poisson', system, guess, tol, BCs, contacts_bcs,\
-                              contacts_WF, maxiter, True, iterative, 1e-6, 1)
+        solver.common_solver('Poisson', system, guess, tol, BCs, maxiter,\
+                             True, iterative, 1e-6, 1)
 
         if solver.equilibrium is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
@@ -106,8 +108,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
-                                    tol, BCs, contacts_bcs, contacts_WF,\
-                                    maxiter, True, iterative, 1e-6, 1)
+                                    tol, BCs, maxiter, True, iterative, 1e-6, 1)
                     system.g *= 10 # the last one will be computed as part of
                                    # the voltage loop
                     if solution is None:
@@ -142,8 +143,7 @@ class SimulationWorker(QObject):
 
                 # Call the Drift Diffusion Poisson solver
                 solution = solver.common_solver('all', system, solution,\
-                                tol, BCs, contacts_bcs, contacts_WF, maxiter,\
-                                True, iterative, 1e-6, 1)
+                                tol, BCs, maxiter, True, iterative, 1e-6, 1)
                 if self.abort:
                     self.simuDone.emit()
                     return
@@ -198,8 +198,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
-                                    tol, BCs, contacts_bcs, contacts_WF,\
-                                    maxiter, True, iterative, 1e-6, 1)
+                                    tol, BCs, maxiter, True, iterative, 1e-6, 1)
                     system.g *= 10
                     if solution is None:
                         msg = "**  The calculations failed  **"

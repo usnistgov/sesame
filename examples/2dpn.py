@@ -33,9 +33,12 @@ region2 = lambda pos: 1 - region(pos)
 nA = 1e15 * 1e6 # [m^-3]
 sys.add_acceptor(nA, region2)
 
+# Define Ohmic contacts
+sys.contact_type('Ohmic', 'Ohmic')
+
 # Use perfectly selective contacts
 Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
-sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
+sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 def region1(pos):
     x, y = pos

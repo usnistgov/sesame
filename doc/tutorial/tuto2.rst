@@ -40,7 +40,7 @@ grid with a finer lattice around it::
                         np.linspace(2.75e-6, Ly, 50)))
 
     # Create a system
-    sys = sesame.Builder(x, y)
+    sys = sesame.Builder(x, y, input_length='m')
 
     def region(pos):
         x, y = pos
@@ -55,7 +55,8 @@ grid with a finer lattice around it::
     nA = 1e15 * 1e6 # [m^-3]
     sys.add_acceptor(nA, region2)
 
-    # Use perfectly selective contacts
+    # Use perfectly selective Ohmic contacts
+    sys.contact_type('Ohmic', 'Ohmic')
     Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
     sys.contacts(Sn_left, Sp_left, Sn_right, Sp_right)
 
