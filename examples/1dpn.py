@@ -8,7 +8,7 @@ x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False),
                     np.linspace(1.2e-6, L, 50)))
 
 # Create a system
-sys = sesame.Builder(x, y, input_length='m')
+sys = sesame.Builder(x, input_length='m')
 
 # Dictionary with the material parameters
 CdTe = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
