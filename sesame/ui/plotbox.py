@@ -4,10 +4,6 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
- 
-import numpy as np 
 
 from matplotlib.backends.backend_qt5agg import (FigureCanvasQTAgg as
 FigureCanvas, NavigationToolbar2QT as NavigationToolbar)
