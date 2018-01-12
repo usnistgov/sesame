@@ -193,6 +193,8 @@ class Window(QMainWindow):
         build.defectNumber = -1
         build.defectBox.clear()
         build.cloc.clear()
+        # Disable save button, enable remove and new buttons
+        build.saveButton2.setEnabled(False)
         for defect in defects:
             # location
             build.cloc.setText(defect['location'])
@@ -212,10 +214,11 @@ class Window(QMainWindow):
             build.ctable.show()
             build.cloc.show()
             build.clbl.show()
-        # Disable save button, enable remove and new buttons
+            # Enable save button
+            build.saveButton2.setEnabled(True)
         build.removeButton2.setEnabled(True)
         build.defectButton.setEnabled(True)
-        build.saveButton2.setEnabled(False)
+
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
@@ -371,7 +374,7 @@ class Window(QMainWindow):
                 R_contact = "Ohmic"
             elif simu.R_Schottky.isChecked():
                 R_contact = "Schottky"
-                R_WF = self.g9.text()
+                R_WF = simu.g9.text()
             elif simu.R_Neutral.isChecked():
                 R_contact = "Neutral"
 

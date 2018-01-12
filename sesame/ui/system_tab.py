@@ -444,9 +444,9 @@ class BuilderBox(QWidget):
         self.defectBox.setCurrentIndex(self.defectNumber)
 
         # Disable remove and new buttons, enable save button
-        self.removeButton2.setEnabled(False)
-        self.defectButton.setEnabled(False)
-        self.saveButton2.setEnabled(True)
+        #self.removeButton2.setEnabled(False)
+        #self.defectButton.setEnabled(False)
+        #self.saveButton2.setEnabled(True)
 
 
     # store data entered
@@ -469,8 +469,8 @@ class BuilderBox(QWidget):
                 self.defects_list[idx][key] = txt
 
         # enable remove and new buttons
-        self.defectButton.setEnabled(True)
-        self.removeButton2.setEnabled(True)
+        #self.defectButton.setEnabled(True)
+        #self.removeButton2.setEnabled(True)
 
     # remove a defect
     def removeDefect(self):
