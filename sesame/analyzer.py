@@ -656,9 +656,10 @@ class Analyzer():
         if nz > 1:
             y = self.sys.ypts / self.sys.scaling.length
             z = self.sys.zpts / self.sys.scaling.length
-            jy = []
+            jz = []
             for k in range(nz):
-                jy.append(spline(y, jn[k*ny:(k+1)*ny]+jp).integral(y[0], y[-1]))
-            j = spline(z, jy).integral(z[0], z[-1])
+                jy = jn[k*ny:(k+1)*ny] + jp[k*ny:(k+1)*ny]
+                jz.append(spline(y, jy).integral(y[0], y[-1]))
+            j = spline(z, jz).integral(z[0], z[-1])
 
         return j
