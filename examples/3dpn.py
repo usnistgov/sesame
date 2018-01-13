@@ -16,7 +16,7 @@ x = np.concatenate((np.linspace(0,1.2e-6, 100, endpoint=False),
 y = np.linspace(0, Ly, 100)
 z = np.linspace(0, Lz, 50)
 
-sys = sesame.Builder(x, y, z)
+sys = sesame.Builder(x, y, z, input_length='m')
 
 def region(pos):
     x, y, z = pos
