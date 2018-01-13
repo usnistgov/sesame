@@ -7,6 +7,8 @@ import numpy as np
 import importlib
 from scipy.io import savemat
 
+from .analyzer import Analyzer
+
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
@@ -271,8 +273,11 @@ class Solver():
             dx, info = lg.lgmres(J, f, M=M, tol=inner_tol)
             if info == 0:
                 return dx
+            elif info > 0:
+                msg = "**  Iterative sparse solver failed after {0} iterations. **".format(info)
+                logging.error(msg)
             else:
-                msg = "**  Iterative sparse solver failed with output info: {0}  **".format(info)
+                msg = "**  Iterative sparse solver failed on wrong input. **"
                 logging.error(msg)
 
     def _get_system(self, x, system, periodic_bcs):
@@ -385,7 +390,8 @@ class Solver():
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
         results are stored in files with ``.npz`` format by default (See below for
-        saving in Matlab format). Note that the
+        saving in Matlab format). The steady state current is computed at the
+        end of the voltage loop and returned. Note that the
         potential is always applied on the right contact.
 
         Parameters
@@ -422,6 +428,10 @@ class Solver():
             Format string for the data files. Use ``mat`` to save the data in a
             Matlab format (version 5 and above).
 
+        Returns
+        -------
+        J: numpy array of floats
+            Steady state current computed for each voltage value.
 
         Notes
         -----
@@ -457,8 +467,10 @@ class Solver():
                            iterative=iterative, inner_tol=inner_tol, htp=htp)
 
 
-        # Loop over the applied potentials made dimensionless
+        # Applied potentials made dimensionless
         Vapp = [i / system.scaling.energy for i in voltages]
+        # Array of the steady state current
+        J = np.zeros((len(Vapp),))
         for idx, vapp in enumerate(Vapp):
 
             if verbose:
@@ -473,22 +485,30 @@ class Solver():
                            iterative=iterative, inner_tol=inner_tol, htp=htp)
 
             if result is not None:
+                # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
-
                 # add some system settings to the saved results
                 result.update({'x': system.xpts, 'y': system.ypts, 'z': system.zpts,\
                                'affinity': system.bl, 'Eg': system.Eg,\
                                'Nc': system.Nc, 'Nv': system.Nv,\
                                'epsilon': system.epsilon})
-
                 if fmt == 'mat':
                     savemat(name, result)
                 else:
                     np.savez_compressed(name, **result)
+                # 2. Compute the steady state current
+                try:
+                    az = Analyzer(system, result)
+                    J[idx] = az.full_current()
+                except Exception:
+                    logging.info("Could not compute the current for the applied voltage"\
+                      + " {0} V (index {1}).".format(voltages[idx], idx))
+
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
                 break
+        return J
 
 default = Solver()
 solve = default.solve

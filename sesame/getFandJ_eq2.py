@@ -135,9 +135,9 @@ def getFandJ_eq(sys, v, periodic_bcs):
         # update vector with zeros
         vec[sites] = 0
         # update Jacobian
-        dav_rows = [sites.tolist()]
-        dav_cols = [sites.tolist()]
-        dav_data = [np.ones((len(sites,))).tolist()]
+        dav_rows = [sites]
+        dav_cols = [sites]
+        dav_data = [np.ones((len(sites,)))]
 
     rows += list(chain.from_iterable(dav_rows))
     columns += list(chain.from_iterable(dav_cols))
@@ -164,9 +164,9 @@ def getFandJ_eq(sys, v, periodic_bcs):
         # update vector with zeros
         vec[sites] = 0
         # update Jacobian
-        dbv_rows = [sites.tolist()]
-        dbv_cols = [sites.tolist()]
-        dbv_data = [np.ones((len(sites,))).tolist()]
+        dbv_rows = [sites]
+        dbv_cols = [sites]
+        dbv_data = [np.ones((len(sites,)))]
 
     rows += list(chain.from_iterable(dbv_rows))
     columns += list(chain.from_iterable(dbv_cols))

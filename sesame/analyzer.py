@@ -632,14 +632,14 @@ class Analyzer():
         -------
         J: float
             The integrated full steady state current.
-
-        Warnings
-        --------
-        Not implemented in 3D.
         """
+
+        # System number of sites
+        nx, ny, nz = self.sys.nx, self.sys.ny, self.sys.nz
+
         # Define the sites between which computing the currents
-        sites_i = [self.sys.nx//2 + j*self.sys.nx for j in range(self.sys.ny)]
-        sites_ip1 = [self.sys.nx//2+1 + j*self.sys.nx for j in range(self.sys.ny)]
+        sites_i = [nx//2 + j*nx + k*nx*ny for k in range(nz) for j in range(ny)]
+        sites_ip1 = [nx//2+1+j*nx+k*nx*ny for k in range(nz) for j in range(ny)]
         # And the corresponding lattice dimensions
         dl = self.sys.dx[self.sys.nx//2]
 
@@ -647,11 +647,18 @@ class Analyzer():
         jn = get_jn(self.sys, self.efn, self.v, sites_i, sites_ip1, dl)
         jp = get_jp(self.sys, self.efp, self.v, sites_i, sites_ip1, dl)
 
-        if self.sys.ny == 1:
-            j = jn + jp
-        if self.sys.ny > 1:
+        if ny == 1:
+            j = jn[0] + jp[0]
+        if ny > 1 and nz == 1:
             # Interpolate the results and integrate over the y-direction
             y = self.sys.ypts / self.sys.scaling.length
             j = spline(y, jn+jp).integral(y[0], y[-1])
+        if nz > 1:
+            y = self.sys.ypts / self.sys.scaling.length
+            z = self.sys.zpts / self.sys.scaling.length
+            jy = []
+            for k in range(nz):
+                jy.append(spline(y, jn[k*ny:(k+1)*ny]+jp).integral(y[0], y[-1]))
+            j = spline(z, jy).integral(z[0], z[-1])
 
         return j
