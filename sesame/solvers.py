@@ -366,9 +366,9 @@ class Solver():
                             # damping and new value of x
                             self._damping(dx)
                             x += dx
-                            # print status of solution procedure every so often
-                            if verbose:
-                                logging.info('step {0}, error = {1}'.format(cc, error))
+                        # print status of solution procedure
+                        if verbose:
+                            logging.info('step {0}, error = {1}'.format(cc, error))
                 except SparseSolverError:
                     msg = "**  The linear system could not be solved  **"
                     logging.error(msg)
