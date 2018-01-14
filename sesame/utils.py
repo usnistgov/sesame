@@ -380,9 +380,9 @@ def plane_defects_sites(sys, location):
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
             if j1 == j2:
-                dl = (sys.dy[k1] + sys.dy[k1+1])/2.
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2.
             if i1 == i2:
-                dl = (sys.dx[k1] + sys.dx[k1+1])/2.
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2.
 
         x1, x2 = sys.xpts[i1], sys.xpts[i2]
         y1, y2 = sys.ypts[j1], sys.ypts[j2]
@@ -401,5 +401,6 @@ def plane_defects_sites(sys, location):
     xcoord = np.asarray(xcoord)
     ycoord = np.asarray(ycoord)
     zcoord = np.asarray(zcoord)
+    perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
     return sites, xcoord, ycoord, zcoord, perp_dl
 
