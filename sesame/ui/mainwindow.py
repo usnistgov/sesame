@@ -193,8 +193,6 @@ class Window(QMainWindow):
         build.defectNumber = -1
         build.defectBox.clear()
         build.cloc.clear()
-        # Disable save button, enable remove and new buttons
-        build.saveButton2.setEnabled(False)
         for defect in defects:
             # location
             build.cloc.setText(defect['location'])
@@ -214,11 +212,10 @@ class Window(QMainWindow):
             build.ctable.show()
             build.cloc.show()
             build.clbl.show()
+        if len(build.defects_list) > 0:
             # Enable save button
             build.saveButton2.setEnabled(True)
-        build.removeButton2.setEnabled(True)
-        build.defectButton.setEnabled(True)
-
+            build.removeButton2.setEnabled(True)
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\

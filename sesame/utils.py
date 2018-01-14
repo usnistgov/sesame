@@ -319,13 +319,19 @@ def plane_defects_sites(sys, location):
 
         if incz == 0:
             if e1 < e2:
-                i1, j1, k1 = i1 + incx, j1, k1
-                i2, j2, k2 = i2 + incx, j2, k2
-                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
+                if i1 == sys.nx-1 or i2 == sys.nx-1:
+                    break
+                else:
+                    i1, j1, k1 = i1 + incx, j1, k1
+                    i2, j2, k2 = i2 + incx, j2, k2
+                    dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
             else:
-                i1, j1, k1 = i1, j1 + incy, k1
-                i2, j2, k2 = i2, j2 + incy, k2
-                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
+                if j1 == sys.ny-1 or j2 == sys.ny-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1 + incy, k1
+                    i2, j2, k2 = i2, j2 + incy, k2
+                    dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incy == 0 and incx != 0:
             if e1 == e3:
@@ -333,13 +339,19 @@ def plane_defects_sites(sys, location):
             else:
                 condition = e1 < e3
             if condition:
-                i1, j1, k1 = i1 + incx, j1, k1
-                i2, j2, k2 = i2 + incx, j2, k2
-                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
+                if i1 == sys.nx-1 or i2 == sys.nx-1:
+                    break
+                else:
+                    i1, j1, k1 = i1 + incx, j1, k1
+                    i2, j2, k2 = i2 + incx, j2, k2
+                    dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
             else:
-                i1, j1, k1 = i1, j1, k1 + incz
-                i2, j2, k2 = i2, j2, k2 + incz
-                dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
+                if k1 == sys.nz-1 or k2 == sys.nz-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1, k1 + incz
+                    i2, j2, k2 = i2, j2, k2 + incz
+                    dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
 
         if incx == 0 and incy != 0:
             if e2 == e3:
@@ -347,17 +359,26 @@ def plane_defects_sites(sys, location):
             else:
                 condition = e2 < e3
             if condition:
-                i1, j1, k1 = i1, j1 + incy, k1
-                i2, j2, k2 = i2, j2 + incy, k2
-                dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
+                if j1 == sys.ny-1 or j2 == sys.ny-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1 + incy, k1
+                    i2, j2, k2 = i2, j2 + incy, k2
+                    dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
+            else:
+                if k1 == sys.nz-1 or k2 == sys.nz-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1, k1 + incz
+                    i2, j2, k2 = i2, j2, k2 + incz
+                    dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
+
+        if incx == 0 and incy == 0:
+            if k1 == sys.nz-1 or k2 == sys.nz-1:
+                break
             else:
                 i1, j1, k1 = i1, j1, k1 + incz
                 i2, j2, k2 = i2, j2, k2 + incz
-                dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
-
-        if incx == 0 and incy == 0:
-            i1, j1, k1 = i1, j1, k1 + incz
-            i2, j2, k2 = i2, j2, k2 + incz
             if j1 == j2:
                 dl = (sys.dy[k1] + sys.dy[k1+1])/2.
             if i1 == i2:

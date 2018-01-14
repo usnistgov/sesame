@@ -51,8 +51,12 @@ def plot_line_defects(sys, ls='-o', fig=None):
         # plot the path of added charges
         ax.plot(sys.xpts[xcoord], sys.ypts[ycoord], ls)
 
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
+    if sys.input_length == 'm':
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('y [m]')
+    if sys.input_length == 'cm':
+        ax.set_xlabel('x [cm]')
+        ax.set_ylabel('y [cm]')
        
     ax.set_xlim(xmin=0, xmax=sys.xpts[-1])
     ax.set_ylim(ymin=0, ymax=sys.ypts[-1])
@@ -69,8 +73,6 @@ def plot_plane_defects(sys, fig=None):
     ----------
     sys: Builder
         The discretized system.
-    scale: float
-        Relevant scaling to apply to the axes.
     fig: Maplotlib figure
         A plot is added to it if given. If not given, a new one is created and 
         displayed.
@@ -90,17 +92,18 @@ def plot_plane_defects(sys, fig=None):
 
         _, X, Y, Z, _ = utils.plane_defects_sites(sys, c.location) 
 
-        X = X / scale
-        Y = Y / scale
-        Z = Z / scale
-
         ax.plot_surface(X, Y, Z)
 
     ax.mouse_init(rotate_btn=1, zoom_btn=3)
 
-    xLabel = ax.set_xlabel('x')
-    yLabel = ax.set_ylabel('y')
-    zLabel = ax.set_zlabel('z')
+    if sys.input_length == 'm':
+        ax.set_xlabel('x [m]')
+        ax.set_ylabel('y [m]')
+        ax.set_zlabel('z [m]')
+    if sys.input_length == 'cm':
+        ax.set_xlabel('x [cm]')
+        ax.set_ylabel('y [cm]')
+        ax.set_zlabel('z [cm]')
 
     ax.set_xlim3d(0, sys.xpts[-1])
     ax.set_ylim3d(0, sys.ypts[-1])
