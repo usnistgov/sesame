@@ -470,9 +470,9 @@ class Solver():
 
         # Applied potentials made dimensionless
         Vapp = [i / system.scaling.energy for i in voltages]
-        jv = []
         # Array of the steady state current
         J = np.zeros((len(Vapp),))
+        J[:] = np.nan
 
         for idx, vapp in enumerate(Vapp):
 
@@ -496,9 +496,6 @@ class Solver():
                                'Nc': system.Nc, 'Nv': system.Nv,\
                                'epsilon': system.epsilon})
 
-                az = analyzer.Analyzer(system, result)
-                jv.append(az.full_current())
-
                 if fmt == 'mat':
                     savemat(name, result)
                 else:
@@ -514,11 +511,10 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
-                return jv
+                return J
                 break
         return J
 
-        return jv
 
 default = Solver()
 solve = default.solve
