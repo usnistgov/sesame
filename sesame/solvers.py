@@ -6,6 +6,7 @@
 import numpy as np
 import importlib
 from scipy.io import savemat
+from . import analyzer
 
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
@@ -459,6 +460,7 @@ class Solver():
 
         # Loop over the applied potentials made dimensionless
         Vapp = [i / system.scaling.energy for i in voltages]
+        jv = []
         for idx, vapp in enumerate(Vapp):
 
             if verbose:
@@ -481,6 +483,9 @@ class Solver():
                                'Nc': system.Nc, 'Nv': system.Nv,\
                                'epsilon': system.epsilon})
 
+                az = analyzer.Analyzer(system, result)
+                jv.append(az.full_current())
+
                 if fmt == 'mat':
                     savemat(name, result)
                 else:
@@ -488,7 +493,10 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
+                return jv
                 break
+
+        return jv
 
 default = Solver()
 solve = default.solve
