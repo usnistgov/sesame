@@ -47,7 +47,7 @@ class SimulationWorker(QObject):
 
         # Solver settings
         loopValues, simName, fmt, BCs, contacts_bcs, contacts_WF, Sc,\
-        tol, maxiter, useMumps, iterative, ramp = solverSettings
+        tol, maxiter, useMumps, iterative, ramp, iterPrec, htpy = solverSettings
 
         # Give contact type and add contacts surface recombination velocities
         left_type, right_type = contacts_bcs
@@ -67,7 +67,7 @@ class SimulationWorker(QObject):
         guess = solver.make_guess(system)
         # Solve Poisson equation
         solver.common_solver('Poisson', system, guess, tol, BCs, maxiter,\
-                             True, iterative, 1e-6, 1)
+                             True, iterative, iterPrec, htpy)
 
         if solver.equilibrium is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
@@ -108,7 +108,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
-                                    tol, BCs, maxiter, True, iterative, 1e-6, 1)
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                     system.g *= 10 # the last one will be computed as part of
                                    # the voltage loop
                     if solution is None:
@@ -143,7 +143,7 @@ class SimulationWorker(QObject):
 
                 # Call the Drift Diffusion Poisson solver
                 solution = solver.common_solver('all', system, solution,\
-                                tol, BCs, maxiter, True, iterative, 1e-6, 1)
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                 if self.abort:
                     self.simuDone.emit()
                     return
@@ -198,7 +198,7 @@ class SimulationWorker(QObject):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
                     solution = solver.common_solver('all', system, solution,\
-                                    tol, BCs, maxiter, True, iterative, 1e-6, 1)
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                     system.g *= 10
                     if solution is None:
                         msg = "**  The calculations failed  **"

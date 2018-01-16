@@ -129,7 +129,7 @@ def parseSettings(settings):
         transition = defect['Transition'].replace("/", ",")
         transition = (ev(transition))
 
-        if isinstance(loc,float):
+        if isinstance(loc, float):
             system.add_point_defects(loc, N, se, sigma_h=sh, E=E, \
                                     transition=transition)
         elif len(loc) == 2:

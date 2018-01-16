@@ -186,7 +186,10 @@ class Simulation(QWidget):
         self.ramp = QSpinBox()
         self.ramp.singleStep()
         self.algoPrecision = QLineEdit("1e-6", self)
-        self.algoSteps = QLineEdit("100", self)
+        self.algoSteps = QSpinBox(self)
+        self.algoSteps.setMinimum(1)
+        self.algoSteps.setMaximum(1000)
+        self.algoSteps.setValue(100)
         self.form2.addRow("Generation ramp", self.ramp)
         self.form2.addRow("Algorithm precision", self.algoPrecision)
         self.form2.addRow("Maximum steps", self.algoSteps)
@@ -214,6 +217,11 @@ class Simulation(QWidget):
         self.radioLayout2.addWidget(self.yesIterative)
         self.radioLayout2.addWidget(self.noIterative)
         self.form2.addRow("Iterative solver", self.radioLayout2)
+        self.iterPrecision = QLineEdit("1e-6", self)
+        self.form2.addRow("Iterative solver precision", self.iterPrecision)
+        self.htpy = QSpinBox(self)
+        self.htpy.setMinimum(1)
+        self.form2.addRow("Newton homotopy", self.htpy)
 
         self.algoBox.setLayout(self.form2)
         self.hlayout.addWidget(self.algoBox)
@@ -327,16 +335,20 @@ class Simulation(QWidget):
         # precision
         precision = float(self.algoPrecision.text())
         # max steps
-        steps = int(self.algoSteps.text())
+        steps = self.algoSteps.value()
         # mumps
         useMumps = self.yesMumps.isChecked()
         # internal iterative solver
         iterative = self.yesIterative.isChecked()
+        # iterative solver precision
+        iterPrec = float(self.iterPrecision.text())
+        # Newton homotopy
+        htpy = self.htpy.value()
 
         contacts_bcs = [contactL, contactR]
         settings = [loopValues, simName, extension, BCs, contacts_bcs,\
                     [phiL, phiR], [ScnL, ScpL, ScnR, ScpR], precision, steps,\
-                    useMumps, iterative, ramp]
+                    useMumps, iterative, ramp, iterPrec, htpy]
         return settings
 
     def run(self, checked):

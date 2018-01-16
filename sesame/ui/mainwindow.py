@@ -193,8 +193,6 @@ class Window(QMainWindow):
         build.defectNumber = -1
         build.defectBox.clear()
         build.cloc.clear()
-        # Disable save button, enable remove and new buttons
-        build.saveButton2.setEnabled(False)
         for defect in defects:
             # location
             build.cloc.setText(defect['location'])
@@ -214,17 +212,17 @@ class Window(QMainWindow):
             build.ctable.show()
             build.cloc.show()
             build.clbl.show()
+        if len(build.defects_list) > 0:
             # Enable save button
             build.saveButton2.setEnabled(True)
-        build.removeButton2.setEnabled(True)
-        build.defectButton.setEnabled(True)
-
+            build.removeButton2.setEnabled(True)
 
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
                       BCs, L_contact, R_contact, L_WF, R_WF,\
                       ScnL, ScpL, ScnR, ScpR,\
-                      precision, maxSteps, useMumps, iterative, ramp):
+                      precision, maxSteps, useMumps, iterative, ramp,\
+                      iterPrec, htpy):
         """
         Fill out all fields of the interface simulation tab with the settings
         from the configuration file.  
@@ -263,7 +261,7 @@ class Window(QMainWindow):
         self.table.simulation.g8.setText(L_WF)
         self.table.simulation.g9.setText(R_WF)
         self.table.simulation.algoPrecision.setText(precision)
-        self.table.simulation.algoSteps.setText(maxSteps)
+        self.table.simulation.algoSteps.setValue(int(maxSteps))
         if useMumps:
             self.table.simulation.yesMumps.setChecked(True)
         else:
@@ -273,6 +271,8 @@ class Window(QMainWindow):
         else:
             self.table.simulation.noIterative.setChecked(True)
         self.table.simulation.ramp.setValue(int(ramp))
+        self.table.simulation.iterPrecision.setText(iterPrec)
+        self.table.simulation.htpy.setValue(int(htpy))
         
     def openConfig(self):
         """
@@ -325,10 +325,13 @@ class Window(QMainWindow):
             useMumps = config.getboolean('Simulation', 'Use Mumps')
             iterative = config.getboolean('Simulation', 'Iterative solver')
             ramp = config.get('Simulation', 'Generation ramp')
+            iterPrec = config.get('Simulation', 'Iterative solver precision')
+            htpy = config.get('Simulation', 'Newton homotopy')
             self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
                                ext, BCs, L_contact, R_contact, L_WF, R_WF,\
                                ScnL, ScpL, ScnR, ScpR, precision,\
-                               maxSteps, useMumps, iterative, ramp)
+                               maxSteps, useMumps, iterative, ramp,\
+                               iterPrec, htpy)
             f.close()
 
     def saveAsConfig(self):
@@ -411,12 +414,17 @@ class Window(QMainWindow):
                 config.set('Simulation', 'Generation ramp',
                 str(simu.ramp.value()))
                 config.set('Simulation', 'Newton precision',\
-                            str(simu.algoPrecision.text()))
-                config.set('Simulation', 'Maximum steps', str(simu.algoSteps.text()))
-                config.set('Simulation', 'Use Mumps', str(simu.yesMumps.isChecked()))
+                            simu.algoPrecision.text())
+                config.set('Simulation', 'Maximum steps',\
+                            str(simu.algoSteps.value()))
+                config.set('Simulation', 'Use Mumps',\
+                            str(simu.yesMumps.isChecked()))
                 config.set('Simulation', 'Iterative solver',\
                             str(simu.yesIterative.isChecked()))
-
+                config.set('Simulation', 'Iterative solver precision',\
+                            simu.iterPrecision.text())
+                config.set('Simulation', 'Newton homotopy',\
+                            str(simu.htpy.value()))
                 config.write(f)
                 f.close()
 
