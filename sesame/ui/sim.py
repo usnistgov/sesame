@@ -98,7 +98,13 @@ class SimulationWorker(QObject):
                 elif system.dimension == 3:
                     f = eval('lambda x, y, z:' + generation)
                 # update generation rate of the system
-                system.generation(f)
+                try:
+                    system.generation(f)
+                except Exception:
+                    msg = "**  The generation rate could not be interpreted  **"
+                    self.logger.error(msg)
+                    self.simuDone.emit()
+                    return
 
                 # Loop at zero bias with increasing defect density of states
                 if ramp >  0:
@@ -191,7 +197,13 @@ class SimulationWorker(QObject):
                 elif system.dimension == 3:
                     f = eval('lambda x, y, z, {0}:'.format(paramName) + generation)
                 # update generation rate of the system
-                system.generation(f, args=(p,))
+                try:
+                    system.generation(f, args=(p,))
+                except Exception:
+                    msg = "**  The generation rate could not be interpreted  **"
+                    self.logger.error(msg)
+                    self.simuDone.emit()
+                    return
 
                 system.g /= 10**ramp
                 for a in range(ramp+1):

@@ -517,7 +517,8 @@ class BuilderBox(QWidget):
         settings['doping'] = d
         settings['materials'] = self.materials_list
         settings['defects'] = self.defects_list
-        settings['gen'] = self.gen.text(), self.paramName.text()
+        generation = self.gen.text().replace('exp', 'np.exp')
+        settings['gen'] = generation, self.paramName.text()
         return settings
 
 
