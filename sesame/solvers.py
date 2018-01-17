@@ -6,6 +6,7 @@
 import numpy as np
 import importlib
 from scipy.io import savemat
+from . import analyzer
 
 from .analyzer import Analyzer
 
@@ -471,6 +472,8 @@ class Solver():
         Vapp = [i / system.scaling.energy for i in voltages]
         # Array of the steady state current
         J = np.zeros((len(Vapp),))
+        J[:] = np.nan
+
         for idx, vapp in enumerate(Vapp):
 
             if verbose:
@@ -492,6 +495,7 @@ class Solver():
                                'affinity': system.bl, 'Eg': system.Eg,\
                                'Nc': system.Nc, 'Nv': system.Nv,\
                                'epsilon': system.epsilon})
+
                 if fmt == 'mat':
                     savemat(name, result)
                 else:
@@ -507,8 +511,10 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
+                return J
                 break
         return J
+
 
 default = Solver()
 solve = default.solve

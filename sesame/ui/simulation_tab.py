@@ -352,8 +352,6 @@ class Simulation(QWidget):
         return settings
 
     def run(self, checked):
-        # Disable run button
-        self.brun.setEnabled(False)
         # Clear the list of data files already uploaded in simulation tab
         self.tabsTable.analysis.filesList.clear()
         self.tabsTable.analysis.dataList.clear()
@@ -396,6 +394,8 @@ class Simulation(QWidget):
             self.simulation.simuDone.connect(self.thread_cleanup)
             self.simulation.newFile.connect(self.updateDataList)
             self.thread.started.connect(self.simulation.run)
+            # Disable run button
+            self.brun.setEnabled(False)
             self.thread.start()
         except Exception:
             p = traceback.format_exc()
