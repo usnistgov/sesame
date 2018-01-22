@@ -66,13 +66,6 @@ of material parameters available, see the documentation of the method
    Different regions can be specified and we show how in the addition of dopants
    below.
 
-.. warning::
-   The code does not handle regions with different band
-   structures because we did not implement the equations necessary to treat the
-   interfaces between them. However, different regions can have different
-   mobilities or bulk lifetimes for example. More on this below and  in
-   :doc:`tutorial 2 <tuto2>`.
-
 Let's add the dopants to define a pn junction. To do this, we need to define the
 regions containing each type of dopants. A region is defined by a function::
 
