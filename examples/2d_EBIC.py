@@ -25,18 +25,23 @@ y = np.concatenate((np.linspace(0, .25e-4, 50, endpoint=False),
 # Create a system
 sys = sesame.Builder(x, y)
 
+# Dictionary with the material parameters
+mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
+       'mu_e':320, 'mu_h':40, 'tau_e':10*1e-9, 'tau_h':10*1e-9}
+
+# Add the material to the system
+sys.add_material(mat)
+
 # define a function specifiying the n-type region
 def region(pos):
     x, y = pos
     return x < junction
+# define a function specifiying the p-type region
+region2 = lambda pos: 1 - region(pos)
 
 # Add the donors
 nD = 1e17 # [cm^-3]
 sys.add_donor(nD, region)
-
-# define a function specifiying the p-type region
-region2 = lambda pos: 1 - region(pos)
-
 # Add the acceptors
 nA = 1e15 # [m^-3]
 sys.add_acceptor(nA, region2)
@@ -46,12 +51,6 @@ Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 1e7, 1e7, 1e7
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 sys.contact_type('Ohmic','Ohmic')
 
-# Dictionary with the material parameters
-mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
-       'mu_e':320, 'mu_h':40, 'tau_e':10*1e-9, 'tau_h':10*1e-9}
-
-# Add the material to the system
-sys.add_material(mat)
 
 # gap state characteristics
 E = 0                   # energy of gap state (eV) from midgap
@@ -99,7 +98,7 @@ Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length
 ######################################################
 x0list = np.linspace(.1e-4, 2.5e-4, 11)
 # Array in which to store results
-jset = []
+jset = np.zeros(len(x0list))
 
 # Cycle over beam positions
 for idx, x0 in enumerate(x0list):
@@ -119,7 +118,7 @@ for idx, x0 in enumerate(x0list):
     # convert current to dimension-ful form
     tj = az.full_current() * sys.scaling.current * sys.scaling.length
     # save the current
-    jset.append(tj)
+    jset[idx] = tj
 
 # display result
 for counter in range(len(jset)):

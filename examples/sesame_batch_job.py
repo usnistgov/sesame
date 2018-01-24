@@ -2,9 +2,16 @@
 
 import numpy as np
 import sesame
+import itertools
 from mpi4py import MPI
 
-def system(rho_GB, E_GB, S_GB, tau):
+def system(params):
+
+    # we assume the params are given in order: [rho_GB, E_GB, S_GB, tau]
+    rho_GB = params[0]
+    E_GB = params[1]
+    S_GB = params[2]
+    tau = params[3]
 
     # Dimensions of the system
     Lx = 3e-4  # [cm]
@@ -78,61 +85,57 @@ if __name__ == '__main__':
     mpisize = mpi_comm.Get_size()
 
     # Set of parameters to vary - these parameters defines 180 simulations
-    rho_GBlist = [1e11, 1e12]           # [1/cm^2]
-    E_GBlist = [-.3, .3]                  # [eV]
-    S_GBlist = [1e-15, 1e-16]           # [cm^2]
-    taulist = [1e-7, 1e-8]             # [s]
+    rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]
+    E_GBlist = [-.3, 0, .3]                  # [eV]
+    S_GBlist = [1e-14, 1e-15, 1e-16]           # [cm^2]
+    taulist = [1e-7, 1e-8, 1e-9]             # [s]
 
     # Specify applied voltages
     voltages = np.linspace(0, .1, 2)
 
+    # this function generates all sets of parameter sets from the constituent lists
+    paramlist = list(itertools.product(rho_GBlist, E_GBlist, S_GBlist, taulist))
+    njobs = len(paramlist)
+
     # Define array to store computed J-V values
-    jvset_local = np.zeros([len(rho_GBlist),len(E_GBlist),len(S_GBlist),len(taulist),len(voltages)])
-    jvset = np.zeros([len(rho_GBlist),len(E_GBlist),len(S_GBlist),len(taulist),len(voltages)])
+    jvset_local = np.zeros([njobs, len(voltages)])
+    jvset = np.zeros([njobs, len(voltages)])
 
-    jobcounter = 0
+    # or params = [rho_GBlist, E_GBlist, S_GBlist, taulist]
+    # paramlist = itertools.product(*params)
 
-    # Vary all parameters
-    for E_GBcounter in range(0,len(E_GBlist)):
-        E_GB = E_GBlist[E_GBcounter]
+    my_param_indices = np.arange(mpirank,njobs,mpisize)
 
-        for rho_GBcounter in range(0, len(rho_GBlist)):
-            rho_GB = rho_GBlist[rho_GBcounter]
+    # cycle over all parameter sets
+    for myjobcounter in my_param_indices:
 
-            for S_GBcounter in range(0, len(S_GBlist)):
-                S_GB = S_GBlist[S_GBcounter]
+        # Get system for given set of parameters
+        params = paramlist[myjobcounter]
+        sys = system(params)
 
-                for taucounter in range(0, len(taulist)):
-                    tau = taulist[taucounter]
+        # Get equilibrium solution
+        #eqsolution = sesame.solve_equilibrium(sys)
 
-                    jobcounter = jobcounter + 1
+        # Define a function for generation profile
+        f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)
+        # add generation to the system
+        sys.generation(f)
 
-                    # Divide jobs among the processors
-                    if (np.mod(jobcounter, mpisize) == mpirank):
+        # Specify output filename for given parameter set
+        outputfile = ''
+        for paramvalue in params:
+            outputfile = outputfile + '{0}_'.format(paramvalue)
 
-                        # Get system for given set of parameters
-                        sys = system(rho_GB, E_GB, S_GB, tau)
-
-                        # Get equilibrium solution
-                        eqsolution = sesame.solve_equilibrium(sys)
-
-                        # Define a function for generation profile
-                        f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)
-                        # add generation to the system
-                        sys.generation(f)
-
-                        # Specify output filename for given parameter set
-                        outputfile = 'EGB{0:d}_rhoGB{1:d}_SGB{2:d}_tau{3:d}'.format(E_GBcounter,rho_GBcounter,S_GBcounter,taucounter)
-                        # Compute J-V curve
-                        jv = sesame.IVcurve(sys, voltages, eqsolution, outputfile)
-                        # Save computed J-V in array
-                        jvset_local[E_GBcounter, rho_GBcounter, S_GBcounter, taucounter,:] = jv
+        # Compute J-V curve
+        jv = sesame.IVcurve(sys, voltages, eqsolution, outputfile)
+        # Save computed J-V in array
+        jvset_local[myjobcounter,:] = jv
 
 
     # Gather results from all processors
     mpi_comm.Reduce(jvset_local,jvset)
 
     # Save J-V data for all parameter sets
-    np.savez("JVset",jvset)
+    np.savez("JVset", jvset, paramlist)
 
 
