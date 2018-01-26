@@ -6,5 +6,6 @@ Preliminaries
 
    about.rst
    install.rst
+   INSTALL_beginner.rst
    authors.rst
    license.rst

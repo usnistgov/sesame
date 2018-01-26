@@ -32,6 +32,7 @@ Sesame |version| documentation
    pre/index
    physics/index
    tutorial/index
+   gui/index
    reference/index
 
 

@@ -1,9 +1,11 @@
 Tutorial 2: IV curve of a one-dimensional heterojunction
 ---------------------------------------------------------
 
-In this tutorial we consider a more complex system in 1-dimension: a heterojunction with a Schottky back contact.  The n-type material is CdS and the p-type material is CdTe.  
+In this tutorial we consider a more complex system in 1-dimension: a heterojunction with a Schottky back contact.  The n-type material is CdS and the p-type material is CdTe.  Below is the band diagram for such a system under short-circuit conditions.
 
-Building a system
+.. image:: hetero.*
+   :align: center
+
 
 We first define the thicknesses of the n-type and p-type regions::
 
@@ -13,12 +15,13 @@ We first define the thicknesses of the n-type and p-type regions::
 
 The mesh for a heterojunction should be very fine in the immediate vicinity of the materials interface.  To construct such a mesh, we define a distance ``dd`` over which the interface refinement occurs, and concatenate meshes for different parts of the system::
 
-    dd = 3e-6 # 2*dd is the distance over which mesh is refined
-    x = np.concatenate((np.linspace(0, dd, 100, endpoint=False),                    # L contact interface
-                    np.linspace(dd, t1-dd, 400, endpoint=False),                    # material 1
-                    np.linspace(t1 - dd, t1 + dd, 200, endpoint=False),             # interface 1
-                    np.linspace(t1 + dd, (t1+t2) - dd, 1000, endpoint=False),       # material 2
-                    np.linspace((t1+t2) - dd, (t1+t2), 100)))                       # R contact interface
+    	dd = 3e-6 # 2*dd is the distance over which mesh is refined
+	x = np.concatenate((np.linspace(0, dd, 10, endpoint=False),                # L contact interface
+                    np.linspace(dd, t1-dd, 50, endpoint=False),                    # material 1
+                    np.linspace(t1 - dd, t1 + dd, 10, endpoint=False),             # interface 1
+                    np.linspace(t1 + dd, (t1+t2) - dd, 100, endpoint=False),       # material 2
+                    np.linspace((t1+t2) - dd, (t1+t2), 10)))                       # R contact interface
+
 
 
 As before we make a system with :func:`~sesame.builder.Builder`::

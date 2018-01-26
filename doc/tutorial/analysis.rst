@@ -1,4 +1,4 @@
-Tutorial 5: Analysis of simulation data
+Tutorial 6: Analysis of simulation data
 ---------------------------------------
 In this tutorial we show how to extract the data computed by the solvers. We
 will use the system created in :doc:`tutorial 3 <tuto3>`, so we start by

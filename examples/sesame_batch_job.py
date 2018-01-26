@@ -3,7 +3,7 @@
 import numpy as np
 import sesame
 import itertools
-from mpi4py import MPI
+#from mpi4py import MPI
 
 def system(params):
 
@@ -77,12 +77,14 @@ def system(params):
     return sys
 
 
+
+
 if __name__ == '__main__':
 
     # Initiate MPI
-    mpi_comm = MPI.COMM_WORLD
-    mpirank = mpi_comm.Get_rank()
-    mpisize = mpi_comm.Get_size()
+    #mpi_comm = MPI.COMM_WORLD
+    mpirank =0# mpi_comm.Get_rank()
+    mpisize =1# mpi_comm.Get_size()
 
     # Set of parameters to vary - these parameters defines 180 simulations
     rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]
@@ -104,7 +106,7 @@ if __name__ == '__main__':
     # or params = [rho_GBlist, E_GBlist, S_GBlist, taulist]
     # paramlist = itertools.product(*params)
 
-    my_param_indices = np.arange(mpirank,njobs,mpisize)
+    my_param_indices = range(mpirank,njobs,mpisize)
 
     # cycle over all parameter sets
     for myjobcounter in my_param_indices:
@@ -114,7 +116,7 @@ if __name__ == '__main__':
         sys = system(params)
 
         # Get equilibrium solution
-        #eqsolution = sesame.solve_equilibrium(sys)
+        eqsolution = sesame.solve_equilibrium(sys)
 
         # Define a function for generation profile
         f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)
@@ -137,5 +139,7 @@ if __name__ == '__main__':
 
     # Save J-V data for all parameter sets
     np.savez("JVset", jvset, paramlist)
+
+
 
 

@@ -1,10 +1,20 @@
 Tutorial 7: Batch submission for computing clusters
 ---------------------------------------
 
-Running sesame on a cluster
+Running Sesame on a cluster
 ............................
 
-Next we give an example of running Sesame on a computing cluster.  This can be accomplished in several different ways, and the most efficient way depends on the details of the cluster environment.  For this example, we use the MPI library.  This determines how sesame is called from the command line, and how the parallel-ization is implemented in the script.  The script "parallel_batch_example.py" is run on 32 processors with the following command::
+Next we give an example of running Sesame on a computing cluster.  This can be accomplished in several different ways, and the most efficient way depends on the details of the cluster environment.  For our example, the prerequisites libraries are:
+
+	* `MPI Library <https://www.open-mpi.org>`_ 
+	* `mpi4py <http://mpi4py.scipy.org>`_ 
+
+The basic idea is illustrated in schematic below  (note we follow MPI and python convention where indices start from 0).  We have more than one processor available to execute all of the (independent) jobs.  In this case, we'll assign the jobs as shown in the figure:
+
+.. image:: mpi.*
+   :align: center
+
+Any executable which uses MPI is be called from the command line using the prefix ``mpirun``.  For example, the script "parallel_batch_example.py" is run on 32 processors with the following command::
 
 	mpirun -np 32 python3 parallel_batch_example.py
 
@@ -16,6 +26,59 @@ We first import some additional packages::
 	import sesame
 	import itertools
 	from mpi4py import MPI
+
+The first half of the script contains a function called ``system``.   The ``system`` function takes parameter values as input and constructs a system object.  This works as in previous tutorials, so we'll skip over it for now and begin with the second half contains a block of code, which begins::
+
+		if __name__ == '__main__':
+
+
+Calling "parallel_batch_example.py" runs the code within the block contained in this "main" block. In the next section we describe the "main" code, which performs the actual parallel-ization of the job.
+
+Cycling over parameters on a computing cluster
+.............................................................
+
+The primary task of the "main" script is to distribute independent serial jobs among an arbitrary number of processors.  This is the easiest type of parallel computing (known as "embarassingly parallel"), and requires only a couple of additional lines of code.
+
+We first initialize the MPI library with the command::
+	
+	    mpi_comm = MPI.COMM_WORLD
+
+
+We next determine the total number of processors available with ``mpi_comm.Get_size()``, and the "rank" of this particular instance of the program using ``mpi_comm.Get_rank()``.  In the schematic shown at the beginning, ``mpisize=4``, and each processor is assigned its own rank: 0, 1, 2, or 3.  The processors will all run the code identically, with the exception that each has its own unique value of mpirank::
+
+
+	    mpirank = mpi_comm.Get_rank()
+	    mpisize = mpi_comm.Get_size()
+
+We define the set of parameter lists we want to study::
+	
+
+	    rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]
+	    E_GBlist = [-.3, 0, .3]                   # [eV]
+	    S_GBlist = [1e-14, 1e-15, 1e-16]          # [cm^2]
+	    taulist = [1e-7, 1e-8, 1e-9]              # [s]
+
+We use the itertools product function to form a list of all combinations of parameter values.  The total number of jobs (`njobs` is equal to the product of the length of all parameter lists.  This can get quite large if we vary several parameters (for this case we have 180 jobs)::
+
+	
+	    paramlist = list(itertools.product(rho_GBlist, E_GBlist, S_GBlist, 	taulist))
+	    njobs = len(paramlist)
+
+
+Here's where the parallel-ization of the batch processes enters.  Each node only needs to compute a subset of all parameters.  We set the relevant parameters for each node with the function ``range``.  The inputs are: starting index, ending index, step size::
+
+	    my_param_indices = range(mpirank,njobs,mpisize)
+
+This partitions the jobs as shown at the top of the page: each processor starts on a different job (the first job index equals the ``mpirank`` value) and skips over ``mpisize`` jobs to the next one.  In this way we cover all jobs roughly equally between all the processors.
+
+
+Next we define two arrays in which to store the computed J-V values.  One of them is a local array, the other is a "global" array into which all the computed values will be set at the end of the program::
+	
+	    # Define array to store computed J-V values
+	    jvset_local = np.zeros([njobs, len(voltages)])
+	    jvset = np.zeros([njobs, len(voltages)])
+	
+Most of the parallel-ization is completed.  The only remaining parallel component of code occurs at the very end, when we compile the results from all the processors into a single array.
 
 Defining the system
 ....................
@@ -89,52 +152,6 @@ We define a function which takes in a list of parameters.  In this case, the par
 
 
 
-Cycling over parameters on a computing cluster
-.............................................................
-
-Next we give an example of how to distribute the jobs among an arbtirary number of processors.  Instead of a python script, this program is the python version of an executable.  This is ::
-
-	if __name__ == '__main__':
-
-Inside the main program, we first initialize the MPI library with the command::
-	
-	    mpi_comm = MPI.COMM_WORLD
-
-
-Next each processor finds their "rank" (explain)::
-
-
-	    mpirank = mpi_comm.Get_rank()
-	    mpisize = mpi_comm.Get_size()
-
-We define the set of parameter lists we want to study::
-	
-	    # Set of parameters to vary - these parameters defines 180 simulations
-	    rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]
-	    E_GBlist = [-.3, 0, .3]                  # [eV]
-	    S_GBlist = [1e-14, 1e-15, 1e-16]           # [cm^2]
-	    taulist = [1e-7, 1e-8, 1e-9]             # [s]
-
-we use this convenient thing::
-
-	
-	    # this function generates all sets of parameter sets from the 	constituent lists
-	    paramlist = list(itertools.product(rho_GBlist, E_GBlist, S_GBlist, 	taulist))
-
-we find the total number of simulations.  This is equal to the product of the length of all parameter lists.  This can get quite large if we vary several parameters::
-
-	    njobs = len(paramlist)
-
-Here's where the parallel-ization of the batch processes enters.  Each node only needs to compute a subset of all parameters.  We set the relevant parameters for each node as follows::
-
-	    my_param_indices = np.arange(mpirank,njobs,mpisize)
-
-We define two arrays in which to store the computed J-V values.  One of them is a local array, the other is a "global" array into which all the computed values will be set at the end of the program::
-	
-	    # Define array to store computed J-V values
-	    jvset_local = np.zeros([njobs, len(voltages)])
-	    jvset = np.zeros([njobs, len(voltages)])
-	
 Here we define the set of applied voltages::	
 
 	    # Specify applied voltages
@@ -167,11 +184,12 @@ Now we cycle over all the parameter sets which apply to a given node::
 	        # Save computed J-V in array
 	        jvset_local[myjobcounter,:] = jv
 	
+To combine the output of all the processers, we use ``mpi_comm.Reduce``.  The first argument is the local value of jv; the second argument is the global jv array.  The local arrays will be added together and stored in the global array::
 	
-	    # Gather results from all processors
 	    mpi_comm.Reduce(jvset_local,jvset)
-	
-	    # Save J-V data for all parameter sets
+
+Finally we save the global array of jv values, together with the list of parameters in a file "JVset"::
+
 	    np.savez("JVset", jvset, paramlist)
 
 

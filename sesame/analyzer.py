@@ -124,8 +124,7 @@ class Analyzer():
         ax = fig.add_subplot(111)
 
         vt = self.sys.scaling.energy
-        X = X * self.sys.scaling.length * 1e4 # in um
-        #X = X * 1e4  # in um
+        X = X * 1e4  # in um
 
         l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
         l2, = ax.plot(X, -vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')

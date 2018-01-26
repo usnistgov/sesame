@@ -11,11 +11,11 @@ t2 = 4*1e-4     # thickness of CdTe
 # Heterojunctions require dense mesh near the interface
 dd = 1e-7   # 2*dd is the distance over which mesh is refined
 # Define the mesh
-x = np.concatenate((np.linspace(0, dd, 100, endpoint=False),                        # L contact interface
-                    np.linspace(dd, t1-dd, 400, endpoint=False),                    # material 1
-                    np.linspace(t1 - dd, t1 + dd, 200, endpoint=False),             # interface 1
-                    np.linspace(t1 + dd, (t1+t2) - dd, 1000, endpoint=False),       # material 2
-                    np.linspace((t1+t2) - dd, (t1+t2), 100)))                       # R contact interface
+x = np.concatenate((np.linspace(0, dd, 10, endpoint=False),                        # L contact interface
+                    np.linspace(dd, t1-dd, 50, endpoint=False),                    # material 1
+                    np.linspace(t1 - dd, t1 + dd, 10, endpoint=False),             # interface 1
+                    np.linspace(t1 + dd, (t1+t2) - dd, 100, endpoint=False),       # material 2
+                    np.linspace((t1+t2) - dd, (t1+t2), 10)))                       # R contact interface
 
 # Build system
 sys = sesame.Builder(x)
@@ -49,7 +49,7 @@ sys.add_acceptor(nA, region2)
 Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
 Lcontact_workFcn, Rcontact_workFcn = 0, 5.0   # Lcontact work function irrelevant because L contact is Ohmic
 # Add the contacts
-sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFunction, Rcontact_workFunction)
+sys.contact_type(Lcontact_type, Rcontact_type, Lcontact_workFcn, Rcontact_workFcn)
 
 # Define the surface recombination velocities for electrons and holes [m/s]
 Scontact = 1.16e7  # [cm/s]
@@ -78,4 +78,10 @@ voltages = np.linspace(0,1,11)
 jv = sesame.IVcurve(sys, voltages, result, filename)
 # Print the results
 for counter in range(len(jv)):
-    print('Vapp = {0:2.1f} [V], J = {1:5.3f} [mA/cm^2]'.format(voltages[counter],jv[counter]*sys.scaling.current*1e3))
+    print('{0:7.5f}'.format(jv[counter]*sys.scaling.current*1e3))
+
+j0 = [14.85815,14.81730,14.76885,14.71047,14.63873,14.54779,14.42153,14.15675,12.76625,-4.23236,-142.06608]
+plt.plot(j0,'bo')
+plt.plot(jv*1e3*sys.scaling.current,'rs')
+plt.show()
+

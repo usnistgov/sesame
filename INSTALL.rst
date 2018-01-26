@@ -29,6 +29,8 @@ The following software is highly recommended though not strictly required:
 The graphical user interface requires `PyQt5
 <https://riverbankcomputing.com/software/pyqt/intro>`_.
 
+For users with no python installation, a convenient standalone installation which automatically includes all of the requisiste libraries and packages is `Anaconda <https://www.anaconda.com/>`_ .
+
 Generic instructions
 .....................
 Standard build and install

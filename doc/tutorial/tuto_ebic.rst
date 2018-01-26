@@ -62,7 +62,7 @@ The system is built as before: a 2-dimensional p-n junction in which the "top" o
 Adding surface recombination
 ............................
 
-To add recombination at the sample surface, we add a planar defect along the line :math:`y=L_y`.  We consider a neutral surface, so that the charge of both transition states are 0.:: 
+Adding recombination at the sample surface is accomplished with a planar defect along the line :math:`y=L_y`.  We consider a neutral surface, so that the charge state of the defect is always 0.  This is implemented by setting ``transition=(0,0)`` as an input argument to ``add_line_defects()``.  The values given in ``transition`` set the charge of the defect when its occupied or unoccupied:: 
 
     p1 = (0, Ly)
     p2 = (Lx, Ly)
@@ -76,29 +76,51 @@ To add recombination at the sample surface, we add a planar defect along the lin
 Electron beam excitation
 ............................
 
-Next we consider the physics of the electron beam excitation.  Exciting the sample with an electron beam leads to a localized generation of charge carriers.  A very simple parameterization of the generation rate density profile is given as (add reference):
+Next we consider the physics of the electron beam excitation.  Exciting the sample with an electron beam leads to a localized generation of charge carriers.  A very simple parameterization of the generation rate density profile is given as follows:
 
 .. math:: 
+   G(x,y) &= \frac{G_{\rm tot}}{A} \times \exp\left(-\frac{(x-x_0)^2+(y-y_0)^2}{2\sigma^2}\right) 
+   :label: Gxy 
 
-   G(x,y) &= G_{\rm tot} \times \exp\left(-\frac{(x-x_0)^2+(y-y_0)^2}{2R_B^2}\right)\\
-   G_{tot} &\approx \frac{I_{\rm beam}}{q} \times \frac{E_{\rm beam}}{3 E_g}\\
+The excitation is a Gaussian centered around the position :math:`(x_0,y_0)`.  :math:`~x_0` is the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0`.  The total generation rate (units :math:`1/s`) is:
+
+.. math::
+   G_{tot} &\approx \frac{I_{\rm beam}}{q} \times \frac{E_{\rm beam}}{3 E_g}
+   :label: A
+
+The length scale and depth of the excitation :math:`\sigma` is determined by the electron beam energy and material mass density.  These are written in terms of the interaction distance :math:`R_B`:
+
+.. math::
    R_B &= r_0 \left(\frac{0.043}{\rho/\rho_0}\right) \times \left(E_{\rm beam} /E_0\right)^{1.75}
-   :label: Gxy
+   :label: Rb
 
-where :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The excitation is centered around the position :math:`(x_0,y_0)`.  :math:`x_0` is given by the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0=0.3 R_B`.  To code :math:`G(x,y)`, we start by making the necessary definitions::
+The constants in Eq. :eq:`Rb` are :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The length scale of the Guassian and the distance from the surface is related to :math:`R_B` as
+
+.. math::
+   \sigma &= \frac{R_B}{\sqrt{15}}\\
+   y_0 &= 0.3\times R_B
+
+
+The normalization constant :math:`A` has units of volume.  The standard normalization of the Gaussian is :math:`2\pi\sigma^2`.  An appropriate choice for the additional length factor is the electron diffusion length :math:`L_D`, so that:
+
+.. math::
+   A &= 2\pi\sigma^2 L_D
+   :label: norm
+  
+To code :math:`G(x,y)`, Eq. :eq:`Gxy` we start by making the necessary definitions of constants::
 
 	q = 1.6e-19      # C
-	ibeam = 10e-12   # A
+	Ibeam = 10e-12   # A
 	Ebeam = 15e3     # eV
 	eg = 1.5         # eV
 	density = 5.85   # g/cm^3
 	kev = 1e3        # eV
 	
-	Gtot = ibeam/q * Ebeam / (3*eg)			
+	Gtot = Ibeam/q * Ebeam / (3*eg)			
 	Rbulb = 0.043 / density * (Ebeam/kev)**1.75 	# given in micron
 	Rbulb = Rbulb * 1e-4  				# converting to cm
 	
-	sigma = Rbulb / np.sqrt(15)		 	# Gaussian spread
+	sigma = Rbulb / sqrt(15)		 	# Gaussian spread
 	y0 = 0.3 * Rbulb				# penetration depth
 
 
@@ -113,14 +135,12 @@ We define an array to store the computed current at each beam position::
 
 	jset = np.zeros(len(x0list))
 	
-Next we scan over :math:`x_0'::
+Next we scan over :math:`x_0` with a :for: loop.  At each value of :math:`x_0`, we define a function as Eq. :eq:`Gxy`, and add this generation to the system::
 
 	for idx, x0 in enumerate(x0list):
 
-Here we make the definition of :math:`G(x,y)` for a given value of :math:`x_0`, and add it to the system definition::	
-
 	    def excitation(x,y):
-	        return Gtot/(2*np.pi*sigma**2*Ld) * np.exp(-(x-x0)**2/(2*sigma**2)) 	* np.exp(-(y-Ly+y0)**2/(2*sigma**2))
+	        return Gtot/(2*np.pi*sigma**2*Ld) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
 	
 	    sys.generation(excitation)
 	

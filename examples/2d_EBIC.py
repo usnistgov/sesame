@@ -27,7 +27,7 @@ sys = sesame.Builder(x, y)
 
 # Dictionary with the material parameters
 mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
-       'mu_e':320, 'mu_h':40, 'tau_e':10*1e-9, 'tau_h':10*1e-9}
+       'mu_e':320, 'mu_h':40, 'tau_e':10*1e-9, 'tau_h':10*1e-9, 'B': 1e-10}
 
 # Add the material to the system
 sys.add_material(mat)
@@ -43,14 +43,13 @@ region2 = lambda pos: 1 - region(pos)
 nD = 1e17 # [cm^-3]
 sys.add_donor(nD, region)
 # Add the acceptors
-nA = 1e15 # [m^-3]
+nA = 1e15 # [cm^-3]
 sys.add_acceptor(nA, region2)
 
 # Use Ohmic contacts
 Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 1e7, 1e7, 1e7
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 sys.contact_type('Ohmic','Ohmic')
-
 
 # gap state characteristics
 E = 0                   # energy of gap state (eV) from midgap
@@ -75,7 +74,7 @@ solution = sesame.solve_equilibrium(sys, periodic_bcs=False)
 
 q = 1.6e-19      # C
 ibeam = 10e-12   # A
-Ebeam = 15e3     # eV
+Ebeam = 10e3     # eV
 eg = 1.5         # eV
 density = 5.85   # g/cm^3
 kev = 1e3        # eV
@@ -91,7 +90,8 @@ y0 = 0.3 * Rbulb
 # get diffusion length to scale generation density
 vt = .0258
 Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length
-
+# converting Gtot to a 2-d quantity
+Gtot = Gtot*Ld
 
 ######################################################
 ##      vary position of the electron beam
@@ -99,13 +99,16 @@ Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length
 x0list = np.linspace(.1e-4, 2.5e-4, 11)
 # Array in which to store results
 jset = np.zeros(len(x0list))
+jratio = np.zeros(len(x0list))
+rset = np.zeros(len(x0list))
+rad_ratio = np.zeros(len(x0list))
 
 # Cycle over beam positions
 for idx, x0 in enumerate(x0list):
 
     # define a function for generation profile
     def excitation(x,y):
-        return Gtot/(2*np.pi*sigma**2*Ld) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
+        return Gtot/(2*np.pi*sigma**2) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
 
     # add generation to the system at new beam position
     sys.generation(excitation)
@@ -113,14 +116,24 @@ for idx, x0 in enumerate(x0list):
     # solve the system
     solution = sesame.solve(sys, periodic_bcs=False, tol=1e-8)
 
-    # evaluate the current
+    # get analyzer object to evaluate current and radiative recombination
     az = sesame.Analyzer(sys, solution)
-    # convert current to dimension-ful form
+    # compute (dimensionless) current and convert to to dimension-ful form
     tj = az.full_current() * sys.scaling.current * sys.scaling.length
     # save the current
     jset[idx] = tj
+    jratio[idx] = tj/(q * Gtot)
+
+    # compute (dimensionless) total radiative recombination and convert to to dimension-ful form
+    cl = az.integrated_radiative_recombination() * sys.scaling.generation * sys.scaling.length**2
+    # save the CL
+    rset[idx] = cl
+    rad_ratio[idx] = cl/Gtot
 
 # display result
 for counter in range(len(jset)):
-    print('x = {0:2.1e} [cm], J = {1:5.3e} [mA/cm]'.format(x0list[counter],jset[counter]*1e3))
+    print('x = {0:2.1e} [cm], J = {1:5.3e} [mA/cm], CL = {2:5.3e}'.format(x0list[counter],jset[counter]*1e3,rset[counter]))
+
+for counter in range(len(jset)):
+    print('x = {0:2.1e} {1:5.3e} {2:5.3e}'.format(x0list[counter],jratio[counter],rad_ratio[counter]))
 
