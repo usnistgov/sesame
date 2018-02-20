@@ -15,12 +15,19 @@ For users with no python installation, there are a number of convenient standalo
 These can be installed on any operating system (windows, linux, macOS).  This page walks through the process using Anaconda in a Windows environment.
 
 
-First download and install Anaconda, using the default settings.  After installation, you'll find a new folder with various programs in the windows ``Start`` button folder: ``Start`` :math:`\rightarrow` ``All Programs`` :math:`\rightarrow` ``Anaconda``:.  
+First download and install Anaconda, using the default settings.  After installation, you'll find a new folder with various programs in the windows ``Start`` button folder: ``Start`` :math:`\rightarrow` ``All Programs`` :math:`\rightarrow` ``Anaconda``.  
+
+
 
 Downloading and Installing Sesame (on Windows)
 ++++++++++++++++++++++++++++++++++++++++++++++
 
-To obtain Sesame, first open the Anaconda Prompt: ``Start`` :math:`\rightarrow` ``All Programs`` :math:`\rightarrow` ``Anaconda`` :math:`\rightarrow` ``Anaconda Prompt``.  A command line should appear (a primer on using the Windows command line can be found `here <https://www.computerhope.com/issues/chusedos.htm>`_).  Sesame is downloaded with the command::
+To obtain Sesame, first open the Anaconda Prompt: ``Start`` :math:`\rightarrow` ``All Programs`` :math:`\rightarrow` ``Anaconda`` :math:`\rightarrow` ``Anaconda Prompt``.  A command line should appear (a primer on using the Windows command line can be found `here <https://www.computerhope.com/issues/chusedos.htm>`_).  Sesame is downloaded using ``git``.  Make sure ``git`` is installed by first typing::
+
+      conda install -c anaconda git
+
+
+Once you have ``git``, obtain Sesame with the command::
 
 	git sesame
 

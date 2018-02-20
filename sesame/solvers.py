@@ -491,10 +491,14 @@ class Solver():
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
                 # add some system settings to the saved results
-                result.update({'x': system.xpts, 'y': system.ypts, 'z': system.zpts,\
+                result.update({'x': system.xpts,\
                                'affinity': system.bl, 'Eg': system.Eg,\
                                'Nc': system.Nc, 'Nv': system.Nv,\
                                'epsilon': system.epsilon})
+                if(system.ypts != None):
+                    result.update({'y': system.ypts})
+                if(system.zpts != None):
+                    result.update({'z': system.zpts})
 
                 if fmt == 'mat':
                     savemat(name, result)
