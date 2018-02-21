@@ -112,7 +112,7 @@ def plot_plane_defects(sys, fig=None):
     if show:
         plt.show()
 
-def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None, title=''):
+def plot(sys, data, cmap='gnuplot', alpha=1, fig=None, title=''):
     """
     Plot a 2D map of a parameter (like mobility) across the system.
 
@@ -123,8 +123,6 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None, title=''):
         The discretized system.
     data: numpy array
         One-dimensional array of data with size equal to the size of the system.
-    scale: float
-        Relevant scaling to apply to the axes.
     cmap: string
         Name of the colormap used by Matplolib.
     alpha: float
@@ -136,8 +134,12 @@ def plot(sys, data, scale=1e-6, cmap='gnuplot', alpha=1, fig=None, title=''):
 
     if not mpl_enabled:
         raise RuntimeError("matplotlib was not found, but is required "
-                           "for plotsys()")
+                           "for this feature.")
 
+    if sys.input_length == 'cm':
+        scale = 1e-4
+    elif sys.input_length == 'm':
+        scale = 1e-6
     xpts, ypts = sys.xpts / scale, sys.ypts / scale
     data = data.reshape(sys.ny, sys.nx)
 

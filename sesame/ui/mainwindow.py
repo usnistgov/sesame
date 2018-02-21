@@ -71,26 +71,6 @@ class Window(QMainWindow):
         fileMenu.addSeparator()
         fileMenu.addAction(exitAction)
 
-        # View menu
-        viewMenu = menuBar.addMenu("&View")
-        view1 = QAction('Lines defects', self)
-        view2 = QAction('Planes defects', self)
-        viewMenu.addAction(view1)
-        viewMenu.addAction(view2)
-        viewMenu.addSeparator()
-
-        view3 = viewMenu.addMenu('Mobility')
-        view31 = QAction('Electron', self)
-        view32 = QAction('Hole', self)
-        view3.addAction(view31)
-        view3.addAction(view32)
-
-        view4 = viewMenu.addMenu('Lifetime')
-        view41 = QAction('Electron', self)
-        view42 = QAction('Hole', self)
-        view4.addAction(view41)
-        view4.addAction(view42)
-
         # IPython menu
         ipythonMenu = menuBar.addMenu("&Console")
         ip1 = QAction('Show console', self)
@@ -101,12 +81,6 @@ class Window(QMainWindow):
         saveAction.triggered.connect(self.saveConfig)
         saveAsAction.triggered.connect(self.saveAsConfig)
         exitAction.triggered.connect(self.close)
-        view1.triggered.connect(lambda: self.displayPlot("lines",1))
-        view2.triggered.connect(lambda: self.displayPlot("planes",1))
-        view31.triggered.connect(lambda: self.displayPlot("mu_e",1))
-        view32.triggered.connect(lambda: self.displayPlot("mu_h",1))
-        view41.triggered.connect(lambda: self.displayPlot("tau_e",1))
-        view42.triggered.connect(lambda: self.displayPlot("tau_h",1))
         ip1.triggered.connect(lambda: self.dock.show())
 
         #============================================
@@ -137,7 +111,7 @@ class Window(QMainWindow):
         # Show the interface
         self.show()
 
-    def setSystem(self, grid, doping, materials, defects, gen, param):
+    def setSystem(self, grid, materials, defects, gen, param):
         """
         Fill out all fields of the interface system tab with the settings from
         the configuration file.  
@@ -150,10 +124,6 @@ class Window(QMainWindow):
         build.g1.setText(grid[0])
         build.g2.setText(grid[1])
         build.g3.setText(grid[2])
-        build.loc1.setText(doping[0]['location'])
-        build.N1.setText(doping[0]['concentration'])
-        build.loc2.setText(doping[1]['location'])
-        build.N2.setText(doping[1]['concentration'])
         build.gen.setText(gen)
         build.paramName.setText(param)
 
@@ -170,7 +140,8 @@ class Window(QMainWindow):
             build.box.addItem("Material " + str(build.matNumber+1))
             build.box.setCurrentIndex(build.matNumber)
             # fill in table with material values
-            values = [mat['Nc'], mat['Nv'], mat['Eg'], mat['epsilon'],\
+            values = [mat['N_D'], mat['N_A'],\
+                      mat['Nc'], mat['Nv'], mat['Eg'], mat['epsilon'],\
                       mat['mass_e'], mat['mass_h'], mat['mu_e'], mat['mu_h'],\
                       mat['Et'], mat['tau_e'], mat['tau_h'], mat['affinity'],\
                       mat['B'], mat['Cn'], mat['Cp']]
@@ -298,13 +269,11 @@ class Window(QMainWindow):
                 return
 
             grid = config.get('System', 'Grid')
-            doping = config.get('System', 'Doping')
             materials = config.get('System', 'Materials')
             defects = config.get('System', 'Defects')
             gen, param = config.get('System', 'Generation rate'),\
                          config.get('System', 'Generation parameter')
-            self.setSystem(ev(grid), ev(doping), ev(materials), ev(defects),\
-                           gen, param)
+            self.setSystem(ev(grid), ev(materials), ev(defects), gen, param)
 
             voltageLoop = config.getboolean('Simulation', 'Voltage loop')
             loopValues = config.get('Simulation', 'Loop values')
@@ -358,8 +327,6 @@ class Window(QMainWindow):
             simu = self.table.simulation
 
             grid = [build.g1.text(), build.g2.text(), build.g3.text()]
-            d = [{'location': build.loc1.text(), 'concentration': build.N1.text()},
-                 {'location': build.loc2.text(), 'concentration': build.N2.text()}]
             mat = build.materials_list
             defects = build.defects_list
             gen, param = build.gen.text(), build.paramName.text()
@@ -383,7 +350,6 @@ class Window(QMainWindow):
 
             with open(self.cfgFile, 'w') as f:
                 config.set('System', 'Grid', str(grid))
-                config.set('System', 'Doping', str(d))
                 config.set('System', 'Materials', str(mat))
                 config.set('System', 'Defects', str(defects))
                 config.set('System', 'Generation rate', gen)
@@ -427,28 +393,6 @@ class Window(QMainWindow):
                             str(simu.htpy.value()))
                 config.write(f)
                 f.close()
-
-    @slotError()
-    def displayPlot(self, prop, checked):
-        """
-        Access to plotter routines to visualize some basic system settings in 2D
-        to make sure the regions are defined as envisioned.
-        """
-        settings = self.table.build.getSystemSettings()
-        system = parseSettings(settings)
-        if prop == "mu_e":
-            plotter.plot(system, system.mu_e)
-        elif prop == "mu_h":
-            plotter.plot(system, system.mu_h)
-        elif prop == "tau_e":
-            plotter.plot(system, system.tau_e)
-        elif prop == "tau_h":
-            plotter.plot(system, system.tau_h)
-        elif prop == "lines":
-            plotter.plot_line_defects(system)
-        elif prop == "planes":
-            plotter.plot_plane_defects(system)
-
         
 class QIPythonWidget(RichJupyterWidget):
     """ 

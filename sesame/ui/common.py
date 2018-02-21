@@ -102,20 +102,13 @@ def parseSettings(settings):
         # define a function that returns true/false dpending on location
         f = parseLocation(location, dimension)
         system.add_material(mat, f)
-
-    # 3. set the doping
-    doping = settings['doping']
-    acceptor, donor = doping
-
-    # location function, and concentration
-    f = parseLocation(acceptor['location'], dimension)
-    N = float(acceptor['concentration'])
-    system.add_acceptor(N, f)
-
-    # location function, and concentration
-    f = parseLocation(donor['location'], dimension)
-    N = float(donor['concentration'])
-    system.add_donor(N, f)
+        # set the doping
+        N_D = float(mat['N_D'])
+        if N_D != 0:
+            system.add_donor(N_D, f)
+        N_A = float(mat['N_A'])
+        if N_A != 0:
+            system.add_acceptor(N_A, f)
 
     # 4. set the defects if present
     defects = settings['defects']

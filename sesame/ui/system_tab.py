@@ -11,6 +11,7 @@ from PyQt5.QtCore import *
 import numpy as np 
 
 from .plotbox import *
+from .common import parseSettings, slotError
 
 
 class BuilderBox(QWidget):
@@ -61,236 +62,36 @@ class BuilderBox(QWidget):
         gridBox.setLayout(gridLayout)
         layout.addWidget(gridBox)
 
-        #==============================
-        # Doping
-        #==============================
-        dopingBox = QGroupBox("Doping")
-        dopingBox.setMinimumWidth(400)
-        layoutD = QVBoxLayout()
+        # #==============================
+        # # Doping
+        # #==============================
+        # dopingBox = QGroupBox("Doping")
+        # dopingBox.setMinimumWidth(400)
+        # layoutD = QVBoxLayout()
 
-        # Accceptor doping
-        layout1 = QFormLayout()
-        self.loc1 = QLineEdit("x > 1e-4")
-        self.N1 = QLineEdit()
-        layout1.addRow("Acceptor doping", QLabel())
-        layout1.addRow("Location [cm]", self.loc1)
-        layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
-        layoutD.addLayout(layout1)
+        # # Accceptor doping
+        # layout1 = QFormLayout()
+        # self.loc1 = QLineEdit("x > 1e-4")
+        # self.N1 = QLineEdit()
+        # layout1.addRow("Acceptor doping", QLabel())
+        # layout1.addRow("Location [cm]", self.loc1)
+        # layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
+        # layoutD.addLayout(layout1)
 
-        layoutD.addSpacing(10)
+        # layoutD.addSpacing(10)
 
-        # Donor doping
-        layout2 = QFormLayout()
-        self.loc2 = QLineEdit("x <= 1e-4")
-        self.N2 = QLineEdit()
-        layout2.addRow("Donor doping", QLabel())
-        layout2.addRow("Location [cm]", self.loc2)
-        layout2.addRow("Concentration [cm\u207B\u00B3]", self.N2)
-        layoutD.addLayout(layout2)
+        # # Donor doping
+        # layout2 = QFormLayout()
+        # self.loc2 = QLineEdit("x <= 1e-4")
+        # self.N2 = QLineEdit()
+        # layout2.addRow("Donor doping", QLabel())
+        # layout2.addRow("Location [cm]", self.loc2)
+        # layout2.addRow("Concentration [cm\u207B\u00B3]", self.N2)
+        # layoutD.addLayout(layout2)
 
-        dopingBox.setLayout(layoutD)
-        layout.addWidget(dopingBox)
+        # dopingBox.setLayout(layoutD)
+        # layout.addWidget(dopingBox)
 
-
-
-    def builder2(self):
-        matBox = QGroupBox("Materials")
-        matBox.setMinimumWidth(400)
-        vlayout = QVBoxLayout()
-        matBox.setLayout(vlayout)
-        self.tabLayout.addWidget(matBox)
-
-
-        # Combo box to keep track of materials
-        matLayout = QHBoxLayout()
-        self.box = QComboBox()
-        self.box.currentIndexChanged.connect(self.comboSelect)
-        self.matNumber = -1
-
-        # Add, remove and save buttons
-        self.newButton = QPushButton("New")
-        self.newButton.clicked.connect(self.addMat)
-        self.newButton.setEnabled(False) # disable on start
-        self.saveButton = QPushButton("Save")
-        self.saveButton.clicked.connect(self.saveMat)
-        self.removeButton = QPushButton("Remove")
-        self.removeButton.setEnabled(False) # disabled on start
-        self.removeButton.clicked.connect(self.removeMat)
-        matLayout.addWidget(self.box)
-        matLayout.addWidget(self.newButton)
-        matLayout.addWidget(self.saveButton)
-        matLayout.addWidget(self.removeButton)
-        vlayout.addLayout(matLayout)
-
-        # Reminder to save
-        vlayout.addWidget(QLabel("Save a material before adding a new one."))
-
-        # Location
-        locLayout = QHBoxLayout()
-        self.loc = QLineEdit("", self)
-        self.lbl = QLabel("Location")
-        locLayout.addWidget(self.lbl)
-        locLayout.addWidget(self.loc)
-        vlayout.addLayout(locLayout)
-
-        # Label explaining how to write location
-        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with (y < 1.5e-6) | (y > 2.5e-6). Use the bitwise operators | for `or`, and & for `and`.")
-        self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
-        self.ex.setWordWrap(True)
-        vlayout.addWidget(self.ex)
-
-
-        # Table for material parameters
-        self.table = QTableWidget()
-        self.table.setRowCount(15)
-        self.table.setColumnCount(2)
-        header = self.table.horizontalHeader()
-        header.setStretchLastSection(True)
-        vlayout.addWidget(self.table)
-
-        # set table
-        self.materials_list = []
-
-        self.rows = ("Nc", "Nv", "Eg", "epsilon", "mass_e", "mass_h",\
-                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "affinity",\
-                     "B", "Cn", "Cp")
-        columns = ("Value", "Unit")
-        self.table.setVerticalHeaderLabels(self.rows)
-        self.table.setHorizontalHeaderLabels(columns)
-
-        self.units = [u"cm\u207B\u00B3", u"cm\u207B\u00B3", "eV", "NA", "NA", "NA",
-                 u"cm\u00B2/(V s)",\
-                 u"cm\u00B2/(V s)", "eV", "s", "s", "eV", u"cm\u00B3/s",\
-                 u"cm\u2076/s", u"cm\u2076/s"]
-
-        # Initialize table
-        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1, \
-              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, \
-              'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0, \
-              'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
-
-        values = [mt[i] for i in self.rows]
-        for idx, (val, unit) in enumerate(zip(values, self.units)):
-            self.table.setItem(idx, 0, QTableWidgetItem(str(val)))
-            item = QTableWidgetItem(unit)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.table.setItem(idx,1, item)
-
-        
-        self.matNumber += 1
-        idx = self.matNumber
-        self.materials_list.append({})
-
-        loc = self.loc.text()
-        self.materials_list[idx]['location'] = loc
-
-        # get params
-        for row in range(15):
-            item = self.table.item(row, 0)
-            txt = item.text()
-            key = self.rows[row]
-            self.materials_list[idx][key] = float(txt)
-
-        self.box.addItem("Material " + str(self.matNumber + 1))
-        self.box.setCurrentIndex(self.matNumber)
-
-
-    # display params of selected material
-    def comboSelect(self):
-        idx = self.box.currentIndex()
-        self.matNumber = idx
-        mat = self.materials_list[idx]
-        values = [mat[i] for i in self.rows]
-
-        self.loc.setText(mat['location'])
-
-        for idx, (val, unit) in enumerate(zip(values, self.units)):
-            self.table.setItem(idx,0, QTableWidgetItem(str(val)))
-
-    # add new material 
-    def addMat(self):
-        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1,\
-                    'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0,\
-                    'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0,\
-                    'B': 0, 'Cn': 0, 'Cp': 0, 'location': None}
-
-        # 1. reinitialize location
-        self.loc.clear()
-
-        # 2. reinitialize table
-        values = [mt[i] for i in self.rows]
-        for idx, (val, unit) in enumerate(zip(values, self.units)):
-            self.table.setItem(idx,0, QTableWidgetItem(str(val)))
-        self.table.show()
-
-        self.matNumber = self.materials_list.__len__()
-        idx = self.matNumber
-        self.materials_list.append({})
-
-        # 3. save standard quantities for the material
-        # get location
-        loc = self.loc.text()
-        self.materials_list[idx]['location'] = loc
-        # get params
-        for row in range(15):
-            item = self.table.item(row, 0)
-            txt = item.text()
-            key = self.rows[row]
-            self.materials_list[idx][key] = float(txt)
-
-        # 4. Increment material number in combo box
-        self.box.addItem("Material " + str(self.matNumber + 1))
-        self.box.setCurrentIndex(self.matNumber)
-
-        # 5. Disable remove and new buttons
-        self.removeButton.setEnabled(False)
-        self.newButton.setEnabled(False)
-        self.saveButton.setEnabled(True)
-
-    # store data entered
-    def saveMat(self):
-        # set ID of material
-        idx = self.matNumber
-
-        # get location
-        loc = self.loc.text()
-        self.materials_list[idx]['location'] = loc
-
-        # get params
-        for row in range(15):
-            item = self.table.item(row, 0)
-            txt = item.text()
-            key = self.rows[row]
-            self.materials_list[idx][key] = float(txt)
-
-        # disable save, enable remove and new buttons
-        self.newButton.setEnabled(True)
-        if len(self.materials_list) > 1:
-            self.removeButton.setEnabled(True)
-
-    # remove a material
-    def removeMat(self):
-        if len(self.materials_list) > 1:
-            # remove from list
-            idx = self.box.currentIndex()
-            del self.materials_list[idx]
-            self.matNumber -= 1
-            # remove from combo box
-            self.box.removeItem(idx)
-            # rename all the others
-            for idx in range(self.box.count()):
-                self.box.setItemText(idx, "Material " + str(idx + 1))
-
-        # disable remove if nothing to remove, enable new mat
-        if len(self.materials_list) == 1:
-            self.removeButton.setEnabled(False)
-            self.newButton.setEnabled(True)
-            self.saveButton.setEnabled(False)
-
-    def builder3(self):
-        layout3 = QVBoxLayout()
-        self.tabLayout.addLayout(layout3)
-       
         #=====================================================
         # Line and plane defects
         #=====================================================
@@ -298,7 +99,7 @@ class BuilderBox(QWidget):
         defectBox.setMinimumWidth(400)
         vlayout = QVBoxLayout()
         defectBox.setLayout(vlayout)
-        layout3.addWidget(defectBox)
+        layout.addWidget(defectBox)
 
         # Combo box to keep track of defects
         self.hbox = QHBoxLayout()
@@ -371,7 +172,7 @@ class BuilderBox(QWidget):
         genBox.setMaximumWidth(400)
         genLayout = QVBoxLayout()
         genBox.setLayout(genLayout)
-        layout3.addWidget(genBox)
+        layout.addWidget(genBox)
 
         lbl = QLabel("Provide a number for uniform illumation, or a space-dependent function, or simply nothing for dark conditions. \nA single variable parameter is allowed and will be looped over during the simulation.")
         lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
@@ -384,6 +185,266 @@ class BuilderBox(QWidget):
         self.paramName = QLineEdit("", self)
         hlayout.addRow("Paramater name", self.paramName)
         genLayout.addLayout(hlayout)
+
+
+    def builder2(self):
+        matBox = QGroupBox("Materials")
+        matBox.setMinimumWidth(400)
+        vlayout = QVBoxLayout()
+        matBox.setLayout(vlayout)
+        self.tabLayout.addWidget(matBox)
+
+
+        # Combo box to keep track of materials
+        matLayout = QHBoxLayout()
+        self.box = QComboBox()
+        self.box.currentIndexChanged.connect(self.comboSelect)
+        self.matNumber = -1
+
+        # Add, remove and save buttons
+        self.newButton = QPushButton("New")
+        self.newButton.clicked.connect(self.addMat)
+        self.newButton.setEnabled(False) # disable on start
+        self.saveButton = QPushButton("Save")
+        self.saveButton.clicked.connect(self.saveMat)
+        self.removeButton = QPushButton("Remove")
+        self.removeButton.setEnabled(False) # disabled on start
+        self.removeButton.clicked.connect(self.removeMat)
+        matLayout.addWidget(self.box)
+        matLayout.addWidget(self.newButton)
+        matLayout.addWidget(self.saveButton)
+        matLayout.addWidget(self.removeButton)
+        vlayout.addLayout(matLayout)
+
+        # Reminder to save
+        vlayout.addWidget(QLabel("Save a material before adding a new one."))
+
+        # Location
+        locLayout = QHBoxLayout()
+        self.loc = QLineEdit("", self)
+        self.lbl = QLabel("Location")
+        locLayout.addWidget(self.lbl)
+        locLayout.addWidget(self.loc)
+        vlayout.addLayout(locLayout)
+
+        # Label explaining how to write location
+        self.ex = QLabel("Tip: Define the region for y < 1.5 µm or y > 2.5 µm with (y < 1.5e-6) | (y > 2.5e-6). Use the bitwise operators | for `or`, and & for `and`.")
+        self.ex.setStyleSheet("qproperty-alignment: AlignJustify;")
+        self.ex.setWordWrap(True)
+        vlayout.addWidget(self.ex)
+
+
+        # Table for material parameters
+        self.table = QTableWidget()
+        self.table.setRowCount(17)
+        self.table.setColumnCount(2)
+        header = self.table.horizontalHeader()
+        header.setStretchLastSection(True)
+        vlayout.addWidget(self.table)
+
+        # set table
+        self.materials_list = []
+
+        self.rows = ("N_D", "N_A", "Nc", "Nv", "Eg", "epsilon", "mass_e", "mass_h",\
+                     "mu_e", "mu_h", "Et", "tau_e", "tau_h", "affinity",\
+                     "B", "Cn", "Cp")
+        columns = ("Value", "Unit")
+        self.table.setVerticalHeaderLabels(self.rows)
+        self.table.setHorizontalHeaderLabels(columns)
+
+        self.units = [u"cm\u207B\u00B3", u"cm\u207B\u00B3",\
+                 u"cm\u207B\u00B3", u"cm\u207B\u00B3", "eV", "NA", "NA", "NA",
+                 u"cm\u00B2/(V s)",\
+                 u"cm\u00B2/(V s)", "eV", "s", "s", "eV", u"cm\u00B3/s",\
+                 u"cm\u2076/s", u"cm\u2076/s"]
+
+        # Initialize table
+        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1, \
+              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, \
+              'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0, \
+              'B': 0, 'Cn': 0, 'Cp': 0, 'location': None, 'N_D':0, 'N_A':0}
+
+        values = [mt[i] for i in self.rows]
+        for idx, (val, unit) in enumerate(zip(values, self.units)):
+            self.table.setItem(idx, 0, QTableWidgetItem(str(val)))
+            item = QTableWidgetItem(unit)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.table.setItem(idx,1, item)
+
+        
+        self.matNumber += 1
+        idx = self.matNumber
+        self.materials_list.append({})
+
+        loc = self.loc.text()
+        self.materials_list[idx]['location'] = loc
+
+        # get params
+        for row in range(17):
+            item = self.table.item(row, 0)
+            txt = item.text()
+            key = self.rows[row]
+            self.materials_list[idx][key] = float(txt)
+
+        self.box.addItem("Material " + str(self.matNumber + 1))
+        self.box.setCurrentIndex(self.matNumber)
+
+
+    # display params of selected material
+    def comboSelect(self):
+        idx = self.box.currentIndex()
+        self.matNumber = idx
+        mat = self.materials_list[idx]
+        values = [mat[i] for i in self.rows]
+
+        self.loc.setText(mat['location'])
+
+        for idx, (val, unit) in enumerate(zip(values, self.units)):
+            self.table.setItem(idx,0, QTableWidgetItem(str(val)))
+
+    # add new material 
+    def addMat(self):
+        mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1,\
+              'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0,\
+              'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0,\
+              'B': 0, 'Cn': 0, 'Cp': 0, 'location': None, 'N_D':0, 'N_A':0}
+
+        # 1. reinitialize location
+        self.loc.clear()
+
+        self.matNumber = len(self.materials_list)
+        idx = self.matNumber
+        self.materials_list.append({})
+
+        # 2. save standard quantities for the material
+        # get location
+        loc = self.loc.text()
+        self.materials_list[idx]['location'] = loc
+        # get params
+        for row in range(17):
+            item = self.table.item(row, 0)
+            txt = item.text()
+            key = self.rows[row]
+            self.materials_list[idx][key] = float(txt)
+
+        # 3. Increment material number in combo box
+        self.box.addItem("Material " + str(self.matNumber + 1))
+        self.box.setCurrentIndex(self.matNumber)
+
+        # 4. Disable remove and new buttons
+        self.removeButton.setEnabled(False)
+        self.newButton.setEnabled(False)
+        self.saveButton.setEnabled(True)
+
+    # store data entered
+    def saveMat(self):
+        # set ID of material
+        idx = self.matNumber
+
+        # get location
+        loc = self.loc.text()
+        self.materials_list[idx]['location'] = loc
+
+        # get params
+        for row in range(17):
+            item = self.table.item(row, 0)
+            txt = item.text()
+            key = self.rows[row]
+            self.materials_list[idx][key] = float(txt)
+
+        # disable save, enable remove and new buttons
+        self.newButton.setEnabled(True)
+        if len(self.materials_list) > 1:
+            self.removeButton.setEnabled(True)
+
+    # remove a material
+    def removeMat(self):
+        if len(self.materials_list) > 1:
+            # remove from list
+            idx = self.box.currentIndex()
+            del self.materials_list[idx]
+            self.matNumber -= 1
+            # remove from combo box
+            self.box.removeItem(idx)
+            # rename all the others
+            for idx in range(self.box.count()):
+                self.box.setItemText(idx, "Material " + str(idx + 1))
+
+        # disable remove if nothing to remove, enable new mat
+        if len(self.materials_list) == 1:
+            self.removeButton.setEnabled(False)
+            self.newButton.setEnabled(True)
+            self.saveButton.setEnabled(False)
+
+    def builder3(self):
+        layout3 = QVBoxLayout()
+        self.tabLayout.addLayout(layout3)
+
+        #=====================================================
+        # View system
+        #=====================================================
+        box = QGroupBox("View system")
+        box.setMinimumWidth(400)
+        vlayout = QVBoxLayout()
+        box.setLayout(vlayout)
+        layout3.addWidget(box)
+
+        hlayout = QHBoxLayout()
+        vlayout.addLayout(hlayout)
+        self.comboPlot = QComboBox()
+        items = ['Choose one', 'Line defects', 'Plane defects', 
+                 'Electron mobility', 'Hole mobility', 
+                 'Electron lifetime', 'Hole lifetime']
+        self.comboPlot.addItems(items)
+        hlayout.addWidget(self.comboPlot)
+        self.plotBtn = QPushButton("Plot")
+        self.plotBtn.clicked.connect(self.displayPlot)
+        hlayout.addWidget(self.plotBtn)
+
+        self.Fig = MplWindow()
+        vlayout.addWidget(self.Fig)
+
+    @slotError()
+    def displayPlot(self, checked):
+        """
+        Access to plotter routines to visualize some basic system settings in 2D
+        to make sure the regions are defined as envisioned.
+        """
+
+        prop = self.comboPlot.currentText()
+
+        if prop == 'Choose one':
+            return
+
+        # system settings
+        settings = self.getSystemSettings()
+        system = parseSettings(settings)
+
+        # get figure
+        fig = self.Fig.figure
+        fig.clear()
+
+        if prop == "Electron mobility":
+            title = r'Electron mobility [$\mathregular{cm^{2}/(V s)}$]'
+            plotter.plot(system, system.mu_e, fig=fig, title=title)
+        elif prop == "Hole mobility":
+            title = r'Hole mobility [$\mathregular{cm^{2}/(V s)}$]'
+            plotter.plot(system, system.mu_h, fig=fig, title=title)
+        elif prop == "Electron lifetime":
+            title = r'Electron lifetime [$\mathregular{s}$]'
+            plotter.plot(system, system.tau_e, fig=fig, title=title)
+        elif prop == "Hole lifetime":
+            title = r'Hole lifetime [$\mathregular{s}$]'
+            plotter.plot(system, system.tau_h, fig=fig, title=title)
+        elif prop == "Line defects":
+            title = r'Line defects'
+            plotter.plot_line_defects(system, fig=fig, title=title)
+        elif prop == "Plane defects":
+            title = r'Plane defects'
+            plotter.plot_plane_defects(system, fig=fig, title=title)
+
+        # draw plot
+        self.Fig.canvas.draw()
 
     # display params of selected defect
     def comboSelect2(self):
@@ -511,10 +572,6 @@ class BuilderBox(QWidget):
             msg.exec_()
             return
 
-        d = [{'location': self.loc1.text(), 'concentration': self.N1.text()},
-             {'location': self.loc2.text(), 'concentration': self.N2.text()}]
-
-        settings['doping'] = d
         settings['materials'] = self.materials_list
         settings['defects'] = self.defects_list
         generation = self.gen.text().replace('exp', 'np.exp')
