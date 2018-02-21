@@ -312,6 +312,11 @@ class BuilderBox(QWidget):
         # 1. reinitialize location
         self.loc.clear()
 
+        # 2. reinitialize doping
+        self.table.setItem(0,0, QTableWidgetItem('0.0'))
+        self.table.setItem(1,0, QTableWidgetItem('0.0'))
+        self.table.show()
+
         self.matNumber = len(self.materials_list)
         idx = self.matNumber
         self.materials_list.append({})
