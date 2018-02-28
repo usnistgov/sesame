@@ -25,6 +25,8 @@ for module, names in available:
 try:
     from . import plotter
     from .plotter import plot_line_defects, plot, plot_plane_defects
+    from . import utils
+    from .utils import save_sim, load_sim
 except:
     pass
 else:

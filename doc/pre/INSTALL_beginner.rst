@@ -1,5 +1,5 @@
-Installation instructions for beginners
----------------------------------------
+Installation instructions (for beginners)
+-----------------------------------------
 
 This section documents how to build Sesame for those with zero python experience.  
 

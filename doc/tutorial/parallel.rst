@@ -1,10 +1,10 @@
-Tutorial 7: Batch submission for computing clusters
+Tutorial 6: Batch submission for computing clusters
 ---------------------------------------
 
 Running Sesame on a cluster
 ............................
 
-Next we give an example of running Sesame on a computing cluster.  This can be accomplished in several different ways, and the most efficient way depends on the details of the cluster environment.  For our example, the prerequisites libraries are:
+Next we give an example of running Sesame on a computing cluster.  This can be accomplished in several different ways; the most efficient way depends on the details of the cluster environment.  For our example, the prerequisites libraries are:
 
 	* `MPI Library <https://www.open-mpi.org>`_ 
 	* `mpi4py <http://mpi4py.scipy.org>`_ 
@@ -14,7 +14,7 @@ The basic idea is illustrated in schematic below  (note we follow MPI and python
 .. image:: mpi.*
    :align: center
 
-Any executable which uses MPI is be called from the command line using the prefix ``mpirun``.  For example, the script "parallel_batch_example.py" is run on 32 processors with the following command::
+Any executable which uses MPI is called from the command line using the prefix ``mpirun``.  For example, the script "parallel_batch_example.py" is run on 32 processors with the following command::
 
 	mpirun -np 32 python3 parallel_batch_example.py
 

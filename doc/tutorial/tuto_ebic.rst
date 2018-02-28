@@ -1,7 +1,7 @@
 Tutorial 4: Simulating an EBIC/CL experiment
 ---------------------------------------------------------
 
-In this tutorial we build a 2-dimensional simulation to describe experiments with a localized carrier generation profile, such as electron beam induced current (EBIC), or cathodoluminescence (CL).  In this case we'll need to define a system as before, and then define a custom carrier generation rate density profile.  We'll then cycle over beam positions and compute the total current and total radiative recombination as a function of beam position.
+In this tutorial we build a 2-dimensional simulation to describe experiments with a localized carrier generation profile, such as electron beam induced current (EBIC), or cathodoluminescence (CL).  In this case we'll need to define a system as before, and then define a custom carrier generation rate density profile associated with electron beam excitation.  We'll then cycle over beam positions and compute the total current and total radiative recombination as a function of beam position.
 
 .. image:: ebic.*
    :align: center  
@@ -9,7 +9,7 @@ In this tutorial we build a 2-dimensional simulation to describe experiments wit
 Building the system
 ........................
 
-The system is built as before: a 2-dimensional p-n junction in which the "top" of the system represents the exposed sample surface.  Building the system works as in the previous tutorials, and the code shown below::
+The system we want to build is a 2-dimensional p-n junction in which the "top" of the system represents the exposed sample surface.  Building the 2-d pn junction proceeds as in the previous tutorials, and the code is shown below::
 
 
     	## dimensions of the system
@@ -40,11 +40,13 @@ The system is built as before: a 2-dimensional p-n junction in which the "top" o
 	sys.add_material(mat)
 	
 	# define a function specifiying the n-type region
-	def region(pos):
+	def n_region(pos):
 	    x, y = pos
 	    return x < junction
 	# define a function specifiying the p-type region
-	region2 = lambda pos: 1 - region(pos)
+	def p_region(pos):
+	    x, y = pos
+	    return x >= junction
 	
 	# Add the donors
 	nD = 1e17 # [cm^-3]
@@ -54,15 +56,16 @@ The system is built as before: a 2-dimensional p-n junction in which the "top" o
 	sys.add_acceptor(nA, region2)
 	
 	# Use Ohmic contacts
+	sys.contact_type('Ohmic','Ohmic')
 	Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 1e7, 1e7, 1e7
 	sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
-	sys.contact_type('Ohmic','Ohmic')
+	
 
 
 Adding surface recombination
 ............................
 
-Adding recombination at the sample surface is accomplished with a planar defect along the line :math:`y=L_y`.  We consider a neutral surface, so that the charge state of the defect is always 0.  This is implemented by setting ``transition=(0,0)`` as an input argument to ``add_line_defects()``.  The values given in ``transition`` set the charge of the defect when its occupied or unoccupied:: 
+Adding recombination at the sample surface is accomplished with a planar defect along the line :math:`y=L_y`.  We consider a neutral surface, so that the charge state of the defect is always 0.  This is implemented by setting ``transition=(0,0)`` as an input argument to ``add_line_defects()``.  As described in the previous tutorial, the values given in ``transition`` set the charge of the defect when its occupied or unoccupied:: 
 
     p1 = (0, Ly)
     p2 = (Lx, Ly)
@@ -76,32 +79,32 @@ Adding recombination at the sample surface is accomplished with a planar defect 
 Electron beam excitation
 ............................
 
-Next we consider the physics of the electron beam excitation.  Exciting the sample with an electron beam leads to a localized generation of charge carriers.  A very simple parameterization of the generation rate density profile is given as follows:
+Next we review the physics of the electron beam excitation.  Excitation with an electron beam generates free carriers.  For a beam focused at :math:`(x_0,y_0)`, a simple parameterization of the generation rate density profile is given by a Gaussian:
 
 .. math:: 
    G(x,y) &= \frac{G_{\rm tot}}{A} \times \exp\left(-\frac{(x-x_0)^2+(y-y_0)^2}{2\sigma^2}\right) 
    :label: Gxy 
 
-The excitation is a Gaussian centered around the position :math:`(x_0,y_0)`.  :math:`~x_0` is the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0`.  The total generation rate (units :math:`1/s`) is:
+For our geometry, :math:`~x_0` is the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0`.  The total generation rate (units :math:`1/s`) is (need reference):
 
 .. math::
    G_{tot} &\approx \frac{I_{\rm beam}}{q} \times \frac{E_{\rm beam}}{3 E_g}
    :label: A
 
-The length scale and depth of the excitation :math:`\sigma` is determined by the electron beam energy and material mass density.  These are written in terms of the interaction distance :math:`R_B`:
+The length scale of the excitation :math:`\sigma` is determined by the electron beam energy and material mass density, and is written in terms of the interaction distance :math:`R_B`:
 
 .. math::
    R_B &= r_0 \left(\frac{0.043}{\rho/\rho_0}\right) \times \left(E_{\rm beam} /E_0\right)^{1.75}
    :label: Rb
 
-The constants in Eq. :eq:`Rb` are :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The length scale of the Guassian and the distance from the surface is related to :math:`R_B` as
+The constants in Eq. :eq:`Rb` are :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The length scale of the Guassian :math:`\sigma` and the distance from the surface :math:`y_0` are related to :math:`R_B` as (ref):
 
 .. math::
    \sigma &= \frac{R_B}{\sqrt{15}}\\
    y_0 &= 0.3\times R_B
 
 
-The normalization constant :math:`A` has units of volume.  The standard normalization of the Gaussian is :math:`2\pi\sigma^2`.  An appropriate choice for the additional length factor is the electron diffusion length :math:`L_D`, so that:
+The normalization constant :math:`A` has units of volume.  The standard normalization of a 2-dimensional Gaussian is :math:`2\pi\sigma^2`, which has units of area.  An appropriate choice for the additional length factor in :math:`A` is the electron diffusion length :math:`L_D`, so that:
 
 .. math::
    A &= 2\pi\sigma^2 L_D
@@ -123,6 +126,9 @@ To code :math:`G(x,y)`, Eq. :eq:`Gxy` we start by making the necessary definitio
 	sigma = Rbulb / sqrt(15)		 	# Gaussian spread
 	y0 = 0.3 * Rbulb				# penetration depth
 
+	Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length  # diffusion length
+
+
 
 Perfoming the beam scan
 ........................
@@ -135,18 +141,22 @@ We define an array to store the computed current at each beam position::
 
 	jset = np.zeros(len(x0list))
 	
-Next we scan over :math:`x_0` with a :for: loop.  At each value of :math:`x_0`, we define a function as Eq. :eq:`Gxy`, and add this generation to the system::
+Next we scan over :math:`x_0` with a ``for`` loop.  At each value of :math:`x_0`, we define a function as given in Eq. :eq:`Gxy`, and add this generation to the system::
 
 	for idx, x0 in enumerate(x0list):
 
 	    def excitation(x,y):
-	        return Gtot/(2*np.pi*sigma**2*Ld) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
+	        return Gtot/(2*np.pi*sigma**2*Ld) * 
+                   np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
 	
 	    sys.generation(excitation)
 	
 Now we solve the system::
 
-	    solution = sesame.solve(sys, periodic_bcs=False, tol=1e-8)
+	    solution = sesame.solve(sys, periodic_bcs=False)
+
+Notice that we provided the optional input argument ``periodic_bcs=False` to the ``solve()`` function.  This ensures that the top and bottom boundary conditions are "hardwall".  The default boundary condition is periodic, such that :math:`f(x,y=0)=f(x,y=L)` for all system properties.
+
 
 We obtain the current and store it in the array::
 	
@@ -157,3 +167,4 @@ We obtain the current and store it in the array::
 	    # save the current
 	    jset[idx] = tj
 
+Finally we save and plot the computed current versus beam position:

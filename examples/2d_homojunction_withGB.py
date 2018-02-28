@@ -89,12 +89,28 @@ print(j*sys.scaling.current*sys.scaling.length*1e3)
 
 
 # specify applied voltages
-voltages = np.linspace(0,1,11)
+voltages = np.linspace(0,.1,10)
 # find j-v
-jv = sesame.IVcurve(sys, voltages, solution, 'GB_JV')
-# Print the results
-for counter in range(len(jv)):
-    print('Vapp = {0:2.1f} [V], J = {1:5.3e} [mA/cm^2]'.
-          format(voltages[counter],jv[counter]*sys.scaling.current*sys.scaling.length*1e3))
+j = sesame.IVcurve(sys, voltages, solution, '2dGB_IV')
+# save the result
+result = {'voltages':voltages,'j':j}
+np.save('2dGB_IV',result)
+
+
+try:
+    import matplotlib.pyplot as plt
+    # let's load one file and do a surface plot of v
+    results = np.load('GB_JV_0.npz')
+    v = np.reshape(results['v'],[sys.ny,sys.nx])
+    v = v * sys.scaling.energy
+    plt.contourf(sys.xpts,sys.ypts,v)
+    plt.xlabel('Position [cm]')
+    plt.ylabel('Position [cm]')
+    plt.colorbar()
+    plt.title('V')
+    plt.show()
+
+except ImportError:
+    print("Matplotlib not installed")
 
 

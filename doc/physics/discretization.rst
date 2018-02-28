@@ -9,13 +9,13 @@ Scharfetter-Gummel scheme
 -------------------------
 To solve the drift diffusion Poisson equations numerically, we utilize a simple
 spatial discretization.  Recall that densities are defined on sites, and fluxes
-(such as current flux, electric field flux) are defined on links.  This is a
-very common technique, and it is always important to remember that *sites* and
+(such as current flux, electric field flux) are defined on links.  It's important to note that *sites* and
 *links* in the discretized grid are fundamentally different objects, as shown in
 the figure below.
 
-.. figure:: site_link.*
+.. figure:: grid_link.*
    :align: center
+   :width: 300	
 
    Sites versus links.  We take the indexing convention that :math:`\Delta
    x^i` represents the space between sites :math:`i` and :math:`i+1`.
@@ -27,7 +27,7 @@ for link :math:`i` (link :math:`i` connects discretized points :math:`i` and
 
 .. math::
     J_n^i & = q\mu_n n_i \frac{\partial E_{F_n,i}}{\partial x} \\
-    J_p^i & = -q\mu_p p_i \frac{\partial E_{F_p,i}}{\partial x}
+    J_p^i & = q\mu_p p_i \frac{\partial E_{F_p,i}}{\partial x}
    :label: ji
 
 Note that here, link indices are denoted with a superscript, while point indices
@@ -46,14 +46,14 @@ We plug this form of :math:`p` into Eq. :eq:`ji`, then multiply both sides of
 the hole current  by :math:`e^{q\phi(x)/k_BT}\ dx`, 
 
 .. math::
-    J_p^i = -q \mu_p N_V e^{\left(b_l-E_g+E_{F_p}-q\phi(x)\right)/k_BT}
+    J_p^i = q \mu_p N_V e^{\left(b_l-E_g-E_{F_p}-q\phi(x)\right)/k_BT}
     \frac{\partial E_{F_p}}{\partial x} 
     
 and integrate over link :math:`i`
 
 .. math::
     \int J_p^i e^{q\phi(x)/k_BT} \mathrm{d}x
-    = -q \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \int e^{E_{F_p}/k_BT}
+    = q \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \int e^{-E_{F_p}/k_BT}
     \mathrm{d}E_{F_p}
    :label: eqx
 
@@ -73,9 +73,9 @@ which enables the integral on the left hand side above to be performed:
 Plugging Eq. :eq:`eqx2` into Eq. :eq:`eqx` and solving for :math:`J_p^i` yields
 
 .. math::
-    J_p^i = - \frac{q^2/k_BT}{\Delta x^i}
+    J_p^i = \frac{q^2/k_BT}{\Delta x^i}
     \frac{\phi_{i+1}-\phi_i}{e^{q\phi_{i+1}/k_BT}-e^{q\phi_i/k_BT}} 
-    \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \left[e^{E_{F_p,i+1}/k_BT}-e^{E_{F_p,i}}\right]
+    \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \left[e^{-E_{F_p,i+1}/k_BT}-e^{-E_{F_p,i}}\right]
    :label: jpi
 
 A similar procedure leads to the following expression for :math:`J_n^i`:
@@ -220,7 +220,7 @@ We do the standard *folding* of the multi-dimensional index label :math:`(i,j,k)
 into the single index label :math:`s` of the sites of the system: 
 
 .. math::
-    s = i + j \times n_x + k \times n_x n_y
+    s = i + (j \times n_x) + (k \times n_x n_y)
 
 where :math:`n_x` (:math:`n_y`) is the number of sites in the
 :math:`x`-direction (:math:`y`-direction).

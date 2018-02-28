@@ -8,6 +8,5 @@ Tutorial: learning Sesame through examples
    tuto1dHetero
    2d_system
    tuto_ebic
-   3d_system
    analysis
    parallel

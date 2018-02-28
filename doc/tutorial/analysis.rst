@@ -1,18 +1,42 @@
-Tutorial 6: Analysis of simulation data
----------------------------------------
-In this tutorial we show how to extract the data computed by the solvers. We
+Tutorial 5: Saving, loading, and analyzing simulation data
+-------------------------------------------------------------
+
+In this tutorial we describe the input and output data formats of Sesame, and show how to use Sesame's built-in tools to analyze the solution.
+
+Saving and Loading data
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+Sesame's ``save_sim`` command saves both the system object, which contains all of the simulation settings, and the solution dictionary.  An example of its use is shown below::
+
+
+	sesame.save_sim(sys, results, "my_sim")
+
+The saved output file is named "my_sim.gzip" extension.  The gzip extension indicates the data is compressed, and the data structures are stored using python's ``pickle`` module.  
+
+
+The data can also be saved in a Matlab-readable format (.mat file), by adding fmt='mat' as an additional input argument:: 
+
+	sesame.save_sim(system, result, "my_sim", fmt='mat')
+
+In this case the arrays defining the system properties (including Eg, Nc, Nv, etc) are saved in a ``system`` data structure, and the solution (:math:`E_{F_n},E_{F_p},V`) is saved in a ``results`` data structure
+
+Make a note of the folded array shape of the data.
+
+Loading a saved simulation is accomplished with the command::
+
+	sys, result = sesame.load_sim("my_sim")
+
+Analysis of data with the Analyzer object
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Next we show how to extract and analyze the data computed by the solvers. We
 will use the system created in :doc:`tutorial 3 <tuto3>`, so we start by
 importing the function that builds it after importing numpy and sesame::
 
     import numpy as np
     import sesame
+   
 
-    from jv_curve import system
-    syst = system()
-
-The Analyzer object
-^^^^^^^^^^^^^^^^^^^
-The data analysis requires to compute carrier densities, currents and plot data.
+Our data analysis will begin with computing carrier densities, currents and plotting data.
 In order to avoid having to deal with the folded discretized system, we provide
 a set of methods callable with real (continuous) space coordinates. In the
 code below we load a data file and create an instance of this class::

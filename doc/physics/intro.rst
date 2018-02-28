@@ -83,11 +83,10 @@ The Shockley-Read-Hall takes the form
    
 where :math:`n^2_i = N_C N_V e^{-E_g/k_BT}, n_1 = n_i e^{E_T /k_BT} ,
 p_1 = n_i e^{- E_T /k_BT}`, where :math:`E_T` is the
-energy level of the trap state, :math:`N_C` (:math:`N_V`) is the conduction (valence) band effective density of
+energy level of the trap state measured from the intrinsic energy level, :math:`N_C` (:math:`N_V`) is the conduction (valence) band effective density of
 states. The equilibrium Fermi energy at which
 :math:`n=p=n_i` is the intrinsic energy level :math:`E_i`.
-The above can be derived on very general grounds
-(see Ref. [1]_, page 34). :math:`\tau_{n,(p)}` is the bulk lifetime for
+:math:`\tau_{n,(p)}` is the bulk lifetime for
 electrons (holes). It is given by
 
 .. math::
@@ -132,7 +131,7 @@ for electrons and holes respectively. :math:`n_d` and :math:`p_d` are
 
 .. math::
    \bar n_d &= n_i e^{E_d/k_BT}\\
-   \bar p_d &= n_i e^{- E_d/k_BT}
+   \bar p_d &= n_i e^{-E_d/k_BT}
 
 where :math:`E_d` is calculated from the intrinsic Fermi level :math:`E_i`.
 The defect recombination is of Shockley-Read-Hall form:
@@ -164,10 +163,7 @@ performing an integral over a continuous defect spectrum.
 Carrier densities and quasi-Fermi levels
 ........................................
 Despite their apparent simplicity, Eqs. :eq:`ddp` are numerically challenging to
-solve. This is due in part to the fact that the carrier densities vary by many
-orders of magnitude throughout the sample, and because drift and diffusion
-currents often nearly cancel each other, and the entire solution depends on the
-small residual current left over. We next discuss a slightly different form of
+solve. We next discuss a slightly different form of
 these same equations which is convenient to use for numerical solutions. We
 introduce the concept of quasi-Fermi level for electrons and holes (denoted by
 :math:`E_{F_n}` and :math:`E_{F_p}`  respectively). The carrier density is
@@ -175,44 +171,21 @@ related to these quantities as
 
 .. math::
    n(x,y,z) &= N_C e^{\left(E_{F_n}(x,y,z) + q\phi(x,y,z) - \chi(x,y,z)\right)/k_BT}\\
-   p(x,y,z) &= N_V e^{\left(E_{F_p}(x,y,z) - q\phi(x,y,z) - E_g+\chi(x,y,z)\right)/k_BT}
+   p(x,y,z) &= N_V e^{\left(-E_{F_p}(x,y,z) - q\phi(x,y,z) - E_g+\chi(x,y,z)\right)/k_BT}
    :label: np
 
 where the term :math:`\chi` is the electron affinity, :math:`\phi` is the
 electrostatic potential. Quasi-Fermi levels are convenient in part because they
 guarantee that carrier densities are always positive. While carrier densities
 vary by many orders of magnitude, quasi-Fermi levels require much less variation
-to describe the system. The signs in Eq.  :eq:`np` can be confusing; they are
-such that the carrier density is larger if its quasi-Fermi level is more
-positive, see the figure below.
-
-.. figure:: bands.*
-   :align: center
-   :figwidth: 500
-
-   Equilibrium energy level diagrams showing the electron quasi-Fermi
-   level in an n-type (p-type) semiconductor on the left (right). We chose
-   :math:`q\phi = -E_g/2` and :math:`\chi=0` to make electron and hole
-   quasi-Fermi levels symmetric. 
-
-On an energy diagram, this
-means that more positive electron quasi-Fermi levels are plotted closer to the
-conduction band, while positive hole quasi-Fermi levels are plotted closer to
-the valence band. When plotting both electron and hole quasi-Fermi levels on the
-same graph (such as on a band diagram), it is therefore necessary to plot, for
-example, :math:`E_{F_n}` and :math:`-E_{F_p}` in order to have a consistent sign
-convention for reading the plot.  Signs are confusing additionally because
-people use different conventions, and sometimes people are careless about them.
-The signs utilized in these notes and in the code have been checked, and are all
-self-consistent. Any questions about signs should therefore not be ascribed to
-typos and the like.
+to describe the system. 
 
 The electron and hole current can be shown to be proportional to the spatial
 gradient of the quasi-Fermi level
 
 .. math::
    \vec{J}_n &= q\mu_n n \vec{\nabla} E_{F_n}\\
-   \vec{J}_p &= -q\mu_p p \vec{\nabla} E_{F_p}
+   \vec{J}_p &= q\mu_p p \vec{\nabla} E_{F_p}
 
 These relations for the currents will be used in the discretization of Eq.
 :eq:`ddp`.
@@ -225,7 +198,7 @@ Equilibrium boundary conditions
 For a given system, Sesame first solves the equilibrium problem. In equilibrium,
 the quasi-Fermi level of electrons and holes are equal and spatially
 constant.  We choose an energy reference such that in equilibrium,
-:math:`E_{F_p} = E_{F_n} = 0`. The equilibrium problem is therefore
+:math:`E_F=E_{F_p} = E_{F_n} = 0`. The equilibrium problem is therefore
 reduced to a single variable :math:`\phi`. Sesame employs both
 Dirichlet and Neumann equilibrium boundary conditions
 for :math:`\phi`, which we discuss next.

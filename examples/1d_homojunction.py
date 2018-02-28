@@ -18,18 +18,21 @@ CdTe = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4,
 sys.add_material(CdTe)
 
 junction = 50e-7 # extent of the junction from the left contact [m]
-def region(pos):
+def n_region(pos):
     x = pos
     return x < junction
 
+def p_region(pos):
+    x = pos
+    return x >= junction
+
 # Add the donors
 nD = 1e17 # [cm^-3]
-sys.add_donor(nD, region)
+sys.add_donor(nD, n_region)
 
 # Add the acceptors
-region2 = lambda pos: 1 - region(pos)
 nA = 1e15 # [cm^-3]
-sys.add_acceptor(nA, region2)
+sys.add_acceptor(nA, p_region)
 
 # Define Ohmic contacts
 sys.contact_type('Ohmic', 'Ohmic')
@@ -48,4 +51,30 @@ sys.generation(f)
 solution = sesame.solve_equilibrium(sys)
 # IV curve
 voltages = np.linspace(0, 0.95, 40)
-jv = sesame.IVcurve(sys, voltages, solution, '1dpnIV')
+j = sesame.IVcurve(sys, voltages, solution, '1d_homojunction_jv')
+
+j = j * sys.scaling.current
+result = {'v':voltages, 'j':j}
+
+np.save('jv_values',result)
+np.savetxt('jv_values.txt',(voltages,j))
+try:
+    import scipy.io.savemat as savemat
+    savemat('jv_values.mat',result)
+except ImportError:
+    print("Scipy not installed, can't save to .mat file")
+
+
+try:
+    import matplotlib.pyplot as plt
+    plt.plot(voltages,j,'-o')
+    plt.xlabel('Voltage [V]')
+    plt.ylabel('Current [A/cm^2]')
+    plt.grid()
+    plt.show()
+
+except ImportError:
+    print("Matplotlib not installed, can't make plot")
+
+
+

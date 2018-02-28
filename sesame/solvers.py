@@ -7,6 +7,7 @@ import numpy as np
 import importlib
 from scipy.io import savemat
 from . import analyzer
+from . utils import save_sim
 
 from .analyzer import Analyzer
 
@@ -491,19 +492,12 @@ class Solver():
                 # 1. Save efn, efp, v
                 name = file_name + "_{0}".format(idx)
                 # add some system settings to the saved results
-                result.update({'x': system.xpts,\
-                               'affinity': system.bl, 'Eg': system.Eg,\
-                               'Nc': system.Nc, 'Nv': system.Nv,\
-                               'epsilon': system.epsilon})
-                if(system.ypts != None):
-                    result.update({'y': system.ypts})
-                if(system.zpts != None):
-                    result.update({'z': system.zpts})
 
                 if fmt == 'mat':
-                    savemat(name, result)
+                    save_sim(system, result, name, fmt='mat')
                 else:
-                    np.savez_compressed(name, **result)
+                    filename = "%s.gzip" % name
+                    save_sim(system, result, filename)
                 # 2. Compute the steady state current
                 try:
                     az = Analyzer(system, result)

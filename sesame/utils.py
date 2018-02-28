@@ -4,6 +4,8 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
+import gzip
+import pickle
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -404,3 +406,24 @@ def plane_defects_sites(sys, location):
     perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
     return sites, xcoord, ycoord, zcoord, perp_dl
 
+def save_sim(sys, result, filename, fmt='npy'):
+    if fmt=='mat':
+        system = {'xpts': sys.xpts, 'ypts': sys.ypts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
+                  'affinity': sys.bl, 'epsilon': sys.epsilon, 'g': sys.g, 'mu_e': sys.mu_e, 'mu_h': sys.mu_h, \
+                  'm_e': sys.mass_e, 'm_h': sys.mass_h, 'tau_e': sys.tau_e, 'tau_h': sys.tau_h, \
+                  'B': sys.B, 'Cn': sys.Cn, 'Cp': sys.Cp, 'n1': sys.n1, 'p1': sys.p1, 'ni': sys.ni, 'rho': sys.rho}
+        if (np.size(sys.ypts) != 0):
+            system.update({'y': sys.ypts})
+        if (np.size(sys.zpts) != 0):
+            system.update({'z': sys.zpts})
+        savemat(filename, {'sys': system, 'results': result}, do_compression=True)
+    else:
+        file = gzip.GzipFile(filename, 'wb')
+        file.write(pickle.dumps((sys, result)))
+        file.close()
+
+def load_sim(filename):
+    file = gzip.GzipFile(filename, 'rb')
+    data = file.read()
+    sys, result = pickle.loads(data)
+    return sys, result

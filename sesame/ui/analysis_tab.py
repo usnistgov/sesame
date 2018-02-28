@@ -292,7 +292,7 @@ class Analysis(QWidget):
                 dataMap = G * az.total_rr()
                 title = r'Total Recomb. [$\mathregular{cm^{-3}s^{-1}}$]'
             if txt != "Electron current" and txt != "Hole current":
-                plot(system, dataMap, scale=1e-4, cmap='viridis',\
+                plot(system, dataMap, cmap='viridis',\
                      fig=self.surfaceFig.figure, title=title)
  
             if txt == "Electron current":
