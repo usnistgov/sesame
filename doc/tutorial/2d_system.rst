@@ -1,24 +1,21 @@
 Tutorial 3: Two-dimensional *pn* junction with a grain boundary
 ---------------------------------------------------------------
-In this tutorial we show how to build a two-dimensional pn junction containing a
-grain boundary. We focus on the creation of different regions and the addition of
-extra charges to the system. See :doc:`tutorial 1 <tuto1>` for the basics on the
-creation of systems. We present the tools available to vizualize the system
-created.
+In this tutorial we show how to build a two-dimensional :math:`pn^{+}` junction containing a
+grain boundary. 
 
-.. seealso:: The example treated here is in the file ``2dpn.py`` in the
-   ``examples`` directory in the root directory of the distribution. 
+.. seealso:: The example treated here is in the file ``2d_homojunction_withGB.py`` located in the
+   ``examples\tutorial4`` directory in the root directory of the distribution. 
 
 Building a two-dimensional system
 ...............................................
-Suppose we want to simulate a two-dimensional pn junction (homojunction) with a
-line of defects as depicted below.  
+We want to simulate a two-dimensional :math:`pn^{+}` junction (homojunction) with a
+columnar grain boundary as depicted below.  
 
 .. image:: geometry.*
    :align: center
 
 As usual, we start by importing the sesame package and numpy. We construct the
-mesh of the system and make an instance of the :func:`~sesame.builder.Builder`.  Notice that in this case we provide the ``Builder`` function with both x and y grids; this automatically tells the code to build a two-dimensional system::
+mesh of the system and make an instance of the :func:`~sesame.builder.Builder`.  Notice that in this case we provide the :func:`~sesame.builder.Builder` function with both x and y grids; this automatically tells the code to build a two-dimensional system::
 
     import sesame
     import numpy as np
@@ -27,18 +24,18 @@ mesh of the system and make an instance of the :func:`~sesame.builder.Builder`. 
     Lx = 3e-4 # [cm]
     Ly = 3e-4 # [cm]
 
-    # extent of the junction from the left contact [m]
-    junction = 10e-9 
+    # position of p-n junction [cm]
+    junction = 10e-7 
 
     # Mesh
-     x = np.concatenate((np.linspace(0, .2e-4, 30, endpoint=False),
-                    np.linspace(0.2e-4, 1.4e-4, 60, endpoint=False),
-                    np.linspace(1.4e-4, 2.7e-4, 60, endpoint=False),
-                    np.linspace(2.7e-4, 2.98e-4, 30, endpoint=False),
-                    np.linspace(2.98e-4, Lx, 10)))
+    x = np.concatenate((np.linspace(0, .2e-4, 30, endpoint=False),      # mesh near the contact
+                    np.linspace(0.2e-4, 1.4e-4, 60, endpoint=False),    # mesh in depletion region
+                    np.linspace(1.4e-4, 2.7e-4, 60, endpoint=False),    # mesh in bulk
+                    np.linspace(2.7e-4, 2.98e-4, 30, endpoint=False),   # mesh near the GB end point
+                    np.linspace(2.98e-4, Lx, 10)))     	              # mesh near the contact
 
-     y = np.concatenate((np.linspace(0, 1.25e-4, 60, endpoint=False),
-                    np.linspace(1.25e-4, 1.75e-4, 50, endpoint=False),
+    y = np.concatenate((np.linspace(0, 1.25e-4, 60, endpoint=False),
+                    np.linspace(1.25e-4, 1.75e-4, 50, endpoint=False),  # mesh near the GB core
                     np.linspace(1.75e-4, Ly, 60)))
 
     # Create a system
@@ -47,13 +44,13 @@ mesh of the system and make an instance of the :func:`~sesame.builder.Builder`. 
 We define and add a material as before::
 
     # Dictionary with the material parameters
-    reg1 = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4,
-            'mu_e':200, 'mu_h':200, 'tau_e':10e-9, 'tau_h':10e-9}
+    mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'affinity': 3.9, 'epsilon':9.4,
+            'mu_e':200, 'mu_h':200, 'tau_e':10e-9, 'tau_h':10e-9, 'Et':0}
 
     # Add the material to the system
-    sys.add_material(reg1)
+    sys.add_material(mat)
 
-We next define functions delimiting the regions with different doping values. Because the model is 2-dimensional, there's a slight difference with previous tutorials.  The function input arguments are now ``tuples``, of the form ``(x,y)``.  In the function, we first "unpack" the x and y coordinate, and determine the location of the x-coordinate relative to the junction::
+We next define functions delimiting the regions with different doping values. Because the model is 2-dimensional, the function input argument ``pos`` is a ``tuple`` of the form ``(x,y)``.  In the functions below, we first "unpack" the x and y coordinate, and determine the location of the x-coordinate relative to the junction::
 
     # Add the donors
     def n_region(pos):
@@ -83,19 +80,18 @@ We specify contacts as before::
 Adding a grain boundary
 ........................
 
-Now we add a line of defects to simulate a grain boundary. We
-define a defect gap state as follows::
+Now we add a line of defects to simulate a grain boundary using the ``sys`` method :func:`~sesame.builder.Builder.add_line_defects`.  The necessary inputs are the grain boundary defect's electrical properties (e.g. capture cross sections, energy level, defect density, and charge states), and the endpoints defining the grain boundary location (recall a grain boundary is represented by a line in a 2-dimensional simulation).  Below we show code defining these properties for our example, and adding the grain boundary to the simulation::
 
     # gap state characteristics
-    s = 1e-15                # trap capture cross section [m^2]
+    s = 1e-15                # trap capture cross section [cm^2]
     E = -0.25                # energy of gap state (eV) from intrinsic energy level
-    N = 2e13                 # defect density [1/m^2]
+    N = 2e13                 # defect density [1/cm^2]
 
     # Specify the two points that make the line containing additional charges
     p1 = (20e-7, 2.5e-4)   # [cm]
     p2 = (2.9e-4, 2.5e-4)  # [cm]
 
-    # Pass the information to the system
+    # Add the line of defects to the system
     sys.add_line_defects([p1, p2], N, s, E=E, transition=(1/-1))
 
 The type of the charge transition :math:`\alpha/\beta` is specified as
@@ -129,10 +125,13 @@ The computation of the IV curve proceeds as in the previous tutorials.  We show 
   # Specify applied voltages
   voltages = np.linspace(0,1,20)
   # Compute IV curve
-  j = sesame.IVcurve(sys, voltages, solution, 'GB_JV')
+  j = sesame.IVcurve(sys, voltages, solution, '2dGB_V')
+  # rescale to dimension-ful current
+  j = j * sesame.scaling.current
+
   # Save the computed IV data
-  result = {'voltages':voltages,'j':j}
-  np.save('2dGB_IV',result)
+  result = {'voltages':voltages, 'j':j}
+  np.save('2dGB_IV', result)
 
 
 
@@ -142,47 +141,48 @@ The computation of the IV curve proceeds as in the previous tutorials.  We show 
 Plotting system variables
 ..........................
 
-The solution can be visualized using matplotlib, as discussed more fully in tutorial 5.  Here we give a brief example of loading an output file and plotting the electrostatic potential versus position.  First we import the plotting library, and load one of the files saved in the IVcurve function::
+The 2-dimensional solutions can be plotted with tools we describe more fully in :doc:`tutorial 4 <analysis>`.  As a preview, we list the commands for loading and plotting the electrostatic potential:: 
 
-  import matplotlib.pyplot as plt
-  # Load an outputfile file and do a surface plot of v
-  results = np.load('GB_JV_0.npz')
+	sys, results = sesame.load_sim('2dGB_V_0.gzip')
+	sesame.plot(sys, results['v'])
 
-The ``results`` variable contains information about the system and the solution.  Refer to :doc:`tutorial 5 <analysis>` for details on how to plot and analyze the solution.  the following code generates a 2-d contour plot of the electrostatic potential::
-
-  # need to reshape the potential from a 1-d array to a 2-d array
-  v = np.reshape(results['v'],[sys.ny,sys.nx])
-  # rescale the potential to dimension-ful form
-  v = v * sys.scaling.energy
-  # make contour plot 
-  plt.contourf(sys.xpts,sys.ypts,v)
-  plt.xlabel('Position [cm]')
-  plt.ylabel('Position [cm]')
-  plt.colorbar()
-  plt.title('V')
-  plt.show()
 
 The output is shown below:
 
 .. image:: GB_potential.*
    :align: center
 
+.. note::
+	As discussed more fully in Tutorial 4, quantities in Sesame are dimensionless by default.  The electrostatic potential shown above is dimensionless, scaled by the thermal voltage.  The ``scaling`` field of ``sys`` provides the relevant quantites needed to rescale quantities to dimension-ful form.
+
+
+
 Spatial variation of material parameters
 ..........................................
 
 
+.. seealso:: The example treated here is in the file ``2d_homojunction_withGB_nonuniform_mobility.py`` in the
+   ``examples\tutorial4`` directory in the root directory of the distribution. 
+
 Suppose we want to have a reduced mobility around the line defects compared to the rest
-of the system. Therefore we need to define two regions in our system, two large
-regions with mobility :math:`200~ \mathrm{cm^2/(V\cdot s)}` and a smaller one
-around the line defect with mobility :math:`20~\mathrm{cm^2/(V\cdot s)}`. 
+of the system.  This can be using the sesame function ``get_sites``, which takes input of the ``sys`` object and the function which described the region.  ``set_sites`` returns the list of position indices ``sites`` which belong to the region defined by the function.  We manaully set the value of the mobility to a smaller value, but only for ``sites`` belonging to the region.  We also plot the mobility versus position to verify that the mobility is set as desired ::
 
 
+  # function defining region of reduced mobility
+  def reduced_mu_region(pos):
+      x, y = pos
+      return ((x < 2e-4) & (x > 1e-4) & (y > .1e-4) & (y <2.9e-4))
 
-In the definition of ``region1``, observe how we define the statement OR. Here
-we use a bitwise logical operator. Other useful operators are ``&`` for AND,
-``~`` for NOT. Statements on each side of an operator must be in between
-parentheses.  We can easily use ``region1`` to define the second region, since
-all sites not in region 1 will be in region 2::
+  # get position indices for reduced mobility region
+  sites = sesame.get_sites(sys, reduced_mu_region)
+
+  # set system mobility values in region near GB
+  sys.mu_e[sites] = 10  # cm^2/(V s)
+  sys.mu_e[sites] = 10  # cm^2/(V s)
+
+  # view spatial-dependent mobility
+  sesame.plot(sys, sys.mu_e)
+
 
    
 

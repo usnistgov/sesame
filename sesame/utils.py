@@ -407,6 +407,24 @@ def plane_defects_sites(sys, location):
     return sites, xcoord, ycoord, zcoord, perp_dl
 
 def save_sim(sys, result, filename, fmt='npy'):
+    """
+    Plot the sites containing additional charges located on lines in 2D. The
+    length scale of the graph is 1 micrometer by default.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    result: dictionary
+        Dictionary of solution, containing 'v', 'efn', 'efp'
+    filename: string
+        Name of outputfile
+    fmt: string
+        Format of output file, set to 'mat' for matlab files.
+        A plot is added to it if given. If not given, a new one is created and a
+        figure is displayed.
+    """
+
     if fmt=='mat':
         system = {'xpts': sys.xpts, 'ypts': sys.ypts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
                   'affinity': sys.bl, 'epsilon': sys.epsilon, 'g': sys.g, 'mu_e': sys.mu_e, 'mu_h': sys.mu_h, \

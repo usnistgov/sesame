@@ -7,6 +7,7 @@ Tutorial: learning Sesame through examples
    tuto1
    tuto1dHetero
    2d_system
-   tuto_ebic
    analysis
+   tuto_ebic
+   tuto_guess
    parallel

@@ -1,0 +1,131 @@
+Tutorial 3: How to find a good guess for computing an IV curve
+----------------------------------------------------------------
+Finding a good initial guess for our calculation is not always an easy task. In
+this tutorial we show how to find a good starting point to compute the IV curve
+on the system created in :doc:`tutorial 2 <tuto2>`.
+
+.. seealso:: The example treated here is in the file ``jv_curve.py`` in the
+   ``examples`` directory in the root directory of the distribution. 
+
+
+We consider the two-dimensional system created in :doc:`tutorial 2 <tuto2>` that
+we rewrite inside its own function::
+
+    import sesame
+    import numpy as np
+
+    def system(amp=1):
+        
+        # Dimensions of the system
+        Lx = 3e-6 # [m]
+        Ly = 5e-6 # [m]
+        # extent of the junction from the left contact [m]
+        junction = 10e-9 
+
+        # Mesh
+        x = np.concatenate((np.linspace(0,1.2e-6, 150, endpoint=False), 
+                            np.linspace(1.2e-6, Lx, 50)))
+        y = np.concatenate((np.linspace(0, 2.25e-6, 50, endpoint=False), 
+                            np.linspace(2.25e-6, 2.75e-6, 50, endpoint=False),
+                            np.linspace(2.75e-6, Ly, 50)))
+
+        sys = sesame.Builder(x, y, input_length='m')
+
+        # Add the donors
+        nD = 1e17 * 1e6 # [m^-3]
+        sys.add_donor(nD, lambda pos: pos[0] < junction)
+
+        # Add the acceptors
+        nA = 1e15 * 1e6 # [m^-3]
+        sys.add_acceptor(nA, lambda pos: pos[0] >= junction)
+
+        # Use perfectly selective Ohmic contacts
+        sys.contact_type('Ohmic', 'Ohmic')
+        Sn_left, Sp_left, Sn_right, Sp_right = 1e50, 0, 0, 1e50
+        sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
+
+        # Region 1
+        reg1 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
+                'mu_e':200*1e-4, 'mu_h':200*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
+        sys.add_material(reg1, lambda pos: (pos[1] <= 2.4e-6) | (pos[1] >= 2.6e-6))
+
+        # Region 2
+        reg2 = {'Nc':8e17*1e6, 'Nv':1.8e19*1e6, 'Eg':1.5, 'epsilon':9.4,
+                'mu_e':20*1e-4, 'mu_h':20*1e-4, 'tau_e':10e-9, 'tau_h':10e-9}
+        sys.add_material(reg2, lambda pos: (pos[1] > 2.4e-6) & (pos[1] < 2.6e-6))
+
+        # gap state characteristics
+        s = 1e-15 * 1e-4               # trap capture cross section [m^2]
+        E = -0.25                      # energy of gap state (eV) from midgap
+        N = 2e13 * 1e4           # defect density [1/m^2]
+
+        p1 = (20e-9, 2.5e-6)   #[m]
+        p2 = (2.9e-6, 2.5e-6)  #[m]
+
+        sys.add_line_defects([p1, p2], N, S, E=E)
+
+        # Define a function for the generation rate
+        phi = amp * 1e21          # photon flux [1/(m^2 s)]
+        alpha = 2.3e6       # absorption coefficient [1/m]
+        f = lambda x, y: phi * alpha * np.exp(-alpha * x)
+        sys.generation(f)
+
+        return sys
+
+Note that we added the parameter ``amp`` that will allow us to turn on slowly
+the amplitude of the generation rate.
+
+In this example we show a procedure to start the drift diffusion Poisson solver
+with a good guess:
+
+1. Solve the Poisson equation to get the electrostatic potential of the system
+   with at thermal equilibrium.
+2. Solve the drift diffusion Poisson equation at zero bias for increasing
+   amplitudes of the generation rate.
+3. Use the last result of step 2. as the initial guess to compute the
+   complete IV curve.
+
+First, we make a system and solve the thermal equilibrium::
+
+    sys = system()
+    solution = sesame.solve_equilibrium(sys, solution)
+
+By default the solver assumes periodic boundary conditions in all directions
+parallel to the contacts. One can change this setting to abrupt boundary
+conditions by setting the flag ``periodic_bcs`` to ``False``. All options are in
+the :doc:`reference documentation <../reference/index>`.
+
+We now proceed to step 2. where we loop over increasing amplitudes of the
+generation rate of an *ad hoc* system at zero bias::
+
+        for amp in [0.001, 0.01, 0.05, 0.1, 0.5]:
+            asys = system(amp)
+            solution = sesame.solve(asys, solution)
+
+Now we have a descent guess for the rest of the IV curve of our original
+system::
+
+    voltages = np.linspace(0, 1, 40)
+    sesame.IVcurve(sys, voltages, solution, '2dpnIV.vapp')
+
+While it is tempting to run :func:`~sesame.solvers.solve` in parallel for each
+values of applied voltage, the solver will likely fail with this approach for
+high voltages. The code for :func:`~sesame.solvers.IVcurve` is simply a for loop
+where the output of :func:`~sesame.solvers.solve` is used as a new guess for the
+next value of applied voltage. This method provides better chances to reach
+convergence at each step. More about the theoretical aspects of the solver can
+be found in the section about the :ref:`algo`.
+
+We discuss the analysis of the data (i.e. computing densities, currents and so
+on) in :doc:`tutorial 5 <analysis>`.
+
+**Solvers options:** 
+
+* Sesame solvers can use the MUMPS library if Sesame was built against it. Once
+  this has been done, pass the argument ``use_mumps=True`` to the functions
+  ``solve_equilibrium``, ``solve`` and ``IVcurve``. 
+
+* For large systems where a direct computation of the Newton correction
+  is impractical, we made possible to use an iterative solver. Use the argument
+  ``iterative=True`` to activate it. Note that we have not tested this feature
+  extensively and a solution is not guaranteed.

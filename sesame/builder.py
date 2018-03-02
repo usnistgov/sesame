@@ -197,13 +197,13 @@ class Builder():
         mat: dictionary 
             Contains the material parameters
             Keys are Nc (Nv): conduction (valence) effective densities of states
-            [m\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
+            [cm\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
             material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
             :sup:`2`/(V s)], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
             energy level of the bulk recombination centers [eV], affinity:
             electron affinity [eV], B: radiation
-            recombination constant [m\ :sup:`3`/s], Cn (Cp): Auger recombination constant for
-            electrons (holes) [m\ :sup:`6`/s], mass_e (mass_h): effective mass of electrons
+            recombination constant [cm\ :sup:`3`/s], Cn (Cp): Auger recombination constant for
+            electrons (holes) [cm\ :sup:`6`/s], mass_e (mass_h): effective mass of electrons
             (holes).
         location: Boolean function
             Definition of the region containing the material. This function must
@@ -297,16 +297,16 @@ class Builder():
         Parameters
         ----------
         location: float
-            The coordinate in [m] defines a point defect in 1D.
+            The coordinate in [cm] defines a point defect in 1D.
         N: float or function
-            Defect density of states [m\ :sup:`-2` ]. Provide a float when the
+            Defect density of states [cm\ :sup:`-2` ]. Provide a float when the
             defect density of states is a delta function, or a function
             returning a float for a continuum. This function should take a
             single energy argument in [eV].
         sigma_e: float
-            Electron capture cross section [m\ :sup:`2`].
+            Electron capture cross section [cm\ :sup:`2`].
         sigma_h: float
-            Hole capture cross section [m\ :sup:`2`].
+            Hole capture cross section [cm\ :sup:`2`].
         E: float
             Energy level of a single state defined with respect to the intrinsic
             Fermi level [eV]. Set to `None` for a continuum of states.
@@ -379,14 +379,14 @@ class Builder():
             two coordinates define a line that must be parallel to the line
             defined by the last two points.
         N: float or function
-            Defect density of states [m\ :sup:`-2` ]. Provide a float when the
+            Defect density of states [cm\ :sup:`-2` ]. Provide a float when the
             defect density of states is a delta function, or a function
             returning a float for a continuum. This function should take a
             single energy argument in [eV].
         sigma_e: float
-            Electron capture cross section [m\ :sup:`2`].
+            Electron capture cross section [cm\ :sup:`2`].
         sigma_h: float
-            Hole capture cross section [m\ :sup:`2`].
+            Hole capture cross section [cm\ :sup:`2`].
         E: float 
             Energy level of a single state defined with respect to the intrinsic
             Fermi level [eV]. Set to `None` for a continuum of states.
@@ -438,7 +438,7 @@ class Builder():
         Parameters
         ----------
         density: float
-            Doping density [m\ :sup:`-3`].
+            Doping density [cm\ :sup:`-3`].
         location: Boolean function
             Definition of the region containing the doping. This function must
             take a tuple of real world coordinates (e.g. (x, y)) as parameters,
@@ -454,7 +454,7 @@ class Builder():
         Parameters
         ----------
         f: function 
-            Generation rate [m\ :sup:`-3`].
+            Generation rate [cm\ :sup:`-3`].
         args: tuple
             Additional arguments to be passed to the function.
         """
@@ -500,17 +500,14 @@ class Builder():
         Parameters
         ----------
         Scn_left: float
-            Surface recombination velocity for electrons at the left contact [m/s].
+            Surface recombination velocity for electrons at the left contact [cm/s].
         Scp_left: float
-            Surface recombination velocity for holes at the left contact [m/s].
+            Surface recombination velocity for holes at the left contact [cm/s].
         Scn_right: float
-            Surface recombination velocity for electrons at the right contact [m/s].
+            Surface recombination velocity for electrons at the right contact [cm/s].
         Scn_right: float
-            Surface recombination velocity for electrons at the right contact [m/s].
+            Surface recombination velocity for electrons at the right contact [cm/s].
 
-        Notes
-        -----
-        Use 10\ :sup:`50` for infinite surface recombination velocities.
         """
 
         self.Scn = [Scn_left / self.scaling.velocity, 

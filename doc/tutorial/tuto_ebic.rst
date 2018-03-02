@@ -1,4 +1,4 @@
-Tutorial 4: Simulating an EBIC/CL experiment
+Tutorial 5: Simulating an EBIC/CL experiment
 ---------------------------------------------------------
 
 In this tutorial we build a 2-dimensional simulation to describe experiments with a localized carrier generation profile, such as electron beam induced current (EBIC), or cathodoluminescence (CL).  In this case we'll need to define a system as before, and then define a custom carrier generation rate density profile associated with electron beam excitation.  We'll then cycle over beam positions and compute the total current and total radiative recombination as a function of beam position.
