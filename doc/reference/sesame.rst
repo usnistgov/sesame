@@ -46,4 +46,13 @@ From `sesame.analyzer`
 
    Analyzer
 
+.. currentmodule:: sesame.utils
+
+From `sesame.utils`
+----------------------
+.. autosummary::
+
+   save_sim
+   load_sim
+
 

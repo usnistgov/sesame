@@ -408,8 +408,7 @@ def plane_defects_sites(sys, location):
 
 def save_sim(sys, result, filename, fmt='npy'):
     """
-    Plot the sites containing additional charges located on lines in 2D. The
-    length scale of the graph is 1 micrometer by default.
+    Utility function that saves a system together with simulation results.
 
     Parameters
     ----------
@@ -420,9 +419,8 @@ def save_sim(sys, result, filename, fmt='npy'):
     filename: string
         Name of outputfile
     fmt: string
-        Format of output file, set to 'mat' for matlab files.
-        A plot is added to it if given. If not given, a new one is created and a
-        figure is displayed.
+        Format of output file, set to 'mat' for matlab files. With the default
+        numpy format, the Builder object is saved directly.
     """
 
     if fmt=='mat':
@@ -430,9 +428,9 @@ def save_sim(sys, result, filename, fmt='npy'):
                   'affinity': sys.bl, 'epsilon': sys.epsilon, 'g': sys.g, 'mu_e': sys.mu_e, 'mu_h': sys.mu_h, \
                   'm_e': sys.mass_e, 'm_h': sys.mass_h, 'tau_e': sys.tau_e, 'tau_h': sys.tau_h, \
                   'B': sys.B, 'Cn': sys.Cn, 'Cp': sys.Cp, 'n1': sys.n1, 'p1': sys.p1, 'ni': sys.ni, 'rho': sys.rho}
-        if (np.size(sys.ypts) != 0):
+        if sys.ny is not None:
             system.update({'y': sys.ypts})
-        if (np.size(sys.zpts) != 0):
+        if sys.nz is not None:
             system.update({'z': sys.zpts})
         savemat(filename, {'sys': system, 'results': result}, do_compression=True)
     else:
@@ -441,7 +439,25 @@ def save_sim(sys, result, filename, fmt='npy'):
         file.close()
 
 def load_sim(filename):
-    file = gzip.GzipFile(filename, 'rb')
-    data = file.read()
+    """
+    Utility function that loads a system together with simulation results.
+
+    Parameters
+    ----------
+    filename: string
+        Name of inputfile
+
+    Returns
+    -------
+    system: Builder object
+        A discritized system.
+    result: dictionary
+        Dictionary containing 1D arrays of electron and hole quasi-Fermi levels
+        and the electrostatic potential across the system. Keys are 'efn',
+        'efp', and/or 'v'.
+    """
+
+    f = gzip.GzipFile(filename, 'rb')
+    data = f.read()
     sys, result = pickle.loads(data)
     return sys, result
