@@ -17,18 +17,16 @@ try:
 except:
     mpl_enabled = False
 
-def plot_line_defects(sys, ls='-o', fig=None):
+
+def plot_grid(sys, fig=None):
     """
-    Plot the sites containing additional charges located on lines in 2D. The
-    length scale of the graph is 1 micrometer by default.
+    Plot the grid of a 2D system.
 
     Parameters
     ----------
     sys: Builder
         The discretized system.
-    ls: string
-        Line style of the plotted paths.
-    ax: Maplotlib axis
+    fig: Maplotlib figure
         A plot is added to it if given. If not given, a new one is created and a
         figure is displayed.
     """
@@ -41,6 +39,45 @@ def plot_line_defects(sys, ls='-o', fig=None):
         show = True
     # add axis to figure
     ax = fig.add_subplot(111)
+
+    for xpt in sys.xpts:
+        ax.plot([xpt,xpt],[sys.ypts[0],sys.ypts[-1]],color='k',linewidth=.5)
+    for ypt in sys.ypts:
+        ax.plot([sys.xpts[0],sys.xpts[-1]],[ypt,ypt],color='k',linewidth=.5)
+
+
+    if show:
+        plt.show()
+
+
+def plot_line_defects(sys, ls='-o', fig=None):
+    """
+    Plot the sites containing additional charges located on lines in 2D. The
+    length scale of the graph is 1 micrometer by default.
+
+    Parameters
+    ----------
+    sys: Builder
+        The discretized system.
+    ls: string
+        Line style of the plotted paths.
+    fig: Maplotlib figure
+        A plot is added to it if given. If not given, a new one is created and a
+        figure is displayed.
+    """
+    if not mpl_enabled:
+        raise RuntimeError("matplotlib was not found, but is required "
+                           "for plotting.")
+
+    show = False
+    if fig is None:
+        fig = plt.figure()
+        show = True
+    # add axis to figure
+    try:
+        ax = fig.axes[0]
+    except Exception:
+        ax = fig.add_subplot(111)
 
     for c in sys.defects_list:
         xa, ya = c.location[0]

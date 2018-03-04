@@ -548,7 +548,7 @@ class Builder():
         self.contacts_WF = [left_wf, right_wf]
 
 def get_sites(sys, location):
-    # find the sites which belongs to a region
+    # find the sites which belong to a region
     nx, ny, nz = sys.nx, sys.ny, sys.nz
     sites = np.arange(nx*ny*nz, dtype=int)
  

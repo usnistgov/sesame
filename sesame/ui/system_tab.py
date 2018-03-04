@@ -62,36 +62,6 @@ class BuilderBox(QWidget):
         gridBox.setLayout(gridLayout)
         layout.addWidget(gridBox)
 
-        # #==============================
-        # # Doping
-        # #==============================
-        # dopingBox = QGroupBox("Doping")
-        # dopingBox.setMinimumWidth(400)
-        # layoutD = QVBoxLayout()
-
-        # # Accceptor doping
-        # layout1 = QFormLayout()
-        # self.loc1 = QLineEdit("x > 1e-4")
-        # self.N1 = QLineEdit()
-        # layout1.addRow("Acceptor doping", QLabel())
-        # layout1.addRow("Location [cm]", self.loc1)
-        # layout1.addRow("Concentration [cm\u207B\u00B3]", self.N1)
-        # layoutD.addLayout(layout1)
-
-        # layoutD.addSpacing(10)
-
-        # # Donor doping
-        # layout2 = QFormLayout()
-        # self.loc2 = QLineEdit("x <= 1e-4")
-        # self.N2 = QLineEdit()
-        # layout2.addRow("Donor doping", QLabel())
-        # layout2.addRow("Location [cm]", self.loc2)
-        # layout2.addRow("Concentration [cm\u207B\u00B3]", self.N2)
-        # layoutD.addLayout(layout2)
-
-        # dopingBox.setLayout(layoutD)
-        # layout.addWidget(dopingBox)
-
         #=====================================================
         # Line and plane defects
         #=====================================================
@@ -362,6 +332,11 @@ class BuilderBox(QWidget):
         if len(self.materials_list) > 1:
             self.removeButton.setEnabled(True)
 
+        # plot system
+        settings = self.getSystemSettings()
+        system = parseSettings(settings)
+        self.Fig.plotSystem(system, self.materials_list, self.defects_list)
+
     # remove a material
     def removeMat(self):
         if len(self.materials_list) > 1:
@@ -379,7 +354,7 @@ class BuilderBox(QWidget):
         if len(self.materials_list) == 1:
             self.removeButton.setEnabled(False)
             self.newButton.setEnabled(True)
-            self.saveButton.setEnabled(False)
+            self.saveButton.setEnabled(True)
 
     def builder3(self):
         layout3 = QVBoxLayout()
@@ -394,62 +369,9 @@ class BuilderBox(QWidget):
         box.setLayout(vlayout)
         layout3.addWidget(box)
 
-        hlayout = QHBoxLayout()
-        vlayout.addLayout(hlayout)
-        self.comboPlot = QComboBox()
-        items = ['Choose one', 'Line defects', 'Plane defects', 
-                 'Electron mobility', 'Hole mobility', 
-                 'Electron lifetime', 'Hole lifetime']
-        self.comboPlot.addItems(items)
-        hlayout.addWidget(self.comboPlot)
-        self.plotBtn = QPushButton("Plot")
-        self.plotBtn.clicked.connect(self.displayPlot)
-        hlayout.addWidget(self.plotBtn)
-
         self.Fig = MplWindow()
         vlayout.addWidget(self.Fig)
 
-    @slotError()
-    def displayPlot(self, checked):
-        """
-        Access to plotter routines to visualize some basic system settings in 2D
-        to make sure the regions are defined as envisioned.
-        """
-
-        prop = self.comboPlot.currentText()
-
-        if prop == 'Choose one':
-            return
-
-        # system settings
-        settings = self.getSystemSettings()
-        system = parseSettings(settings)
-
-        # get figure
-        fig = self.Fig.figure
-        fig.clear()
-
-        if prop == "Electron mobility":
-            title = r'Electron mobility [$\mathregular{cm^{2}/(V s)}$]'
-            plotter.plot(system, system.mu_e, fig=fig, title=title)
-        elif prop == "Hole mobility":
-            title = r'Hole mobility [$\mathregular{cm^{2}/(V s)}$]'
-            plotter.plot(system, system.mu_h, fig=fig, title=title)
-        elif prop == "Electron lifetime":
-            title = r'Electron lifetime [$\mathregular{s}$]'
-            plotter.plot(system, system.tau_e, fig=fig, title=title)
-        elif prop == "Hole lifetime":
-            title = r'Hole lifetime [$\mathregular{s}$]'
-            plotter.plot(system, system.tau_h, fig=fig, title=title)
-        elif prop == "Line defects":
-            title = r'Line defects'
-            plotter.plot_line_defects(system, fig=fig, title=title)
-        elif prop == "Plane defects":
-            title = r'Plane defects'
-            plotter.plot_plane_defects(system, fig=fig, title=title)
-
-        # draw plot
-        self.Fig.canvas.draw()
 
     # display params of selected defect
     def comboSelect2(self):
@@ -535,6 +457,11 @@ class BuilderBox(QWidget):
         # enable remove and new buttons
         self.defectButton.setEnabled(True)
         self.removeButton2.setEnabled(True)
+
+        # plot system
+        settings = self.getSystemSettings()
+        system = parseSettings(settings)
+        self.Fig.plotSystem(system, self.materials_list, self.defects_list)
 
     # remove a defect
     def removeDefect(self):
