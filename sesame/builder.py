@@ -195,25 +195,26 @@ class Builder():
         Parameters
         ----------
         mat: dictionary 
-            Contains the material parameters
-            Keys are Nc (Nv): conduction (valence) effective densities of states
-            [cm\ :sup:`-3`], Eg: band gap [:math:`\mathrm{eV}`], epsilon:
-            material's permitivitty, mu_e (mu_h): electron (hole) mobility [m\
-            :sup:`2`/(V s)], tau_e (tau_h): electron (hole) bulk lifetime [s], Et:
-            energy level of the bulk recombination centers [eV], affinity:
-            electron affinity [eV], B: radiation
-            recombination constant [cm\ :sup:`3`/s], Cn (Cp): Auger recombination constant for
-            electrons (holes) [cm\ :sup:`6`/s], mass_e (mass_h): effective mass of electrons
-            (holes).
+            Contains the material parameters Keys are Nc (Nv): conduction
+            (valence) effective densities of states [cm\ :sup:`-3`], Eg: band
+            gap [:math:`\mathrm{eV}`], epsilon: material's permitivitty, mu_e
+            (mu_h): electron (hole) mobility [m\ :sup:`2`/(V s)], tau_e (tau_h):
+            electron (hole) bulk lifetime [s], Et: energy level of the bulk
+            recombination centers [eV], affinity: electron affinity [eV], B:
+            radiation recombination constant [cm\ :sup:`3`/s], Cn (Cp): Auger
+            recombination constant for electrons (holes) [cm\ :sup:`6`/s],
+            mass_e (mass_h): effective mass of electrons (holes). All parameters
+            can be scalars or callable functions similar to the location
+            argument.
         location: Boolean function
             Definition of the region containing the material. This function must
-            take a tuple of real world coordinates (e.g. (x, y)) as parameters,
+            take a tuple of real world coordinates (e.g. (x, y)) as parameter,
             and return True (False) if the lattice node is inside (outside) the
             region.
         """
 
         # sites belonging to the region
-        s = get_sites(self, location)
+        s, pos = get_sites(self, location)
 
         N = self.scaling.density
         t = self.scaling.time
@@ -230,24 +231,30 @@ class Builder():
                   'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6, \
                   'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
-        for key in mat.keys():
-            mt[key] = mat[key]
+        arrays = [self.Nc, self.Nv, self.Eg, self.epsilon, self.mass_e, 
+                  self.mass_h, self.mu_e, self.mu_h, self.tau_e, self.tau_h,
+                  self.bl, self.B, self.Cn, self.Cp]
 
-        # fill in arrays
-        self.Nc[s]      = mt['Nc'] / N
-        self.Nv[s]      = mt['Nv'] / N
-        self.Eg[s]      = mt['Eg'] / vt
-        self.epsilon[s] = mt['epsilon']
-        self.mass_e[s]  = mt['mass_e']
-        self.mass_h[s]  = mt['mass_h']
-        self.mu_e[s]    = mt['mu_e'] / mu
-        self.mu_h[s]    = mt['mu_h'] / mu
-        self.tau_e[s]   = mt['tau_e'] / t
-        self.tau_h[s]   = mt['tau_h'] / t
-        self.bl[s]      = mt['affinity'] / vt
-        self.B[s]       = mt['B'] / ((1./N)/t)
-        self.Cn[s]      = mt['Cn'] / ((1./N**2)/t)
-        self.Cp[s]      = mt['Cp'] / ((1./N**2)/t)
+        for arr, (key, val) in zip(arrays, mt.items()):
+            if key in mat.keys():
+                val = mat[key]
+            if not callable(val):
+                arr[s] = val
+            else:
+                arr[s] = (val(pos) * location(pos))[s]
+
+        # make values dimensionless
+        self.Nc[s]     /= N
+        self.Nv[s]     /= N
+        self.Eg[s]     /= vt
+        self.mu_e[s]   /= mu
+        self.mu_h[s]   /= mu
+        self.tau_e[s]  /= t
+        self.tau_h[s]  /= t
+        self.bl[s]     /= vt
+        self.B[s]      /= (1./N)/t
+        self.Cn[s]     /= (1./N**2)/t
+        self.Cp[s]     /= (1./N**2)/t
 
         Etrap = mt['Et'] / self.scaling.energy
         self.n1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + Etrap)
@@ -412,7 +419,7 @@ class Builder():
         self.add_defects(location, N, sigma_e, sigma_h, E, transition)
  
     def doping_profile(self, density, location):
-        s = get_sites(self, location)
+        s, _ = get_sites(self, location)
         self.rho[s] = density / self.scaling.density
 
     def add_donor(self, density, location=lambda pos: True):
@@ -553,11 +560,11 @@ def get_sites(sys, location):
     sites = np.arange(nx*ny*nz, dtype=int)
  
     if sys.dimension == 1:
-        mask = location((sys.xpts))
+        pos = (sys.xpts)
 
     if sys.dimension == 2:
         pos = np.transpose([np.tile(sys.xpts, ny), np.repeat(sys.ypts, nx)])
-        mask = location((pos[:,0], pos[:,1]))
+        pos = (pos[:,0], pos[:,1])
 
     if sys.dimension == 3:
         pos = np.reshape(np.concatenate((np.tile(sys.xpts, ny*nz),
@@ -567,11 +574,12 @@ def get_sites(sys, location):
                                        ),
                          (3, nx*ny*nz)
                         ).T
-        mask = location((pos[:,0], pos[:,1], pos[:,2]))
+        pos = (pos[:,0], pos[:,1], pos[:,2])
 
+    mask = location(pos)
     if type(mask) == bool:
-        return sites
+        return sites, pos
     else:
-        return sites[mask.astype(bool)]
+        return sites[mask.astype(bool)], pos
 
 
