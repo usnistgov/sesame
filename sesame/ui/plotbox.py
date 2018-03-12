@@ -47,6 +47,8 @@ class MplWindow(QWidget):
                        '#bcbd22', '#17becf']
         self.iterColors = iter(self.colors)
 
+        self.default_size = self.figure.get_size_inches()
+
 
     def plotSystem(self, sys, materials, defects):
         # Upon saving a material or a defect, we clear the figure and plot all
@@ -64,11 +66,15 @@ class MplWindow(QWidget):
             # 1. materials
             # find all relevant coordinates
             nx, ny = sys.nx, sys.ny
+            xpts, ypts = sys.xpts, sys.ypts
+            if ypts is None:
+                ypts = np.array([0, 1])
+                ny = 2
             x, y = [], []
             for mat in materials:
-                location = parseLocation(mat['location'], 2)
+                location = parseLocation(mat['location'], sys.dimension)
                 indices = np.array([[i,j] for j in range(ny) for i in range(nx)\
-                                    if location((sys.xpts[i], sys.ypts[j]))])
+                                    if location((xpts[i], ypts[j]))])
                 x.append(indices[:,0])
                 y.append(indices[:,1])
             # create an array of fake data to be plotted
@@ -78,19 +84,30 @@ class MplWindow(QWidget):
 
             if (d > 0).all():
                 cmap = 'Set2'
-            self.ax.pcolormesh(sys.xpts, sys.ypts, d.T, cmap=cmap)
+            self.ax.pcolormesh(xpts, ypts, d.T, cmap=cmap)
 
             # 2. defects
-            plotter.plot_line_defects(sys, fig=self.figure)
+            if sys.dimension == 2:
+                plotter.plot_line_defects(sys, fig=self.figure)
 
             # 3. plot grid on top
-            for xpt in sys.xpts:
-                self.ax.plot([xpt,xpt],[sys.ypts[0],sys.ypts[-1]],'k',linewidth=.5)
-            for ypt in sys.ypts:
-                self.ax.plot([sys.xpts[0],sys.xpts[-1]],[ypt,ypt],'k',linewidth=.5)
+            for xpt in xpts:
+                self.ax.plot([xpt,xpt],[ypts[0],ypts[-1]],'k',linewidth=.5)
+            for ypt in ypts:
+                self.ax.plot([xpts[0],xpts[-1]],[ypt,ypt],'k',linewidth=.5)
+            
+            if sys.dimension == 1:
+                self.figure.set_figheight(1)
+                self.ax.get_yaxis().set_visible(False)
+            else:
+                self.figure.set_figheight(self.default_size[1])
+                self.ax.get_yaxis().set_visible(True)
 
             self.ax.set_xlabel('x [cm]')
-            self.ax.set_ylabel('y [cm]')
+            if sys.dimension == 2:
+                self.ax.set_ylabel('y [cm]')
+
+            self.figure.tight_layout()
             self.canvas.draw()
 
         except Exception:

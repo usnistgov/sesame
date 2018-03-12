@@ -188,6 +188,12 @@ class Window(QMainWindow):
             build.saveButton2.setEnabled(True)
             build.removeButton2.setEnabled(True)
 
+        # plot system
+        settings = build.getSystemSettings()
+        system = parseSettings(settings)
+        build.Fig.plotSystem(system, materials, defects)
+
+
 
     def setSimulation(self, voltageLoop, loopValues, workDir, fileName, ext,\
                       BCs, L_contact, R_contact, L_WF, R_WF,\
