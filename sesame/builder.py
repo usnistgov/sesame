@@ -185,6 +185,7 @@ class Builder():
         self.B       = np.zeros((nx*ny*nz,), dtype=float)
         self.Cn      = np.zeros((nx*ny*nz,), dtype=float)
         self.Cp      = np.zeros((nx*ny*nz,), dtype=float)
+        self.Etrap   = np.zeros((nx*ny*nz,), dtype=float)
 
         self.defects_list = []
 
@@ -231,17 +232,19 @@ class Builder():
                   'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0, 'tau_e': 1e-6, \
                   'tau_h': 1e-6, 'affinity': 0, 'B': 0, 'Cn': 0, 'Cp': 0}
 
-        arrays = [self.Nc, self.Nv, self.Eg, self.epsilon, self.mass_e, 
-                  self.mass_h, self.mu_e, self.mu_h, self.tau_e, self.tau_h,
-                  self.bl, self.B, self.Cn, self.Cp]
+        arrays = {'Nc': self.Nc, 'Nv': self.Nv, 'Eg': self.Eg,\
+                  'epsilon': self.epsilon, 'mass_e': self.mass_e,\
+                  'mass_h': self.mass_h, 'mu_e': self.mu_e, 'mu_h': self.mu_h,\
+                  'Et': self.Etrap, 'tau_e': self.tau_e, 'tau_h': self.tau_h,\
+                  'affinity': self.bl, 'B': self.B, 'Cn': self.Cn, 'Cp': self.Cp}
 
-        for arr, (key, val) in zip(arrays, mt.items()):
+        for key, val in mt.items():
             if key in mat.keys():
                 val = mat[key]
             if not callable(val):
-                arr[s] = val
+                arrays[key][s] = val
             else:
-                arr[s] = (val(pos) * location(pos))[s]
+                arrays[key][s] = (val(pos) * location(pos))[s]
 
         # make values dimensionless
         self.Nc[s]     /= N
@@ -249,6 +252,7 @@ class Builder():
         self.Eg[s]     /= vt
         self.mu_e[s]   /= mu
         self.mu_h[s]   /= mu
+        self.Etrap[s]  /= vt
         self.tau_e[s]  /= t
         self.tau_h[s]  /= t
         self.bl[s]     /= vt
@@ -256,9 +260,8 @@ class Builder():
         self.Cn[s]     /= (1./N**2)/t
         self.Cp[s]     /= (1./N**2)/t
 
-        Etrap = mt['Et'] / self.scaling.energy
-        self.n1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + Etrap)
-        self.p1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 - Etrap)
+        self.n1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 + self.Etrap)
+        self.p1[s] = np.sqrt(self.Nc[s] * self.Nv[s]) * np.exp(-self.Eg[s]/2 - self.Etrap)
 
         self.ni = np.sqrt(self.Nc * self.Nv) * np.exp(-self.Eg/2)
 
