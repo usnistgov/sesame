@@ -163,9 +163,9 @@ class SimulationWorker(QObject):
                                      'epsilon': system.epsilon})
 
                     if (system.ypts != None):
-                        result.update({'y': system.ypts})
+                        solution.update({'y': system.ypts})
                     if (system.zpts != None):
-                        result.update({'z': system.zpts})
+                        solution.update({'z': system.zpts})
 
                     if fmt == '.mat':
                         savemat(name, solution)
