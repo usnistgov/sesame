@@ -162,9 +162,9 @@ class SimulationWorker(QObject):
                                      'Nv': system.Nv,\
                                      'epsilon': system.epsilon})
 
-                    if (system.ypts != None):
+                    if (np.size(system.ypts)>1):
                         solution.update({'y': system.ypts})
-                    if (system.zpts != None):
+                    if (np.size(system.zpts)>1):
                         solution.update({'z': system.zpts})
 
                     if fmt == '.mat':

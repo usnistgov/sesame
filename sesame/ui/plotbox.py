@@ -73,8 +73,12 @@ class MplWindow(QWidget):
             x, y = [], []
             for mat in materials:
                 location = parseLocation(mat['location'], sys.dimension)
-                indices = np.array([[i,j] for j in range(ny) for i in range(nx)\
+                if sys.dimension==2:
+                    indices = np.array([[i,j] for j in range(ny) for i in range(nx)\
                                     if location((xpts[i], ypts[j]))])
+                else:
+                    indices = np.array([[i, j] for j in range(ny) for i in range(nx) \
+                                        if location((xpts[i]))])
                 x.append(indices[:,0])
                 y.append(indices[:,1])
             # create an array of fake data to be plotted
