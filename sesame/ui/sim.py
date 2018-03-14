@@ -177,7 +177,7 @@ class SimulationWorker(QObject):
                         save_sim(system, solution, filename)
                         #np.savez_compressed(name, **solution)
                         # signal a new file has been created to the main thread
-                        self.newFile.emit(name + '.npz')
+                        self.newFile.emit(name + '.gzip')
                 else:
                     logging.info("The solver failed to converge for the applied voltage"\
                           + " {0} V (index {1}).".format(loopValues[idx], idx))

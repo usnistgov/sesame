@@ -431,6 +431,7 @@ def save_sim(sys, result, filename, fmt='npy'):
                   'B': sys.B, 'Cn': sys.Cn, 'Cp': sys.Cp, 'n1': sys.n1, 'p1': sys.p1, 'ni': sys.ni, 'rho': sys.rho}
         if sys.dimension==2:
             system.update({'y': sys.ypts})
+            # consider automatic resizing to 2-d arrays before saving
         if sys.dimension==3:
             system.update({'z': sys.zpts})
         savemat(filename, {'sys': system, 'results': result}, do_compression=True)

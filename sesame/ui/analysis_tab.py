@@ -12,6 +12,7 @@ from ast import literal_eval as ev
 import numpy as np 
 from scipy.io import savemat
 import logging
+import sesame
 
 from .plotbox import *
 from .common import parseSettings, slotError
@@ -170,7 +171,7 @@ class Analysis(QWidget):
     def browse(self):
         dialog = QFileDialog()
         wd = self.table.simulation.workDirName.text()
-        paths = dialog.getOpenFileNames(self, "Upload files", wd, "(*.npz)")[0]
+        paths = dialog.getOpenFileNames(self, "Upload files", wd, "(*.gzip)")[0]
         for path in paths:
             self.filesList.append(path)
             path = os.path.basename(path)
@@ -226,8 +227,8 @@ class Analysis(QWidget):
     @slotError("bool")
     def surfacePlot(self, checked):
         # get system
-        settings = self.table.build.getSystemSettings()
-        system = parseSettings(settings)
+        #settings = self.table.build.getSystemSettings()
+        #system = parseSettings(settings)
 
         # get data from file
         files = [self.filesList[self.dataList.row(i)]\
@@ -251,7 +252,9 @@ class Analysis(QWidget):
             return
         else:
             fileName = files[0]
-            data = np.load(fileName)
+
+            #data = np.load(fileName)
+            system, data = sesame.load_sim(fileName)
 
             # make an instance of the Analyzer
             az = Analyzer(system, data)
@@ -385,7 +388,8 @@ class Analysis(QWidget):
 
         # loop over the files and plot
         for fdx, fileName in enumerate(files):
-            data = np.load(fileName)
+            system, data = sesame.load_sim(fileName)
+            #data = np.load(fileName)
             az = Analyzer(system, data)
 
             # get sites and coordinates of a line or else

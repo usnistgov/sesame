@@ -92,7 +92,7 @@ class Simulation(QWidget):
         self.fileLayout = QHBoxLayout()
         self.fileName = QLineEdit()
         self.fbox = QComboBox()
-        self.fbox.addItems([".npz", ".mat"])
+        self.fbox.addItems([".gzip", ".mat"])
         self.fileLayout.addWidget(self.fileName)
         self.fileLayout.addWidget(self.fbox)
 

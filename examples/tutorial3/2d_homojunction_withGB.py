@@ -30,26 +30,25 @@ sys.add_material(mat)
 # extent of the junction from the left contact [cm]
 junction = .1e-4    # [cm]
 # define a function specifiying the n-type region
-def region1(pos):
+def n_region(pos):
     x, y = pos
     return x < junction
+nD = 1e17   # donor density[cm^-3]
+sys.add_donor(nD, n_region)  # Add the donors
+
+
 # define a function specifiying the p-type region
-def region2(pos):
+def p_region(pos):
     x, y = pos
     return x >= junction
-
-nD = 1e17   # donor density[cm^-3]
-# Add the donors
-sys.add_donor(nD, region1)
 nA = 1e15   # acceptor density [m^-3]
-# Add the acceptors
-sys.add_acceptor(nA, region2)
+sys.add_acceptor(nA, p_region)  # Add the acceptors
 
 
 # Define contacts: CdS and CdTe contacts are Ohmic
 sys.contact_type('Ohmic','Ohmic')
 # Define the surface recombination velocities for electrons and holes [cm/s]
-Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 1e7, 1e7, 1e7
+Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 0, 0, 1e7
 # This function specifies the simulation contact recombination velocity
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
@@ -65,9 +64,9 @@ p2 = (2.9e-4, 1.5*1e-4)     # [cm]
 
 
 # add donor defect along GB
-sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1,0))
+sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1,-1))
 # add acceptor defect along GB
-sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0,-1))
+#sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0,-1))
 
 
 # Solve equilibirum problem first
@@ -90,9 +89,13 @@ print(j*sys.scaling.current*sys.scaling.length*1e3)
 
 
 # specify applied voltages
-voltages = np.linspace(0,.1,1)
+voltages = np.linspace(0,.9,10)
 # find j-v
 j = sesame.IVcurve(sys, voltages, solution, '2dGB_V')
+
+j = j * sys.scaling.current*sys.scaling.length*1e3
+import matplotlib.pyplot as plt
+plt.plot(voltages, j, '-o')
 
 # save the result
 result = {'voltages':voltages, 'j':j}

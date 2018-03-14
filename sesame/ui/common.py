@@ -82,15 +82,15 @@ def parseSettings(settings):
     grid = settings['grid']
     dimension = len(grid)
 
-    xgrid = ev(grid[0])
+    xgrid = ev(grid[0].lstrip())
     xpts = parseGrid(xgrid)
     ypts = None
     zpts = None
     if dimension == 2 or dimension == 3:
-        ygrid = ev(grid[1])
+        ygrid = ev(grid[1].lstrip())
         ypts = parseGrid(ygrid)
     if dimension == 3:
-        zgrid = ev(grid[2])
+        zgrid = ev(grid[2].lstrip())
         zpts = parseGrid(zgrid)
     # build a sesame system
     system = Builder(xpts, ypts, zpts)
