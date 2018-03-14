@@ -11,3 +11,4 @@ In the following subsections we detail the content and use of each of the window
    system
    simulation
    analysis
+   scripts
