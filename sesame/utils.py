@@ -6,6 +6,7 @@
 import numpy as np
 import gzip
 import pickle
+from scipy.io import savemat
 
 def get_indices(sys, p, site=False):
     # Return the indices of continous coordinates on the discrete lattice
@@ -424,13 +425,13 @@ def save_sim(sys, result, filename, fmt='npy'):
     """
 
     if fmt=='mat':
-        system = {'xpts': sys.xpts, 'ypts': sys.ypts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
+        system = {'xpts': sys.xpts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
                   'affinity': sys.bl, 'epsilon': sys.epsilon, 'g': sys.g, 'mu_e': sys.mu_e, 'mu_h': sys.mu_h, \
                   'm_e': sys.mass_e, 'm_h': sys.mass_h, 'tau_e': sys.tau_e, 'tau_h': sys.tau_h, \
                   'B': sys.B, 'Cn': sys.Cn, 'Cp': sys.Cp, 'n1': sys.n1, 'p1': sys.p1, 'ni': sys.ni, 'rho': sys.rho}
-        if sys.ny is not None:
+        if sys.dimension==2:
             system.update({'y': sys.ypts})
-        if sys.nz is not None:
+        if sys.dimension==3:
             system.update({'z': sys.zpts})
         savemat(filename, {'sys': system, 'results': result}, do_compression=True)
     else:
