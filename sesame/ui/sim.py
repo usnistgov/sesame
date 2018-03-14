@@ -10,6 +10,8 @@ import logging
 
 import sesame
 from ..solvers import Solver
+from .. utils import save_sim
+from scipy.io import savemat
 
 logging.basicConfig(level=logging.ERROR, format='%(levelname)s: %(message)s')
 
@@ -157,20 +159,23 @@ class SimulationWorker(QObject):
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
                     # add some system settings to the saved results
-                    solution.update({'x': system.xpts, 'affinity': system.bl,\
-                                     'Eg': system.Eg, 'Nc': system.Nc,\
-                                     'Nv': system.Nv,\
-                                     'epsilon': system.epsilon})
+                    #solution.update({'x': system.xpts, 'affinity': system.bl,\
+                    #                 'Eg': system.Eg, 'Nc': system.Nc,\
+                    #                 'Nv': system.Nv,\
+                    #                 'epsilon': system.epsilon})
 
-                    if (system.ypts != None):
-                        result.update({'y': system.ypts})
-                    if (system.zpts != None):
-                        result.update({'z': system.zpts})
+                    #if (np.size(system.ypts)>1):
+                    #    solution.update({'y': system.ypts})
+                    #if (np.size(system.zpts)>1):
+                    #    solution.update({'z': system.zpts})
 
                     if fmt == '.mat':
+                        save_sim(system, solution, name, fmt='mat')
                         savemat(name, solution)
                     else:
-                        np.savez_compressed(name, **solution)
+                        filename = "%s.gzip" % name
+                        save_sim(system, solution, filename)
+                        #np.savez_compressed(name, **solution)
                         # signal a new file has been created to the main thread
                         self.newFile.emit(name + '.npz')
                 else:
