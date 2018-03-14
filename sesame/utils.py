@@ -463,3 +463,7 @@ def load_sim(filename):
     data = f.read()
     sys, result = pickle.loads(data)
     return sys, result
+
+
+def check_sim_settings(system1, system2):
+    x = 1

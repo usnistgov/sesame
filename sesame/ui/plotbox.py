@@ -60,6 +60,7 @@ class MplWindow(QWidget):
 
         try:
             self.ax.clear()
+            self.toolbar.update()
             # find all relevant coordinates
             nx, ny = sys.nx, sys.ny
             xpts, ypts = sys.xpts, sys.ypts
@@ -79,7 +80,8 @@ class MplWindow(QWidget):
                 y.append(indices[:,1])
 
                 if sys.dimension == 1:
-                    self.ax.plot(xpts[x], np.ones_like(xpts[x])/2., lw=50)
+                    self.ax.plot(xpts[x[-1]], np.ones_like(xpts[x[-1]]) / 2., lw=50)
+                    #self.ax.plot(xpts[x], np.ones_like(xpts[x])/2., lw=50)
                     self.ax.margins(0)
             # create an array of fake data to be plotted
             d = np.zeros((nx, ny)) - 1

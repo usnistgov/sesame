@@ -18,6 +18,7 @@ from .plotbox import *
 from .common import parseSettings, slotError
 from ..analyzer import Analyzer
 from ..plotter import plot
+from .. utils import check_sim_settings
 
 
 class Analysis(QWidget):
@@ -227,8 +228,8 @@ class Analysis(QWidget):
     @slotError("bool")
     def surfacePlot(self, checked):
         # get system
-        #settings = self.table.build.getSystemSettings()
-        #system = parseSettings(settings)
+        settings = self.table.build.getSystemSettings()
+        gui_system = parseSettings(settings)
 
         # get data from file
         files = [self.filesList[self.dataList.row(i)]\
@@ -255,6 +256,9 @@ class Analysis(QWidget):
 
             #data = np.load(fileName)
             system, data = sesame.load_sim(fileName)
+
+            # check to see if data file sim settings are the same as gui sim settings!
+            check_sim_settings(system, gui_system)
 
             # make an instance of the Analyzer
             az = Analyzer(system, data)

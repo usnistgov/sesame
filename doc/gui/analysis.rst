@@ -5,7 +5,7 @@ After successful completion of the simulation, the ``Analysis tab`` provides too
 
 
 
-.. image:: analysis1.*
+.. image:: analysis.*
    :align: center
 
 **Import data**
