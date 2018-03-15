@@ -18,7 +18,7 @@ from .plotbox import *
 from .common import parseSettings, slotError
 from ..analyzer import Analyzer
 from ..plotter import plot
-from .. utils import check_sim_settings
+from .. utils import check_equal_sim_settings
 
 
 class Analysis(QWidget):
@@ -258,7 +258,15 @@ class Analysis(QWidget):
             system, data = sesame.load_sim(fileName)
 
             # check to see if data file sim settings are the same as gui sim settings!
-            check_sim_settings(system, gui_system)
+            are_equal = check_equal_sim_settings(system, gui_system)
+            if are_equal == False:
+                msg = QMessageBox()
+                msg.setWindowTitle("Warning!")
+                msg.setIcon(QMessageBox.Critical)
+                msg.setText("System parameters from GUI and data file do not match!")
+                msg.setEscapeButton(QMessageBox.Ok)
+                msg.exec_()
+
 
             # make an instance of the Analyzer
             az = Analyzer(system, data)
@@ -378,21 +386,29 @@ class Analysis(QWidget):
  
         # get system
         settings = self.table.build.getSystemSettings()
-        system = parseSettings(settings)
+        gui_system = parseSettings(settings)
 
         # scalings
-        vt = system.scaling.energy
-        N  = system.scaling.density
-        G  = system.scaling.generation
-        J  = system.scaling.current
-        x0 = system.scaling.length
+        vt = gui_system.scaling.energy
+        N  = gui_system.scaling.density
+        G  = gui_system.scaling.generation
+        J  = gui_system.scaling.current
+        x0 = gui_system.scaling.length
 
         # Ydata is a list for the quantities looped over
         Ydata = []
 
+        are_all_equal = True
         # loop over the files and plot
         for fdx, fileName in enumerate(files):
             system, data = sesame.load_sim(fileName)
+
+            # check to see if data file sim settings are the same as gui sim settings!
+            are_equal = check_equal_sim_settings(system, gui_system)
+            if are_equal == False:
+                are_all_equal = False
+
+
             #data = np.load(fileName)
             az = Analyzer(system, data)
 
@@ -444,7 +460,7 @@ class Analysis(QWidget):
             if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
-            if txt == "Integrated defects recombination":
+            if txt == "Integrated planar defects recombination":
                 if system.dimension == 1:
                     Ydata.append(G * x0 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
@@ -501,6 +517,15 @@ class Analysis(QWidget):
        
         self.linearFig.canvas.figure.tight_layout()
         self.linearFig.canvas.draw()
+
+        # check to see if data file sim settings are the same as gui sim settings!
+        if are_all_equal == False:
+            msg = QMessageBox()
+            msg.setWindowTitle("Warning!")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("System parameters from GUI and data file do not match!")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
 
     def export(self, figure):
         saveSettings = Export(self, figure)

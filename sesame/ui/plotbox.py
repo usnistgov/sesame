@@ -96,15 +96,15 @@ class MplWindow(QWidget):
 
             # plot grid on top
             if sys.dimension == 1:
-                self.ax.plot([xpts[0],xpts[0]],[0,1],'k',linewidth=.5)
+                self.ax.plot([xpts[0],xpts[0]],[0,1],'k',linewidth=.25)
                 for xpt in xpts[1:]:
-                    self.ax.plot([xpt,xpt],[0.4,0.6],'k',linewidth=.5)
+                    self.ax.plot([xpt,xpt],[0.4,0.6],'k',linewidth=.25)
                 
             if sys.dimension == 2:
                 for xpt in xpts:
-                    self.ax.plot([xpt,xpt],[ypts[0],ypts[-1]],'k',linewidth=.5)
+                    self.ax.plot([xpt,xpt],[ypts[0],ypts[-1]],'k',linewidth=.25)
                 for ypt in ypts:
-                    self.ax.plot([xpts[0],xpts[-1]],[ypt,ypt],'k',linewidth=.5)
+                    self.ax.plot([xpts[0],xpts[-1]],[ypt,ypt],'k',linewidth=.25)
             
             if sys.dimension == 1:
                 self.ax.get_yaxis().set_visible(False)

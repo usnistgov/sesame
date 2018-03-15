@@ -91,7 +91,7 @@ class Window(QMainWindow):
         icon = absolute_path('resources'+os.path.sep+'logo-icon_sesame.png')
         QApplication.setWindowIcon(QIcon(icon))
         # Create geomtry and center the window
-        self.setGeometry(0,0,1000,700)
+        self.setGeometry(0,0,1525,775)
         windowFrame = self.frameGeometry()
         screenCenter = QDesktopWidget().availableGeometry().center()
         windowFrame.moveCenter(screenCenter)

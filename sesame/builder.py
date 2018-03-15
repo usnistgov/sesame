@@ -423,7 +423,7 @@ class Builder():
  
     def doping_profile(self, density, location):
         s, _ = get_sites(self, location)
-        self.rho[s] = density / self.scaling.density
+        self.rho[s] = self.rho[s] + density / self.scaling.density
 
     def add_donor(self, density, location=lambda pos: True):
         """
@@ -432,7 +432,7 @@ class Builder():
         Parameters
         ----------
         density: float
-            Doping density [m\ :sup:`-3`].
+            Doping density [cm\ :sup:`-3`].
         location: Boolean function
             Definition of the region containing the doping. This function must
             take a tuple of real world coordinates (e.g. (x, y)) as parameters,
