@@ -27,6 +27,30 @@ mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
 # Add the material to the system
 sys.add_material(mat)
 
+# function defining region of reduced mobility
+xGB = 1.5e-4  # GB x-coordinate
+Lmu = .25e-4  # distance from GB over which mobility is reduced
+def reduced_mu_region(pos):
+    x, y = pos
+    return ((x < xGB+Lmu) & (x > xGB-Lmu) & (y > .1e-4) & (y < 2.9e-4))
+
+# function defining region of reduced mobility
+def my_mu(pos):
+    muGB = 10
+    x, y = pos
+    # mobility varies linearly between GB core and Lmu
+    return 10 + 310*np.abs((x-xGB)/Lmu)
+
+mat2 = {'Nc': 8e17, 'Nv': 1.8e19, 'Eg': 1.5, 'epsilon': 9.4, 'Et': 0,
+       'mu_e': my_mu, 'mu_h': 40, 'tau_e': 10 * 1e-9, 'tau_h': 10 * 1e-9}
+
+# Add the material to the system
+sys.add_material(mat2, reduced_mu_region)
+
+
+sesame.plot(sys, sys.mu_e)
+
+
 # extent of the junction from the left contact [cm]
 junction = .1e-4    # [cm]
 # define a function specifiying the n-type region
@@ -69,20 +93,6 @@ sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1,0))
 # add acceptor defect along GB
 sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0,-1))
 
-# function defining region of reduced mobility
-def reduced_mu_region(pos):
-    x, y = pos
-    return ((x < 2e-4) & (x > 1e-4) & (y > .1e-4) & (y <2.9e-4))
-
-# get position indices for reduced mobility region
-s = sesame.get_sites(sys, reduced_mu_region)
-
-# set system mobility values in region near GB
-sys.mu_e[s] = 10  # cm^2/(V s)
-sys.mu_e[s] = 10  # cm^2/(V s)
-
-# view spatial-dependent mobility
-sesame.plot(sys, sys.mu_e)
 
 # Solve equilibirum problem first
 solution = sesame.solve_equilibrium(sys)
