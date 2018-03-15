@@ -171,11 +171,9 @@ class SimulationWorker(QObject):
 
                     if fmt == '.mat':
                         save_sim(system, solution, name, fmt='mat')
-                        savemat(name, solution)
                     else:
                         filename = "%s.gzip" % name
                         save_sim(system, solution, filename)
-                        #np.savez_compressed(name, **solution)
                         # signal a new file has been created to the main thread
                         self.newFile.emit(name + '.gzip')
                 else:
