@@ -1,5 +1,5 @@
 Tutorial 6: Batch submission for computing clusters
----------------------------------------
+----------------------------------------------------
 
 Running Sesame on a cluster
 ............................

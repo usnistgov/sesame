@@ -7,7 +7,7 @@ grain boundary.
    ``examples\tutorial4`` directory in the root directory of the distribution. 
 
 Building a two-dimensional system
-...............................................
+.................................
 We want to simulate a two-dimensional :math:`pn^{+}` junction (homojunction) with a
 columnar grain boundary as depicted below.  
 

@@ -120,7 +120,7 @@ defects occupy a reduced dimensionality space: a point in a 1D model, a line in
 a 2D model, a plane in a 3D model). The extended defect energy level spectrum
 can be discrete or continuous. For a discrete spectrum, we label the defect with
 the subscript :math:`d`. The occupancy of the defect level :math:`f_d` is given
-by [2]_
+by [1]_
 
 .. math::
     f_d = \frac{S_n n + S_p p_d}{S_n(n+n_d) + S_p(p+p_d)} 
@@ -278,5 +278,4 @@ velocity).
 
 
 .. rubric:: References
-.. [1] S. J. Fonash, *Solar cell device physics*, Academic Press 1981.
-.. [2] W. Shockley, W. T. Read, Jr., *Phys. Rev.*, **87**, 835 (1952).
+.. [1] W. Shockley, W. T. Read, Jr., *Phys. Rev.*, **87**, 835 (1952).

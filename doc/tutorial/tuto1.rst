@@ -1,5 +1,5 @@
 Tutorial 1: IV curve of a one-dimensional *pn* homojunction
----------------------------------------------------------
+------------------------------------------------------------
 
 In this tutorial we show how to build a simple one-dimensional :math:`pn^{+}` homojunction and compute its I-V curve.  In this and other tutorials we assume a rudimentary knowledge of python (e.g. basic syntax, function definition, etc.) and numpy (e.g. array declarations).
 
@@ -47,7 +47,7 @@ To make a system we use Sesame's :func:`~sesame.builder.Builder` class.   The in
 
 
 Adding material properties
-...........................................
+..........................
 
 Next we add a material to our system. A material is defined using a python ``dictionary`` object, which is added to the system using the :func:`~sesame.builder.Builder.add_material` method of `sys`::
 
