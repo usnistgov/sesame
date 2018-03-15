@@ -27,8 +27,6 @@ try:
     from .plotter import plot_line_defects, plot, plot_plane_defects
     from . import utils
     from .utils import save_sim, load_sim
-    from . import builder
-    from .builder import get_sites
 except:
     pass
 else:

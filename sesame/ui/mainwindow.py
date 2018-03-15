@@ -61,11 +61,14 @@ class Window(QMainWindow):
 
         # File menu
         fileMenu = menuBar.addMenu("&File")
+        newAction = QAction('New', self)
         openAction = QAction('Open...', self)
         saveAction = QAction('Save', self)
         saveAsAction = QAction('Save as...', self)
         exitAction = QAction('Exit', self)
+        fileMenu.addAction(newAction)
         fileMenu.addAction(openAction)
+        fileMenu.addSeparator()
         fileMenu.addAction(saveAction)
         fileMenu.addAction(saveAsAction)
         fileMenu.addSeparator()
@@ -77,6 +80,7 @@ class Window(QMainWindow):
         ipythonMenu.addAction(ip1)
 
         # actions
+        newAction.triggered.connect(self.newConfig)
         openAction.triggered.connect(self.openConfig)
         saveAction.triggered.connect(self.saveConfig)
         saveAsAction.triggered.connect(self.saveAsConfig)
@@ -189,9 +193,13 @@ class Window(QMainWindow):
             build.removeButton2.setEnabled(True)
 
         # plot system
-        settings = build.getSystemSettings()
-        system = parseSettings(settings)
-        build.Fig.plotSystem(system, materials, defects)
+        if grid != ['', '', '']:
+            settings = build.getSystemSettings()
+            system = parseSettings(settings)
+            build.Fig.plotSystem(system, materials, defects)
+        else:
+            build.Fig.ax.clear()
+            build.Fig.canvas.draw()
 
 
 
@@ -251,6 +259,41 @@ class Window(QMainWindow):
         self.table.simulation.iterPrecision.setText(iterPrec)
         self.table.simulation.htpy.setValue(int(htpy))
         
+    def newConfig(self):
+        """
+        Reset all the fields of the interface to their original values.
+        """
+
+        # system and simulation tabs
+        grid = ['', '', '']
+        materials = [{'Nc': 1e19, 'Nv': 1e19, 'Eg': 1., 'epsilon': 10., 'mass_e': 1., \
+              'mass_h': 1., 'mu_e': 100., 'mu_h': 100., 'Et': 0., \
+              'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0., \
+              'B': 0., 'Cn': 0., 'Cp': 0., 'location': '', 'N_D':0., 'N_A':0.}]
+
+        self.setSystem(grid, materials, [], '', '')
+        self.setSimulation(True, '', '', '',  '.npz', True, 'Ohmic', 'Ohmic',\
+                           '', '', '1e5', '1e5', '1e5', '1e5', '1e-6',\
+                           '100', False, False, '0', '1e-6', '1')
+
+        # analysis tab
+        self.table.simulation.logWidget.clear()
+        self.table.analysis.dataList.clear()
+        self.table.analysis.filesList = []
+        self.table.analysis.radioPos.setChecked(False)
+        self.table.analysis.radioLoop.setChecked(False)
+        self.table.analysis.Xdata.setText('')
+
+        self.table.analysis.linearFig.canvas.figure.clear()
+        self.table.analysis.linearFig.figure.add_subplot(111)
+        self.table.analysis.linearFig.canvas.draw()
+        self.table.analysis.iterColors = iter(self.table.analysis.colors)
+        self.table.analysis.surfaceFig.canvas.figure.clear()
+        self.table.analysis.surfaceFig.figure.add_subplot(111)
+        self.table.analysis.surfaceFig.canvas.draw()
+        
+
+
     def openConfig(self):
         """
         Open and read the configuration of the interface system and simulation

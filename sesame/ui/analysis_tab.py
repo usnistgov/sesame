@@ -253,8 +253,6 @@ class Analysis(QWidget):
             return
         else:
             fileName = files[0]
-
-            #data = np.load(fileName)
             system, data = sesame.load_sim(fileName)
 
             # check to see if data file sim settings are the same as gui sim settings!

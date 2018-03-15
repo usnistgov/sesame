@@ -479,10 +479,6 @@ def load_sim(filename):
 
 def check_equal_sim_settings(system1, system2):
 
-    #x = 1
-    #n_fields1 = dir(system1)
-    #n_fields2 = dir(system2)
-
     # cycle over all elements of system2
     equivalent = True
     for attr in dir(system2):
@@ -492,12 +488,8 @@ def check_equal_sim_settings(system1, system2):
         tfield = getattr(system2,attr)
         # determine if element is an array
         if type(tfield) is np.ndarray:
-            tfield1 = getattr(system1,attr)
-            if np.array_equal(tfield, tfield1)==False:
+            tfield1 = getattr(system1, attr)
+            if np.array_equal(tfield, tfield1) == False:
                 equivalent = False
 
-    x = 1
     return equivalent
-
-
-
