@@ -8,14 +8,14 @@ Ly = 3e-4   # [cm]
 
 # Mesh
 x = np.concatenate((np.linspace(0, .2e-4, 30, endpoint=False),
-                    np.linspace(0.2e-4, 1.4e-4, 60, endpoint=False),
-                    np.linspace(1.4e-4, 2.7e-4, 60, endpoint=False),
+                    np.linspace(0.2e-4, 1.4e-4, 50, endpoint=False),
+                    np.linspace(1.4e-4, 2.7e-4, 50, endpoint=False),
                     np.linspace(2.7e-4, 2.98e-4, 30, endpoint=False),
                     np.linspace(2.98e-4, Lx, 10)))
 
-y = np.concatenate((np.linspace(0, 1.25e-4, 60, endpoint=False),
+y = np.concatenate((np.linspace(0, 1.25e-4, 50, endpoint=False),
                     np.linspace(1.25e-4, 1.75e-4, 50, endpoint=False),
-                    np.linspace(1.75e-4, Ly, 60)))
+                    np.linspace(1.75e-4, Ly, 50)))
 
 # Create a system
 sys = sesame.Builder(x, y)

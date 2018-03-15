@@ -25,18 +25,18 @@ mesh of the system and make an instance of the :func:`~sesame.builder.Builder`. 
     Ly = 3e-4 # [cm]
 
     # position of p-n junction [cm]
-    junction = 10e-7 
+    junction = .1e-4 
 
     # Mesh
     x = np.concatenate((np.linspace(0, .2e-4, 30, endpoint=False),      # mesh near the contact
-                    np.linspace(0.2e-4, 1.4e-4, 60, endpoint=False),    # mesh in depletion region
-                    np.linspace(1.4e-4, 2.7e-4, 60, endpoint=False),    # mesh in bulk
+                    np.linspace(0.2e-4, 1.4e-4, 50, endpoint=False),    # mesh in depletion region
+                    np.linspace(1.4e-4, 2.7e-4, 50, endpoint=False),    # mesh in bulk
                     np.linspace(2.7e-4, 2.98e-4, 30, endpoint=False),   # mesh near the GB end point
                     np.linspace(2.98e-4, Lx, 10)))     	              # mesh near the contact
 
-    y = np.concatenate((np.linspace(0, 1.25e-4, 60, endpoint=False),
+    y = np.concatenate((np.linspace(0, 1.25e-4, 50, endpoint=False),
                     np.linspace(1.25e-4, 1.75e-4, 50, endpoint=False),  # mesh near the GB core
-                    np.linspace(1.75e-4, Ly, 60)))
+                    np.linspace(1.75e-4, Ly, 50)))
 
     # Create a system
     sys = sesame.Builder(x, y)
@@ -84,12 +84,12 @@ Now we add a line of defects to simulate a grain boundary using the ``sys`` meth
 
     # gap state characteristics
     s = 1e-15                # trap capture cross section [cm^2]
-    E = -0.25                # energy of gap state (eV) from intrinsic energy level
-    N = 2e13                 # defect density [1/cm^2]
+    E = 0.4                 # energy of gap state (eV) from intrinsic energy level
+    N = 1e14                 # defect density [1/cm^2]
 
     # Specify the two points that make the line containing additional charges
-    p1 = (20e-7, 2.5e-4)   # [cm]
-    p2 = (2.9e-4, 2.5e-4)  # [cm]
+    p1 = (.1e-4, 1.5e-4)   # [cm]
+    p2 = (2.9e-4, 1.5e-4)  # [cm]
 
     # Add the line of defects to the system
     sys.add_line_defects([p1, p2], N, s, E=E, transition=(1/-1))
@@ -122,8 +122,16 @@ Computing the IV curve
 
 The computation of the IV curve proceeds as in the previous tutorials.  We show the code below::
 
+  # Solve equilibirum problem first
+  solution = sesame.solve_equilibrium(sys)
+
+  # define a function for generation profile
+  f = lambda x, y: 2.3e21*np.exp(-2.3e4*x)
+  # add generation to the system
+  sys.generation(f)
+
   # Specify applied voltages
-  voltages = np.linspace(0,1,20)
+  voltages = np.linspace(0, .9, 10)
   # Compute IV curve
   j = sesame.IVcurve(sys, voltages, solution, '2dGB_V')
   # rescale to dimension-ful current
@@ -165,25 +173,26 @@ Spatial variation of material parameters
    ``examples\tutorial4`` directory in the root directory of the distribution. 
 
 Suppose we want to have a reduced mobility around the line defects compared to the rest
-of the system.  This can be using the sesame function ``get_sites``, which takes input of the ``sys`` object and the function which described the region.  ``set_sites`` returns the list of position indices ``sites`` which belong to the region defined by the function.  We manaully set the value of the mobility to a smaller value, but only for ``sites`` belonging to the region.  We also plot the mobility versus position to verify that the mobility is set as desired ::
-
+of the system.  To do so, we add another material which is defined in the region of non-uniform mobility.  It has the same properties as the original material, except that the mobility is not longer a scalar, but a function::
 
   # function defining region of reduced mobility
+  xGB = 1.5e-4  # GB x-coordinate
+  Lmu = .25e-4  # distance from GB over which mobility is reduced
   def reduced_mu_region(pos):
       x, y = pos
-      return ((x < 2e-4) & (x > 1e-4) & (y > .1e-4) & (y <2.9e-4))
+      return ((x < xGB+Lmu) & (x > xGB-Lmu) & (y > .1e-4) & (y < 2.9e-4))
 
-  # get position indices for reduced mobility region
-  sites = sesame.get_sites(sys, reduced_mu_region)
+  # function defining region of reduced mobility
+  def my_mu(pos):
+      muGB = 10
+      x, y = pos
+      # mobility varies linearly between GB core and Lmu
+      return 10 + 310*np.abs((x-xGB)/Lmu)
 
-  # set system mobility values in region near GB
-  sys.mu_e[sites] = 10  # cm^2/(V s)
-  sys.mu_e[sites] = 10  # cm^2/(V s)
+  mat2 = {'Nc': 8e17, 'Nv': 1.8e19, 'Eg': 1.5, 'epsilon': 9.4, 'Et': 0,
+         'mu_e': my_mu, 'mu_h': 40, 'tau_e': 10 * 1e-9, 'tau_h': 10 * 1e-9}
 
-  # view spatial-dependent mobility
+  # Add the material to the system
+  sys.add_material(mat2, reduced_mu_region)
+
   sesame.plot(sys, sys.mu_e)
-
-
-   
-
-
