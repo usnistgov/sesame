@@ -143,7 +143,7 @@ def runTest4():
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (3e-6*1e2) * 1e4
         j.append(tj)
-        print(tj)
+        
 
 
     jcomsol = np.array([-136.07, -135.73, -135.30, -134.73, -133.61, -129.76, -119.33, -83.149, 115.90])
