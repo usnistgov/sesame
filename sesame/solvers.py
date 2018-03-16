@@ -207,7 +207,8 @@ class Solver():
             self.equilibrium = None # delete it to force its computation
 
         if self.equilibrium is None:
-            logging.info("Solving for the equilibrium electrostatic potential")
+            if verbose == True:
+                logging.info("Solving for the equilibrium electrostatic potential")
 
             if guess is None:
                 guess = self.make_guess(system)
