@@ -35,7 +35,7 @@ are denoted with a subscript.
 
 Next, a key step to ensure numerical stability is to integrate the above in order to
 get a completely discretized version of the current :math:`J^i`.  This discretization
-is known as the Scharfetter-Gummel scheme [3]_, and is mandatory.  Let us
+is known as the Scharfetter-Gummel scheme [1]_, and is mandatory.  Let us
 do the hole case.  First, rewrite the hole density in terms of the quasi-Fermi
 level. 
 
@@ -251,4 +251,4 @@ these cases.
 
 
 .. rubric:: References
-.. [3] H. K. Gummel, IEEE Transactions on Electron Devices, **11**, 455 (1964).
+.. [1] H. K. Gummel, IEEE Transactions on Electron Devices, **11**, 455 (1964).
