@@ -160,7 +160,7 @@ Now we solve the system::
 
 	    solution = sesame.solve(sys, periodic_bcs=False)
 
-Notice that we provided the optional input argument ``periodic_bcs=False` to the ``solve()`` function.  This ensures that the top and bottom boundary conditions are "hardwall".  The default boundary condition is periodic, such that :math:`f(x,y=0)=f(x,y=L)` for all system properties.
+Notice that we provided the optional input argument ``periodic_bcs=False`` to the ``solve()`` function.  This ensures that the top and bottom boundary conditions are "hardwall".  The default boundary condition is periodic, such that :math:`f(x,y=0)=f(x,y=L)` for all system properties.
 
 
 We obtain the current and store it in the array::

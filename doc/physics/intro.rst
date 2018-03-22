@@ -131,7 +131,7 @@ The defect recombination is of Shockley-Read-Hall form:
 .. math::
    R_d = \frac{S_nS_p(n p - n_i^2)}{S_n(n + n_d) + S_p(p + p_d)}.
 
-The charge density :math:`q_d`given by a single defect depends on the defect type (acceptor
+The charge density :math:`q_d` given by a single defect depends on the defect type (acceptor
 or donor)
 
 .. math::

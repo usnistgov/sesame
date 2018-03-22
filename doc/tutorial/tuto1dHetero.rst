@@ -1,5 +1,5 @@
 Tutorial 2: I-V curve of a one-dimensional *pn* heterojunction
--------------------------------------------------------------
+--------------------------------------------------------------
 
 In this tutorial we consider a more complex system in 1-dimension: a heterojunction with a Schottky back contact.  The n-type material is CdS and the p-type material is CdTe.  The structure of the script is the same as in the last tutorial, however we must provide more detail to describe a more complex system.  
 
