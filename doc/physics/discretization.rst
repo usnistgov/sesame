@@ -20,8 +20,7 @@ the figure below.
    Sites versus links.  We take the indexing convention that :math:`\Delta
    x^i` represents the space between sites :math:`i` and :math:`i+1`.
 
-We consider a one-dimensional system to illustrate how the discretization of the
-model is done.  First, we want to rewrite the currents in semi-discretized form
+We consider a one-dimensional system to illustrate the model discretization.  First, we want to rewrite the currents in semi-discretized form
 for link :math:`i` (link :math:`i` connects discretized points :math:`i` and
 :math:`i+1`):  
 
@@ -30,64 +29,63 @@ for link :math:`i` (link :math:`i` connects discretized points :math:`i` and
     J_p^i & = q\mu_p p_i \frac{\partial E_{F_p,i}}{\partial x}
    :label: ji
 
-Note that here, link indices are denoted with a superscript, while point indices
+Note that here, link indices are denoted with a superscript, while site indices
 are denoted with a subscript.
 
 Next, a key step to ensure numerical stability is to integrate the above in order to
 get a completely discretized version of the current :math:`J^i`.  This discretization
-is known as the Scharfetter-Gummel scheme [3]_, and is mandatory.  Let us
+is known as the Scharfetter-Gummel scheme [3]_.  Let us
 do the hole case.  First, rewrite the hole density in terms of the quasi-Fermi
 level. 
 
 .. math::
-    p_i = N_V e^{\left(b_l-E_g+E_{F_p}(x)-\phi(x)\right)/k_BT}
+    p(x) = e^{\left(-\chi(x)-E_g(x)-E_{F_p}(x)-q\phi(x)+k_BT \ln(N_V)\right)/k_BT}
 
-We plug this form of :math:`p` into Eq. :eq:`ji`, then multiply both sides of
-the hole current  by :math:`e^{q\phi(x)/k_BT}\ dx`, 
+where :math:`chi` is the electron affinity, :math:`E_g` is the band gap.  It's convenient to define :math:`\psi_p=\chi+E_g+E_g-k_BT\ln(N_V)`.  We plug this form of :math:`p` into Eq. :eq:`ji`:
 
 .. math::
-    J_p^i = q \mu_p N_V e^{\left(b_l-E_g-E_{F_p}-q\phi(x)\right)/k_BT}
-    \frac{\partial E_{F_p}}{\partial x} 
+    J_p^i = q \mu_p e^{-\psi_p(x)/k_BT}
+    \frac{\partial E_{F_p}}{\partial x} ,
     
-and integrate over link :math:`i`
+next multiply both sides of
+the hole current  by :math:`e^{\psi_p(x)/k_BT}\ dx`, and integrate over link :math:`i`
 
 .. math::
-    \int J_p^i e^{q\phi(x)/k_BT} \mathrm{d}x
-    = q \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \int e^{-E_{F_p}/k_BT}
+    \int J_p^i e^{\psi_p(x)/k_BT} \mathrm{d}x
+    = q \mu_p \int e^{-E_{F_p}/k_BT}
     \mathrm{d}E_{F_p}
    :label: eqx
 
-Now we assume that the potential varies linearly between grid points, 
+Now we assume that :math:`\psi_p` varies linearly between grid points, 
 
 .. math::
-    \phi \left(x\right) = \frac{\phi_{i+1}-\phi_{i}}{\Delta x^i}\left(x-x_i\right)+\phi_i,
+    \psi_p \left(x\right) = \frac{\psi_{p_{i+1}}-\psi_{p_i}}{\Delta x^i}\left(x-x_i\right)+\psi_{p_i},
 
 which enables the integral on the left hand side above to be performed:
 
 .. math::
-    \int_{x_i}^{x_{i+1}} \mathrm{d}x e^{\pm q\phi(x)/k_BT} = \pm
-    \frac{k_BT}{q} \Delta x^i \frac{e^{\pm q\phi_{i+1}/k_BT} - e^{\pm
-    q\phi_i / k_BT}}{\phi_{i+1} - \phi_i}
+    \int_{x_i}^{x_{i+1}} \mathrm{d}x e^{\psi_p(x)/k_BT} = 
+    \frac{k_BT}{q} \Delta x^i \frac{e^{ q\psi_{p_{i+1}}/k_BT} - e^{
+    q\psi_{p_i} / k_BT}}{\psi_{p_{i+1}} - \psi_{p_i}}
    :label: eqx2
 
 Plugging Eq. :eq:`eqx2` into Eq. :eq:`eqx` and solving for :math:`J_p^i` yields
 
 .. math::
     J_p^i = \frac{q^2/k_BT}{\Delta x^i}
-    \frac{\phi_{i+1}-\phi_i}{e^{q\phi_{i+1}/k_BT}-e^{q\phi_i/k_BT}} 
-    \mu_p N_V e^{\left(b_l-E_g\right)/k_BT} \left[e^{-E_{F_p,i+1}/k_BT}-e^{-E_{F_p,i}}\right]
+    \frac{\psi_{p_{i+1}}-\psi_{p_i}}{e^{q\psi_{p_{i+1}}/k_BT}-e^{q\psi_{p_i}/k_BT}} 
+    \mu_p  \left[e^{-E_{F_p,i+1}/k_BT}-e^{-E_{F_p,i}}\right]
    :label: jpi
 
 A similar procedure leads to the following expression for :math:`J_n^i`:
 
 .. math::
     J_n^i = \frac{q^2/k_BT}{\Delta x^i}
-    \frac{\phi_{i+1}-\phi_i}{e^{-q\phi_{i+1}/k_BT}-e^{-q\phi_i/k_BT}}
+    \frac{\psi_{n_{i+1}}-\psi_{n_i}}{e^{-q\psi_{n_{i+1}}/k_BT}-e^{-q\psi_{n_i}/k_BT}}
     \mu_n N_C e^{-b_l}  \left[e^{E_{F_n,i+1}/k_BT}-e^{E_{F_n,i}/k_BT}\right]
    :label: jni
 
-The formulations of :math:`J_{n,p}^i` given in Eqs. :eq:`jpi` and :eq:`jni`
-ensure perfect current conservation.
+where :math:`\psi_n=q\phi+\chi+k_BT \ln(N_V)`.  
 
 
 
@@ -106,9 +104,9 @@ The appropriate form is given by:
     \\ f_n^i &= \frac{2}{\Delta x^i + \Delta
     x^{i-1}}\left(J_n^{i} - J_n^{i-1}\right) - G_i + R_i \\ 
     f_v^i &= \frac{2}{\Delta x^i + \Delta x^{i-1}}
-    \left( \left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)
-    -\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) \right) -
-    \frac{\rho_i}{\epsilon}
+    \left( \left(\frac{\epsilon_{i}+\epsilon_{i-1}}{2}\right)\left(\frac{\phi_{i}-\phi_{i-1}}{\Delta x^{i-1}}\right)
+    -\left(\frac{\epsilon_{i+1}+\epsilon_{i}}{2}\right)\left(\frac{\phi_{i+1}-\phi_i}{\Delta x^i}\right) \right) -
+    \rho_i
 
 These equations are the
 discretized drift-diffusion-Poisson equations to be solved for the variables
@@ -120,7 +118,7 @@ We use a Newton-Raphson method to solve the above set of equations.  The idea
 behind the method is clearest in a simple one-dimensional case as illustrated on
 the figure below.  Given a general nonlinear function :math:`f(x)`, we want to find its
 root :math:`\bar x: f(\bar x)=0`.  Given an initial guess :math:`x_1`, one can
-estimate the error :math:`\delta x` in this guess, assuming that the function
+estimate the error :math:`\delta x` in this guess by assuming that the function
 varies linearly all the way to its root
 
 .. math::
@@ -147,7 +145,7 @@ where
 .. math::
     A_{ij} = \frac{\partial F_i}{\partial x_j}
 
-Here is a small subset of what the :math:`A` matrix looks like for our problem.
+Here is a small subset of the :math:`A` matrix for our problem.
 We have only explicitly shown the row which corresponds to :math:`f_n^i` (here we
 drop the super/sub script convention set up to distinguish between
 sites and links, for the sake of writing things more compactly):
@@ -220,7 +218,7 @@ We do the standard *folding* of the multi-dimensional index label :math:`(i,j,k)
 into the single index label :math:`s` of the sites of the system: 
 
 .. math::
-    s = i + (j \times n_x) + (k \times n_x n_y)
+    s = i + (j \times n_x) + (k \times n_x \times n_y)
 
 where :math:`n_x` (:math:`n_y`) is the number of sites in the
 :math:`x`-direction (:math:`y`-direction).
@@ -240,8 +238,7 @@ in the :math:`y`- and :math:`z`-directions.
 +------------------------+-------------------------------------------------------+
 
 By default the Newton correction is computed by a direct resolution of the
-system in Eq. :eq:`corr`. This is done using the default Scipy solver which gives
-quite poor performances. We recommend using the MUMPS library instead. Note that
+system in Eq. :eq:`corr`. This is done using the default Scipy solver. We recommend using the MUMPS library instead, which yields faster performace. Note that
 for large systems, and especially for 3D problems, the memory and the computing
 time required by the direct methods aforementioned become so large that they are
 impractical. It is possible to use an iterative method to solve Eq. :eq:`corr` in

@@ -243,7 +243,7 @@ class SimulationWorker(QObject):
                     else:
                         np.savez_compressed(name, **solution)
                         # signal a new file has been created to the main thread
-                        self.newFile.emit(name + '.npz')
+                        self.newFile.emit(name + '.gzip')
                 else:
                     self.logger.info("The solver failed to converge for the parameter value"\
                           + " {0} (index {1}).".format(p, idx))

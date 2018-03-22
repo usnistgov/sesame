@@ -30,20 +30,20 @@ CdTe = {'Nc': 8e17, 'Nv': 1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
         'affinity': 3.9}
 
 # CdS region
-region1 = lambda x: x<=t1
+CdS_region = lambda x: x<=t1
 # CdTe region
-region2 = lambda x: x>t1
+CdTe_region = lambda x: x>t1
 
 # Add the material to the system
-sys.add_material(CdS, region1)     # adding CdS
-sys.add_material(CdTe, region2)     # adding CdTe
+sys.add_material(CdS, CdS_region)     # adding CdS
+sys.add_material(CdTe, CdTe_region)     # adding CdTe
 
 # Add the donors
 nD = 1e17  # donor density [cm^-3]
-sys.add_donor(nD, region1)
+sys.add_donor(nD, CdS_region)
 # Add the acceptors
 nA = 1e15  # acceptor density [cm^-3]
-sys.add_acceptor(nA, region2)
+sys.add_acceptor(nA, CdTe_region)
 
 # Define contacts: CdS contact is Ohmic, CdTe contact is Schottky
 Lcontact_type, Rcontact_type = 'Ohmic', 'Schottky'
@@ -70,7 +70,7 @@ f = lambda x: phi0*alpha*np.exp(-x*alpha)   # f is an "inline" function
 sys.generation(f)
 
 # Specify the applied voltage values
-voltages = np.linspace(0,1,21)
+voltages = np.linspace(0,.1,2)
 # Perform I-V calculation
 j = sesame.IVcurve(sys, voltages, result, '1dhetero_V')
 j = j * sys.scaling.current
@@ -78,10 +78,15 @@ j = j * sys.scaling.current
 result = {'v':voltages, 'j':j}
 np.save('IV_values', result)
 
-import matplotlib.pyplot as plt
-plt.plot(voltages, j, '-o')
-plt.xlabel('Voltage [V]')
-plt.ylabel('Current [A/cm^2]')
-plt.grid()
-plt.show()
+# plot I-V curve
+try:
+    import matplotlib.pyplot as plt
+    plt.plot(voltages, j,'-o')
+    plt.xlabel('Voltage [V]')
+    plt.ylabel('Current [A/cm^2]')
+    plt.grid()     # add grid
+    plt.show()     # show the plot on the screen
+# no matplotlib installed
+except ImportError:
+    print("Matplotlib not installed, can't make plot")
 

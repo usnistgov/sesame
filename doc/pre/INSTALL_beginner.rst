@@ -35,8 +35,8 @@ The git repository of Sesame is cloned in the directory where the command was
 issued. Enter the sesame repository, build and install Sesame with the commands::
 
     cd sesame
-    python3 setup.py build
-    python3 setup.py install --user
+    python setup.py build
+    python setup.py install --user
 
 The essential procedure for installing for other operating systems is the same.  
 
@@ -46,7 +46,17 @@ Upon installation, you can try some of the examples.  Navigate the `examples` di
 
 	cd sesame\examples
 
-Running a sesame python script is done via:
+Running a sesame python script is done with the command::
 
-	python3 1dpn.py
+	python 1dpn.py
+
+The GUI is launched with the command from the sesame install directory::
+    
+     python app.py
+
+Note: some distributions of Anaconda are packaged with older versions of PyQt.  If you find that graphics do not render, or that the GUI does not run, it may be because PyQt is not up to date.  You can try this command to update PyQt::
+
+     conda install -c anaconda pyqt
+
+    
 

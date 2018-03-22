@@ -8,21 +8,20 @@ Geometry and governing equations
 .................................
 
 Our model system is shown below. It is a semiconductor device connected to two
-contacts at :math:`x=0` and :math:`x=L` (where :math:`L` is the length of
-the device in the :math:`x`-direction). The doped regions are drawn for the
+contacts at :math:`x=0` and :math:`x=L`. The doped regions are drawn for the
 example only, any doping profile can be considered.
 
 .. image:: model.*
    :align: center
 
 
-The steady state of this system under nonequilibrium conditions is treated with
-the drift-diffusion-Poisson equations
+The steady state of this system under nonequilibrium conditions is described by
+the drift-diffusion-Poisson equations:
 
 .. math:: 
    \vec{\nabla}\cdot \vec{J}_n &= -q(G-R)\\
    \vec{\nabla}\cdot \vec{J}_p &= q(G-R)\\
-   \vec{\nabla}\cdot (\vec{\nabla} \epsilon\epsilon_0 \phi) &= \rho
+   \vec{\nabla}\cdot (\epsilon\vec{\nabla} \phi) &= \rho/\epsilon_0
    :label: ddp
 
 with the currents
@@ -35,10 +34,10 @@ with the currents
 where :math:`n, p` are the electron and hole number densities, and :math:`\phi`
 is the electrostatic potential. :math:`J_{n(p)}` is the charge current density
 of electrons (holes). Here :math:`q` is the absolute value of the electron
-charge. :math:`\rho` is the local charge and :math:`\epsilon` is the dielectric
-constant of the material. :math:`\mu_{n,p}` is the electron/hole
+charge. :math:`\rho` is the local charge, :math:`\epsilon` is the dielectric
+constant of the material, and :math:`\epsilon_0` is the permittivity of free space. :math:`\mu_{n,p}` is the electron/hole
 mobility, and is related the diffusion :math:`D _{n,p}` by :math:`D_{n,p} =
-k_BT\mu_{n,p}/q`.  :math:`G` is the generation rate density, :math:`R` is the
+k_BT\mu_{n,p}/q`, where :math:`k_B` is Boltzmann's constant and :math:`T` is the temperature.  :math:`G` is the generation rate density, :math:`R` is the
 recombination and we denote the net generation rate :math:`U=G-R`. The natural
 length scale is the Debye length, given by :math:`\lambda = \epsilon_0 k_B T /(q^2
 N )`, where :math:`N` is the concentration relevant to the problem. Combining
@@ -61,7 +60,7 @@ derivative operator, and the dimensionless variables are
    \bar p &= p/N \\
    \bar U &= \frac{U \lambda^2}{ND} \\
    \bar t &= t \frac{q\mu N}{\epsilon_0} \\
-   \bar J_{n,p} &= J_{n,p} \frac{qDN}{\lambda} 
+   \bar J_{n,p} &= J_{n,p} \frac{\lambda}{qDN} 
 
 with :math:`D=k_BT\mu/q` a diffusion coefficient corresponding to our choice of
 scaling for the mobility :math:`\mu=1~\mathrm{cm^2/(V\cdot s)}`. See the 
@@ -69,14 +68,7 @@ scaling for the mobility :math:`\mu=1~\mathrm{cm^2/(V\cdot s)}`. See the
 
 
 We suppose that the bulk recombination is through three mechanisms:
-Shockley-Read-Hall, radiative and Auger.  Unlike the defect-mediated
-recombination, radiative and Auger processes are respectively second and third
-order in charge density. For this reason they become more important at higher
-densities (such as for heavily doped systems, or systems with high generation
-rate density of electron-hole pairs).  On the other hand, Shockley-Read-Hall
-recombination is first order in charge density.
-
-The Shockley-Read-Hall takes the form
+Shockley-Read-Hall, radiative and Auger.  The Shockley-Read-Hall recombination takes the form
 
 .. math::
    R_{\rm SRH} = \frac{np - n_i^2}{\tau_p(n+n_1) + \tau_n(p+p_1)}
@@ -111,14 +103,14 @@ Auger mechanism has the form
 
 where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 
-Additional charges: line and plane defects
+Extended line and plane defects
 ............................................
 
 Additional charged defects can be added to the system to simulate, for example,
 grain boundaries or sample surfaces in a semiconductor. These extended planar
 defects occupy a reduced dimensionality space: a point in a 1D model, a line in
 a 2D model, a plane in a 3D model). The extended defect energy level spectrum
-can be discrete or continuous. For a discrete spectrum, we label the defect with
+can be discrete or continuous. For a discrete spectrum, we label a defect with
 the subscript :math:`d`. The occupancy of the defect level :math:`f_d` is given
 by [1]_
 
@@ -139,11 +131,11 @@ The defect recombination is of Shockley-Read-Hall form:
 .. math::
    R_d = \frac{S_nS_p(n p - n_i^2)}{S_n(n + n_d) + S_p(p + p_d)}.
 
-The charge density given by a single defect depends on the defect type (acceptor
+The charge density :math:`q_d`given by a single defect depends on the defect type (acceptor
 or donor)
 
 .. math::
-   q = q\rho_d \times \left\{
+   q_d = q\rho_d \times \left\{
     \begin{array}{ll}
         (1-f_d) & \mbox{donor} \\
         (-f_d) & \mbox{acceptor}
@@ -215,18 +207,18 @@ n-type contact with :math:`N_D` ionized donors at the :math:`x = 0` contact, Eq.
 :eq:`np` yields the expression for :math:`\phi^{eq}(x = 0)`:
 
 .. math::
-    \phi^{eq} (0,y,z) = k_BT Ln\left(N_D/N_C \right) -  \chi(0,y,z)
+    \phi^{eq} (0,y,z) = k_BT \ln\left(N_D/N_C \right) -  \chi(0,y,z)
 
 Similar reasoning yields expressions for :math:`\phi^{eq}` for p-type doping and
 at the :math:`x = L` contact.  For Schottky contacts, we assume that the Fermi
 level at the contact is equal to the Fermi level of the metal.  This implies
-that the equilibrium electron density is :math:`N_C exp [-(\Phi_M-\chi)/k_BT]`
+that the equilibrium electron density is :math:`N_C \exp [-(\Phi_M-\chi)/k_BT]`
 where :math:`\Phi_M` is the work function of the metal contact. Eq. :eq:`np`
 then yields the expression for :math:`\phi^{eq}` (shown here for
 the :math:`x = 0` contact):
 
 .. math::
-    \phi^{eq} (0,y,z) = -\Phi_M|_{x=0 contact}
+    \phi^{eq} (0,y,z) = -\Phi_M|_{x=0~contact}
 
 An identical expression applies for the :math:`x = L` contact.
 
@@ -268,12 +260,6 @@ denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
    :label: BCs
 
 where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.
-In being collected by a contact, a carrier in the valence or conduction band
-loses its energy and relaxes to the chemical potential of the bulk contact.
-This is essentially a recombination process. The recombination velocity may be
-thought of identically as a carrier lifetime in two dimensions (considering
-Eq. :eq:`tau` where the trap density is two-dimensional, one obtains units of
-velocity).  
 
 
 

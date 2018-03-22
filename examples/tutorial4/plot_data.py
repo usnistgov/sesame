@@ -7,6 +7,10 @@ from scipy.io import savemat
 sys, results = sesame.load_sim("2dGB_V_0.gzip")
 az = sesame.Analyzer(sys,results)
 
+az.map3D(results['v']) # units of kT/q
+
+az.electron_current_map()
+
 p1 = (2e-4, 0)
 p2 = (2e-4, 3e-4)
 

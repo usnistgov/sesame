@@ -1,7 +1,12 @@
 Tutorial 5: Simulating an EBIC/CL experiment
 ---------------------------------------------------------
 
-In this tutorial we build a 2-dimensional simulation to describe experiments with a localized carrier generation profile, such as electron beam induced current (EBIC), or cathodoluminescence (CL).  In this case we'll need to define a system as before, and then define a custom carrier generation rate density profile associated with electron beam excitation.  We'll then cycle over beam positions and compute the total current and total radiative recombination as a function of beam position.
+In this tutorial we build a 2-dimensional simulation to describe experiments with a localized carrier generation profile, such as electron beam induced current (EBIC), or cathodoluminescence (CL). 
+
+.. seealso:: The example treated here is in the file ``2d_EBIC.py`` located in the ``examples\tutorial5`` directory of the distribution.  The same simulation's GUI input file is ``2d_EBIC.ini``, also located in the ``examples\tutorial5`` directory.
+
+
+For this case we'll need to define a system as before, and then define a custom carrier generation rate density profile associated with electron beam excitation.  We'll then cycle over beam positions and compute the total current and total radiative recombination as a function of beam position.
 
 .. image:: ebic.*
    :align: center  
@@ -50,10 +55,10 @@ The system we want to build is a 2-dimensional p-n junction in which the "top" o
 	
 	# Add the donors
 	nD = 1e17 # [cm^-3]
-	sys.add_donor(nD, region)
+	sys.add_donor(nD, n_region)
 	# Add the acceptors
 	nA = 1e15 # [m^-3]
-	sys.add_acceptor(nA, region2)
+	sys.add_acceptor(nA, p_region)
 	
 	# Use Ohmic contacts
 	sys.contact_type('Ohmic','Ohmic')
@@ -79,13 +84,13 @@ Adding recombination at the sample surface is accomplished with a planar defect 
 Electron beam excitation
 ............................
 
-Next we review the physics of the electron beam excitation.  Excitation with an electron beam generates free carriers.  For a beam focused at :math:`(x_0,y_0)`, a simple parameterization of the generation rate density profile is given by a Gaussian:
+Next we review the physics of the electron beam excitation.  For a beam focused at :math:`(x_0,y_0)`, a simple parameterization of the generation rate density profile is given by a Gaussian:
 
 .. math:: 
    G(x,y) &= \frac{G_{\rm tot}}{A} \times \exp\left(-\frac{(x-x_0)^2+(y-y_0)^2}{2\sigma^2}\right) 
    :label: Gxy 
 
-For our geometry, :math:`~x_0` is the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0`.  The total generation rate (units :math:`1/s`) is (need reference):
+For our geometry, :math:`~x_0` is the lateral beam position, while the depth of the excitation from the sample surface is :math:`y_0`.  The total generation rate (units :math:`1/s`) is approximated by [4]_:
 
 .. math::
    G_{tot} &\approx \frac{I_{\rm beam}}{q} \times \frac{E_{\rm beam}}{3 E_g}
@@ -97,7 +102,7 @@ The length scale of the excitation :math:`\sigma` is determined by the electron 
    R_B &= r_0 \left(\frac{0.043}{\rho/\rho_0}\right) \times \left(E_{\rm beam} /E_0\right)^{1.75}
    :label: Rb
 
-The constants in Eq. :eq:`Rb` are :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The length scale of the Guassian :math:`\sigma` and the distance from the surface :math:`y_0` are related to :math:`R_B` as (ref):
+The constants in Eq. :eq:`Rb` are :math:`r_0=1~{\rm \mu m},~\rho_0=1~{\rm g/cm^3},~E_0=1~{\rm keV}`.  The length scale of the Guassian :math:`\sigma` and the distance from the surface :math:`y_0` are related to :math:`R_B` as [5]_:
 
 .. math::
    \sigma &= \frac{R_B}{\sqrt{15}}\\
@@ -168,3 +173,8 @@ We obtain the current and store it in the array::
 	    jset[idx] = tj
 
 Finally we save and plot the computed current versus beam position:
+
+
+.. rubric:: References
+.. [4]  C. J. Wu and D. B. Wittry, J. App. Phys., **49**, 2827,(1978).
+.. [5] A. E. Grun, Zeitschrift fur Naturforschung, **12a**, 89, (1957).

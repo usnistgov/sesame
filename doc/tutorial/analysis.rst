@@ -14,7 +14,7 @@ In the previous tutorials, detailed solution data was saved automatically in the
 
 	sesame.save_sim(sys, results, "my_sim")
 
-The saved output file is named "my_sim.gzip" extension.  Note that the gzip extension indicates the data is compressed, and the data structures are stored using python's ``pickle`` module.  
+The saved output file is named "my_sim.gzip".  Note that the gzip extension indicates the data is compressed, and the data structures are stored using python's ``pickle`` module.  
 
 
 The data can also be saved in a Matlab-readable format (.mat file), by adding ``fmt='mat'`` as an additional input argument:: 
@@ -37,7 +37,7 @@ Loading a saved simulation is accomplished with the ``load_sim`` command.  This 
 
 Analysis of data: the Analyzer object
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-Next we show how to extract and analyze the data computed by the solvers.  To facilitate data analysis, Sesame has an :func:`~sesame.analyzer.Analyzer` class which contains many methods to compute typical quantities of interest, such as total radiative recombination, total current, carrier densities, grain boundary recombination, etc.  A summary and the descriptions of the methods available via the
+Next we show how to extract and analyze the data computed by the solvers.  To facilitate data analysis, Sesame has an :func:`~sesame.analyzer.Analyzer` class which contains many methods to compute typical quantities of interest, such as total defect, radiative, or radiative recombination, total current, carrier densities, grain boundary recombination, etc.  A summary and the descriptions of the methods available via the
 :func:`~sesame.analyzer.Analyzer` object are detailed in
 Sec. :ref:`label_code`.
 
@@ -47,7 +47,7 @@ We'll demonstrate the use of some of these methods, using the system created in 
     import sesame
    
 
-Our data analysis will begin with computing carrier densities, currents and plotting data.  In the
+Our data analysis will begin with computing carrier densities and currents, and plotting data.  In the
 code below we load a data file and create an instance of Analyzer class.  The :func:`~sesame.analyzer.Analyzer` object is initialized with a system and a dictionary of
 results.  This dictionary must contain the key ``'v'``, and can include ``'efn'``, ``'efp'`` when computed.::
 
@@ -56,7 +56,7 @@ results.  This dictionary must contain the key ``'v'``, and can include ``'efn'`
 
 
 We start with how to obtain integrated
-quantities like the steady stated current. In the code below we compute the
+quantities like the steady state current. In the code below we compute the
 current for all applied voltages of the IV curve, using the :func:`~sesame.analyzer.Analyzer` method ``full_current()``::
 
     J = []
@@ -104,7 +104,7 @@ the x-direction::
     # On the previously defined line
     jn = az.electron_current(location=(p1, p2))
 
-We now turn to the treatment of the line defects introduced in our system.  The following code retrieves the solution along the grain boundary core::
+We now turn to the treatment of the extended line defects introduced in our system.  The following code retrieves the solution along the grain boundary core::
 
     # Line endpoints of the grain boundary core 
     p1 = (20e-7, 1.5e-4)   #[cm]
@@ -132,16 +132,15 @@ The attribute of Builder called ``defects_list`` is a list of named tuples. This
 list stores the parameters of each defect originally added to the system. The
 field names of the named tuples are ``sites``, ``location``, ``dos``,
 ``energy``, ``sigma_e``, ``sigma_h``, ``transition``, ``perp_dl``. The last
-field contains the lattice distance perpendicular to the line of defects. It is
-necessary to normalize the recombination velocity and the density of states.
+field contains the lattice distance perpendicular to the line of defects. This quantity is used to normalize the recombination velocity and the density of states.
 
 
 
 Plotting data
 ^^^^^^^^^^^^^^^^^^^^^^^^
 
-To make the
-visualization of two- and three-dimensional plots easy, ``sesame`` provides a
+To facilitate the
+visualization of two- and three-dimensional plots, ``sesame`` provides a
 few functions (requiring ``matplotblib``) that represent quantities in 2D or
 3D. For example, one can visualize the electrostatic potential at zero bias in
 3D with::
@@ -162,7 +161,7 @@ or plot the electron current accross the system::
 .. image:: analysis_currents.*
    :align: center
 
-We finally show how to use native matplotlib functionality to plot the data obtained with the :func:`~sesame.analyzer.Analyzer` object.  In the following code we make plots of the electron density that we obtained earlier::
+We finally show how to use native ``matplotlib`` functionality to plot the data obtained with the :func:`~sesame.analyzer.Analyzer` object.  In the following code we make plots of the electron density that we obtained earlier::
 
    # points define line perpendicular to GB
    p1 = (2e-4, 0)   # [cm]

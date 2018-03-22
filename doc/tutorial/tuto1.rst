@@ -1,4 +1,4 @@
-Tutorial 1: IV curve of a one-dimensional *pn* homojunction
+Tutorial 1: I-V curve of a one-dimensional *pn* homojunction
 ------------------------------------------------------------
 
 In this tutorial we show how to build a simple one-dimensional :math:`pn^{+}` homojunction and compute its I-V curve.  In this and other tutorials we assume a rudimentary knowledge of python (e.g. basic syntax, function definition, etc.) and numpy (e.g. array declarations).
@@ -23,15 +23,15 @@ Numpy/Scipy can be found `here
 Constructing a mesh and building the system
 ...........................................
 
-We start by importing the sesame package and numpy::
+We start by importing the sesame and numpy packages::
 
     import sesame
     import numpy as np
 
-Choosing a good mesh is crucial for getting reliable results.  An overly coarse mesh will
+Choosing a good mesh is a crucial step in performing the simulation.  An overly coarse mesh will
 give inaccurate results, while an excessively fine mesh will make the simulation slow.  The best mesh for most systems is nonuniform: being highly refined in regions where the solution changes rapidly, and coarse in regions where the solution varies slowly.  After the tutorials the user should have a
 sense of how to construct an appropriate mesh.  In this example, we create a mesh which
-contains more nodes in the *pn* junction depletion region::
+contains more sites in the *pn* junction depletion region::
 
     L = 3e-4 # length of the system in the x-direction [cm]
     x = np.concatenate((np.linspace(0,1.2e-4, 100, endpoint=False),     # depletion region
@@ -117,12 +117,12 @@ contact boundary conditions.  For this example, we'll use selective Ohmic contac
 Computing an I-V curve
 ......................
 
-We've finished defining the system.  Before computing the system response to illumination and applied voltaged, it's necessary to first solve the equilibrium system.  This is done with the command :func:`~sesame.solvers.Solver.solve_equilibrium`, which returns the equilibrium solution ::
+We've finished defining the system.  Before computing the system response to illumination and applied voltage, it's necessary to first solve the equilibrium system.  This is done with the command :func:`~sesame.solvers.Solver.solve_equilibrium`, which returns the equilibrium solution ::
 
      # First find the equilibrium solution
      eqsolution = sesame.solve_equilibrium(sys)
 
-To compute an IV curve under illumination, we specify the generation profile with a function.  For this example, we use an exponentially varying generation profile defined in the function ``gfcn``::
+To compute an I-V curve under illumination, we specify the generation profile with a function.  For this example, we use an exponentially varying generation profile defined in the function ``gfcn``::
 
     phi = 1e17       # photon flux [1/(cm^2 s)]
     alpha = 2.3e4    # absorption coefficient [1/cm]
@@ -135,7 +135,7 @@ Adding the illumination profile to the simulation is accomplished with the ``sys
 
     sys.generation(gfcn)
 
-Finally we compute the IV curve under illumination.  We do this with the sesame method :func:`~sesame.solvers.Solver.IVcurve`, whose the input arguments are: the system object ``sys``, an array of applied voltage values, the equilibrium solution we just computed, and a string which is the seedname for the output files.::
+Finally we compute the I-V curve under illumination.  We do this with the sesame method :func:`~sesame.solvers.Solver.IVcurve`, whose the input arguments are the system object ``sys``, an array of applied voltage values, the equilibrium solution we just computed, and a string which is the seedname for the output files.::
 
     voltages = np.linspace(0, 0.95, 40)
     j = sesame.IVcurve(sys, voltages, eqsolution, '1dhomo_V')
@@ -144,8 +144,8 @@ Finally we compute the IV curve under illumination.  We do this with the sesame 
 .. note::
    The ``IVcurve`` method returns the dimensionless current. We convert it to dimension-ful form by multiplying by the constant ``sys.scaling.current``.
 
-The data files will have names like ``1dhomo_V.vapp_0.gzip`` where the number 0
-is the index of of the array ``voltages``. These data files contain all the information about the simulation settings and solution.  :doc:`tutorial 4 <analysis>` discusses how to access and plot this detailed data.  
+The output data files will have names like ``1dhomo_V_0.gzip`` where the number 0
+labels the the ``voltages`` array index. These data files contain all the information about the simulation settings and solution.  :doc:`tutorial 4 <analysis>` discusses how to access and plot this detailed data.  
 
 Saving and plotting the I-V curve
 .................................

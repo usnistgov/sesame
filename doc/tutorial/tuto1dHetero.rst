@@ -1,4 +1,4 @@
-Tutorial 2: IV curve of a one-dimensional *pn* heterojunction
+Tutorial 2: I-V curve of a one-dimensional *pn* heterojunction
 -------------------------------------------------------------
 
 In this tutorial we consider a more complex system in 1-dimension: a heterojunction with a Schottky back contact.  The n-type material is CdS and the p-type material is CdTe.  The structure of the script is the same as in the last tutorial, however we must provide more detail to describe a more complex system.  
@@ -26,7 +26,7 @@ The mesh for a heterojunction should be very fine in the immediate vicinity of t
 
     	dd = 3e-6 # 2*dd is the distance over which mesh is highly refined
 	x = np.concatenate((np.linspace(0, dd, 10, endpoint=False),                # L contact interface
-                    np.linspace(dd, t1-dd, 50, endpoint=False),                    # material 1
+                    np.linspace(dd, t1 - dd, 50, endpoint=False),                    # material 1
                     np.linspace(t1 - dd, t1 + dd, 10, endpoint=False),             # interface 1
                     np.linspace(t1 + dd, (t1+t2) - dd, 100, endpoint=False),       # material 2
                     np.linspace((t1+t2) - dd, (t1+t2), 10)))                       # R contact interface
@@ -56,6 +56,7 @@ Now we add materials to our system.  We define two dictionaries to describe the 
 
     CdS = {'Nc': 2.2e18, 'Nv':1.8e19, 'Eg':2.4, 'epsilon':10, 'Et': 0,
         'mu_e':100, 'mu_h':25, 'tau_e':1e-8, 'tau_h':1e-13, 'affinity': 4.}
+
     CdTe = {'Nc': 8e17, 'Nv': 1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
         'mu_e':320, 'mu_h':40, 'tau_e':5e-9, 'tau_h':5e-9, 'affinity': 3.9}
 
@@ -72,9 +73,9 @@ Adding the dopants works as in the last tutorial::
 
     
     nD = 1e17  # donor density [cm^-3]
-    sys.add_donor(nD, region1)
+    sys.add_donor(nD, CdS_region)
     nA = 1e15  # acceptor density [cm^-3]
-    sys.add_acceptor(nA, region2)
+    sys.add_acceptor(nA, CdTe_region)
 
 
 Specifying contact types
@@ -96,10 +97,10 @@ Having defined the contact types, we next specify the contact recombination velo
 
 Computing an I-V curve
 ......................
-We've now completed the system definition.  As in the last example, we compute the equilibrium solution, add illumination, and compute the IV curve
+We've now completed the system definition.  As in the last example, we compute the equilibrium solution, add illumination, and compute the I-V curve
 
 .. warning::
-   Sesame does not include interface current mechanisms of       thermionic emission and tunneling.
+   Sesame does not include interface transport mechanisms of       thermionic emission and tunneling.
 
 :: 
 
@@ -115,7 +116,7 @@ We've now completed the system definition.  As in the last example, we compute t
     voltages = np.linspace(0, 0.95, 40)
     j = sesame.IVcurve(sys, voltages, eqsolution, '1dhetero_V')
     # convert dimensionless current to dimension-ful current
-     j = j * sys.scaling.current
+    j = j * sys.scaling.current
 
 
 The current can be saved and plotted as in the previous tutorial::

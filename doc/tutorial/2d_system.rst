@@ -4,7 +4,8 @@ In this tutorial we show how to build a two-dimensional :math:`pn^{+}` junction 
 grain boundary. 
 
 .. seealso:: The example treated here is in the file ``2d_homojunction_withGB.py`` located in the
-   ``examples\tutorial4`` directory in the root directory of the distribution. 
+   ``examples\tutorial3`` directory in the root directory of the distribution.  The same simulation's GUI input file is ``2d_homojunction_withGB.ini``, also located in the ``examples\tutorial3`` directory.
+
 
 Building a two-dimensional system
 .................................
@@ -14,7 +15,7 @@ columnar grain boundary as depicted below.
 .. image:: geometry.*
    :align: center
 
-As usual, we start by importing the sesame package and numpy. We construct the
+As usual, we start by importing the sesame and numpy packages. We construct the
 mesh of the system and make an instance of the :func:`~sesame.builder.Builder`.  Notice that in this case we provide the :func:`~sesame.builder.Builder` function with both x and y grids; this automatically tells the code to build a two-dimensional system::
 
     import sesame
@@ -56,6 +57,7 @@ We next define functions delimiting the regions with different doping values. Be
     def n_region(pos):
         x, y = pos
         return x < junction
+
     nD = 1e17  # [cm^-3]
     sys.add_donor(nD, n_region)
 
@@ -63,6 +65,7 @@ We next define functions delimiting the regions with different doping values. Be
     def p_region(pos):
         x, y = pos
         return x >= junction    
+
     nA = 1e15  # [cm^-3]
     sys.add_acceptor(nA, p_region)
 
@@ -83,18 +86,19 @@ Adding a grain boundary
 Now we add a line of defects to simulate a grain boundary using the ``sys`` method :func:`~sesame.builder.Builder.add_line_defects`.  The necessary inputs are the grain boundary defect's electrical properties (e.g. capture cross sections, energy level, defect density, and charge states), and the endpoints defining the grain boundary location (recall a grain boundary is represented by a line in a 2-dimensional simulation).  Below we show code defining these properties for our example, and adding the grain boundary to the simulation::
 
     # gap state characteristics
-    s = 1e-15                # trap capture cross section [cm^2]
-    E = 0.4                 # energy of gap state (eV) from intrinsic energy level
-    N = 1e14                 # defect density [1/cm^2]
+    rho_GB = 1e14               # defect density [1/cm^2]
+    S_GB = 1e-15                # trap capture cross section [cm^2]
+    E_GB = 0.4                  # energy of gap state (eV) from intrinsic energy level
+    
 
     # Specify the two points that make the line containing additional charges
     p1 = (.1e-4, 1.5e-4)   # [cm]
     p2 = (2.9e-4, 1.5e-4)  # [cm]
 
     # Add the line of defects to the system
-    sys.add_line_defects([p1, p2], N, s, E=E, transition=(1/-1))
+    sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1/-1))
 
-The type of the charge transition :math:`\alpha/\beta` is specified as
+The type of the charge transition :math:`\alpha/\beta` is specified by assigning the ``transition`` input value as
 shown above. In our example we chose a mixture of donor and acceptor at energy
 E. An acceptor would be described by (-1,0) and a donor by (1,0).
 
@@ -111,7 +115,7 @@ E. An acceptor would be described by (-1,0) and a donor by (1,0).
 
      .. code-block:: python
 
-        sys.add_line_defects([p1, p2], N, sn, sp, E=E)
+        sys.add_line_defects([p1, p2], rho_GB, Sn_GB, Sp_GB, E=E_GB)
    * A continuum of states can be considered by omitting the energy argument
      above. The density of states can be a callable function or a numerical
      value, in which case the density of states is independent of the energy.

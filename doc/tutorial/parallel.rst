@@ -1,6 +1,8 @@
 Tutorial 6: Batch submission for computing clusters
 ----------------------------------------------------
 
+.. seealso:: The example treated here is in the file ``sesame_batch_job.py`` located in the ``examples\tutorial6`` directory of the distribution.  
+
 Running Sesame on a cluster
 ............................
 
@@ -44,7 +46,7 @@ We first initialize the MPI library with the command::
 	    mpi_comm = MPI.COMM_WORLD
 
 
-We next determine the total number of processors available with ``mpi_comm.Get_size()``, and the "rank" of this particular instance of the program using ``mpi_comm.Get_rank()``.  In the schematic shown at the beginning, ``mpisize=4``, and each processor is assigned its own rank: 0, 1, 2, or 3.  The processors will all run the code identically, with the exception that each has its own unique value of mpirank::
+We next determine the total number of processors available with ``mpi_comm.Get_size()``, and the "rank" of a particular instance of the program using ``mpi_comm.Get_rank()``.  In the schematic shown at the beginning, ``mpisize=4``, and each processor is assigned its own rank: 0, 1, 2, or 3.  The processors will all run the code identically, with the exception that each has its own unique value of mpirank::
 
 
 	    mpirank = mpi_comm.Get_rank()
@@ -58,7 +60,7 @@ We define the set of parameter lists we want to study::
 	    S_GBlist = [1e-14, 1e-15, 1e-16]          # [cm^2]
 	    taulist = [1e-7, 1e-8, 1e-9]              # [s]
 
-We use the itertools product function to form a list of all combinations of parameter values.  The total number of jobs (`njobs` is equal to the product of the length of all parameter lists.  This can get quite large if we vary several parameters (for this case we have 180 jobs)::
+We use the itertools product function to form a list of all combinations of parameter values.  The total number of jobs (``njobs`` is equal to the product of the length of all parameter lists.  This can get quite large if we vary several parameters (for this case we have 180 jobs)::
 
 	
 	    paramlist = list(itertools.product(rho_GBlist, E_GBlist, S_GBlist, 	taulist))
@@ -72,7 +74,7 @@ Here's where the parallel-ization of the batch processes enters.  Each node only
 This partitions the jobs as shown at the top of the page: each processor starts on a different job (the first job index equals the ``mpirank`` value) and skips over ``mpisize`` jobs to the next one.  In this way we cover all jobs roughly equally between all the processors.
 
 
-Next we define two arrays in which to store the computed J-V values.  One of them is a local array, the other is a "global" array into which all the computed values will be set at the end of the program::
+Next we define two arrays in which to store the computed I-V values.  One of them is a local array, the other is a "global" array into which all the computed values will be set at the end of the program::
 	
 	    # Define array to store computed J-V values
 	    jvset_local = np.zeros([njobs, len(voltages)])
@@ -155,7 +157,7 @@ We define a function which takes in a list of parameters.  In this case, the par
 Here we define the set of applied voltages::	
 
 	    # Specify applied voltages
-	    voltages = np.linspace(0, .1, 2)
+	    voltages = np.linspace(0, .9, 10)
 
 Now we cycle over all the parameter sets which apply to a given node::
 	
@@ -167,7 +169,7 @@ Now we cycle over all the parameter sets which apply to a given node::
 	        sys = system(params)
 	
 	        # Get equilibrium solution
-	        #eqsolution = sesame.solve_equilibrium(sys)
+	        eqsolution = sesame.solve_equilibrium(sys)
 	
 	        # Define a function for generation profile
 	        f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)

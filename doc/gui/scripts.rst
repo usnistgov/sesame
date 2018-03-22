@@ -1,7 +1,7 @@
 Running scripts in the GUI
 ---------------------------
 
-The standalone Sesame GUI executable contains a full Python distribution.  This can be accessed by selecting the ``Console -> Show Console`` option from the window.  An IPython console is displayed, as shown below.  Below we show how Sesame scripts may be run from the python console:
+The standalone Sesame GUI executable contains a full Python distribution.  This can be accessed by selecting the ``Console`` :math:`\rightarrow` ``Show Console`` option from the window.  An IPython console is displayed, as shown below.  Below we show how Sesame scripts may be run from the python console:
 
 .. image:: ipython.*
    :align: center

@@ -8,7 +8,7 @@ The system tab is used to define the conditions of the simulation (e.g. the appl
    :align: center
 
 **Basic Settings**
-The GUI allows looping over two types of variables: the applied voltage and a user-defined parameter in the generation rate (this variable is defined in the bottom-right field of the ``System`` tab).  The Loop values can be specified with ``numpy`` functions for array construction (as in the example shown above), or can be specified manually (e.g. [0, .1, .2]).  
+The GUI allows looping over two types of variables: the applied voltage and a user-defined parameter in the generation rate (this variable is defined in the bottom-left field of the ``System`` tab).  The Loop values can be specified with ``numpy`` functions for array construction (as in the example shown above), or can be specified manually (e.g. [0, .1, .2]).  
 
 The working directory and output file name determine the location and name of simulation output files.  The files can be saved in python format (.npz) or matlab format (.mat).  The output filenames are appended by "_x", where x labels the loop index.  
 

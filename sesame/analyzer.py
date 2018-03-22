@@ -132,7 +132,7 @@ class Analyzer():
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
 
         fig.legend([l1, l2], [r'$\mathregular{E_{F_n}}$',\
-                              r'$\mathregular{-E_{F_p}}$'])
+                              r'$\mathregular{E_{F_p}}$'])
 
 
         ax.set_xlabel('Position [µm]')
@@ -403,7 +403,7 @@ class Analyzer():
                 jp = get_jp(self.sys, self.efp, self.v, sites, sites+Nx, dy)
         return jp
 
-    def electron_current_map(self, cmap='gnuplot', scale=1e6):
+    def electron_current_map(self, cmap='gnuplot', scale=1e4):
         """
         Compute a 2D map of the electron current.
 
@@ -417,7 +417,7 @@ class Analyzer():
         """
         self.current_map(True, cmap, scale)
 
-    def hole_current_map(self, cmap='gnuplot', scale=1e6):
+    def hole_current_map(self, cmap='gnuplot', scale=1e4):
         """
         Compute a 2D map of the hole current of a 2D system.
 
