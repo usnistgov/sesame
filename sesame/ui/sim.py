@@ -158,16 +158,6 @@ class SimulationWorker(QObject):
 
                 if solution is not None:
                     name = simName + "_{0}".format(idx)
-                    # add some system settings to the saved results
-                    #solution.update({'x': system.xpts, 'affinity': system.bl,\
-                    #                 'Eg': system.Eg, 'Nc': system.Nc,\
-                    #                 'Nv': system.Nv,\
-                    #                 'epsilon': system.epsilon})
-
-                    #if (np.size(system.ypts)>1):
-                    #    solution.update({'y': system.ypts})
-                    #if (np.size(system.zpts)>1):
-                    #    solution.update({'z': system.zpts})
 
                     if fmt == '.mat':
                         save_sim(system, solution, name, fmt='mat')
@@ -238,10 +228,11 @@ class SimulationWorker(QObject):
 
                     if self.abort:
                         return
-                    if fmt == 'mat':
-                        savemat(name, solution)
+                    if fmt == '.mat':
+                        save_sim(system, solution, name, fmt='mat')
                     else:
-                        np.savez_compressed(name, **solution)
+                        filename = "%s.gzip" % name
+                        save_sim(system, solution, filename)
                         # signal a new file has been created to the main thread
                         self.newFile.emit(name + '.gzip')
                 else:

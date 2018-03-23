@@ -13,12 +13,13 @@ Ly = 3e-4   #[cm]
 junction = .1e-4    # [cm]
 
 # Mesh
-x = np.concatenate((np.linspace(0,.4e-4, 40, endpoint=False),
-                    np.linspace(0.4e-4, 1.0e-4, 40, endpoint=False),
-                    np.linspace(1.0e-4, 3.0e-4, 100)))
+x = np.concatenate((np.linspace(0,.2e-4, 30, endpoint=False),
+                    np.linspace(0.2e-4, 1.4e-4, 60, endpoint=False),
+                    np.linspace(1.4e-4, 2.9e-4, 70, endpoint=False),
+                    np.linspace(2.9e-4, 3e-4, 10)))
 
-y = np.concatenate((np.linspace(0, 2e-4, 80, endpoint=False),
-                    np.linspace(2e-4, 2.75e-4, 60, endpoint=False),
+y = np.concatenate((np.linspace(0, 1.75e-4, 50, endpoint=False),
+                    np.linspace(1.75e-4, 2.75e-4, 50, endpoint=False),
                     np.linspace(2.75e-4, Ly, 50)))
 
 # Create a system
@@ -73,7 +74,7 @@ solution = sesame.solve_equilibrium(sys, periodic_bcs=False)
 
 q = 1.6e-19      # C
 ibeam = 10e-12   # A
-Ebeam = 10e3     # eV
+Ebeam = 15e3     # eV
 eg = 1.5         # eV
 density = 5.85   # g/cm^3
 kev = 1e3        # eV
@@ -90,7 +91,7 @@ y0 = 0.3 * Rbulb
 vt = .0258
 Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length
 # converting Gtot to a 2-d quantity
-Gtot = Gtot*Ld
+Gtot = Gtot
 
 ######################################################
 ##      vary position of the electron beam
@@ -107,7 +108,7 @@ for idx, x0 in enumerate(x0list):
 
     # define a function for generation profile
     def excitation(x,y):
-        return Gtot/(2*np.pi*sigma**2) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
+        return Gtot/(2*np.pi*sigma**2*Ld) * np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
 
     # add generation to the system at new beam position
     sys.generation(excitation)
@@ -121,13 +122,15 @@ for idx, x0 in enumerate(x0list):
     tj = az.full_current() * sys.scaling.current * sys.scaling.length
     # save the current
     jset[idx] = tj
-    jratio[idx] = tj/(q * Gtot)
+    # obtain total generation from sys object
+    gtot = sys.gtot * sys.scaling.generation * sys.scaling.length**2
+    jratio[idx] = tj/(q * gtot)
 
     # compute (dimensionless) total radiative recombination and convert to to dimension-ful form
     cl = az.integrated_radiative_recombination() * sys.scaling.generation * sys.scaling.length**2
     # save the CL
     rset[idx] = cl
-    rad_ratio[idx] = cl/Gtot
+    rad_ratio[idx] = cl/gtot
 
 # display result
 for counter in range(len(jset)):
@@ -136,3 +139,6 @@ for counter in range(len(jset)):
 for counter in range(len(jset)):
     print('x = {0:2.1e} {1:5.3e} {2:5.3e}'.format(x0list[counter],jratio[counter],rad_ratio[counter]))
 
+import matplotlib.pyplot as plt
+plt.plot(x0list,jset)
+plt.show()

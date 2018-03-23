@@ -155,6 +155,9 @@ Next we scan over :math:`x_0` with a ``for`` loop.  At each value of :math:`x_0`
                    np.exp(-(x-x0)**2/(2*sigma**2)) * np.exp(-(y-Ly+y0)**2/(2*sigma**2))
 	
 	    sys.generation(excitation)
+
+.. note::
+    Using the GUI is more awkward for this type of simulation, because only one variable definition is allowed in the generation function definition.  Therefore all of the numerical prefactors must be computed by the user and input by hand.
 	
 Now we solve the system::
 
@@ -172,7 +175,25 @@ We obtain the current and store it in the array::
 	    # save the current
 	    jset[idx] = tj
 
-Finally we save and plot the computed current versus beam position:
+
+It can be informative to plot the current normalized to the total generation rate.  The (dimensionless) total generation rate for a simulation is contained in the ``gtot`` field of ``sys``.  As always, we must use ``scaling`` factors to make this a dimension-ful quantity.  The code for this is shown below::
+
+    # obtain total generation from sys object
+    gtot = sys.gtot * sys.scaling.generation * sys.scaling.length**2
+    jratio[idx] = tj/(q * gtot)
+
+
+We can also compute the radiative recombination at each beam position point, thereby simulation a cathodoluminesence experiment.  This code shown below::
+
+  # compute (dimensionless) total radiative recombination and convert to to   dimension-ful form
+  cl = az.integrated_radiative_recombination() * sys.scaling.generation *   sys.scaling.length**2
+  # save the CL
+  rset[idx] = cl
+  rad_ratio[idx] = cl/gtot
+
+
+The current and CL can be saved and plotted as in previous tutorials.
+
 
 
 .. rubric:: References

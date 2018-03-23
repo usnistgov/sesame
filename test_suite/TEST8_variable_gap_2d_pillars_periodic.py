@@ -128,7 +128,7 @@ def runTest8():
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (2e-4)
         j.append(tj)
-        print(tj)
+
 
 
     jSesame_12_4_2017 = np.array([0.51880926865443222, 0.49724822874328478, 0.38634212450640715, -0.41864449697811151, -7.1679242861918242,
@@ -137,4 +137,3 @@ def runTest8():
     error = np.max(np.abs((jSesame_12_4_2017 - np.transpose(j)) / (.5 * (jSesame_12_4_2017 + np.transpose(j)))))
     print("error = {0}".format(error))
 
-runTest8()

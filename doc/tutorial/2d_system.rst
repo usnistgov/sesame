@@ -81,7 +81,7 @@ We specify contacts as before::
     Sesame assumes that the contact properties (e.g. recombination velocity, metallic work function) are uniform along the y-direction.
 
 Adding a grain boundary
-........................
+.......................
 
 Now we add a line of defects to simulate a grain boundary using the ``sys`` method :func:`~sesame.builder.Builder.add_line_defects`.  The necessary inputs are the grain boundary defect's electrical properties (e.g. capture cross sections, energy level, defect density, and charge states), and the endpoints defining the grain boundary location (recall a grain boundary is represented by a line in a 2-dimensional simulation).  Below we show code defining these properties for our example, and adding the grain boundary to the simulation::
 

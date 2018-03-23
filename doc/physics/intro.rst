@@ -256,7 +256,7 @@ denoted respectively by :math:`S_{c_p}` and :math:`S_{c_n}`
    \vec{J}_n(0,y,z) \cdot \vec{u}_x &= qS_{c_n} (n(0,y,z) - n_{\rm eq}(0,y,z))\\
    \vec{J}_p(0,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(0,y,z) - p_{\rm eq}(0,y,z))\\
    \vec{J}_n(L,y,z) \cdot \vec{u}_x &= -qS_{c_n} (n(L,y,z) - n_{\rm eq}(L,y,z))\\
-   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= -qS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
+   \vec{J}_p(L,y,z) \cdot \vec{u}_x &= qS_{c_p} (p(L,y,z) - p_{\rm eq}(L,y,z))\\
    :label: BCs
 
 where :math:`n(p)_{\rm eq}` is the thermal equilibrium electron (hole) density.

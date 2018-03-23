@@ -39,7 +39,7 @@ level.
 .. math::
     p(x) = e^{\left(-\chi(x)-E_g(x)-E_{F_p}(x)-q\phi(x)+k_BT \ln(N_V)\right)/k_BT}
 
-where :math:`chi` is the electron affinity, :math:`E_g` is the band gap.  It's convenient to define :math:`\psi_p=\chi+E_g+E_g-k_BT\ln(N_V)`.  We plug this form of :math:`p` into Eq. :eq:`ji`:
+where :math:`\chi` is the electron affinity, :math:`E_g` is the band gap.  It's convenient to define :math:`\psi_p=\chi+E_g+E_g-k_BT\ln(N_V)`.  We plug this form of :math:`p` into Eq. :eq:`ji`:
 
 .. math::
     J_p^i = q \mu_p e^{-\psi_p(x)/k_BT}
@@ -63,27 +63,27 @@ which enables the integral on the left hand side above to be performed:
 
 .. math::
     \int_{x_i}^{x_{i+1}} \mathrm{d}x e^{\psi_p(x)/k_BT} = 
-    \frac{k_BT}{q} \Delta x^i \frac{e^{ q\psi_{p_{i+1}}/k_BT} - e^{
-    q\psi_{p_i} / k_BT}}{\psi_{p_{i+1}} - \psi_{p_i}}
+    k_BT \Delta x^i \frac{e^{ \psi_{p_{i+1}}/k_BT} - e^{
+    \psi_{p_i} / k_BT}}{\psi_{p_{i+1}} - \psi_{p_i}}
    :label: eqx2
 
 Plugging Eq. :eq:`eqx2` into Eq. :eq:`eqx` and solving for :math:`J_p^i` yields
 
 .. math::
-    J_p^i = \frac{q^2/k_BT}{\Delta x^i}
-    \frac{\psi_{p_{i+1}}-\psi_{p_i}}{e^{q\psi_{p_{i+1}}/k_BT}-e^{q\psi_{p_i}/k_BT}} 
+    J_p^i = \frac{q\mu_p^i}{\Delta x^i}
+    \frac{\psi_{p_{i}}-\psi_{p_{i+1}}}{e^{\psi_{p_{i+1}}/k_BT}-e^{\psi_{p_i}/k_BT}} 
     \mu_p  \left[e^{-E_{F_p,i+1}/k_BT}-e^{-E_{F_p,i}}\right]
    :label: jpi
 
-A similar procedure leads to the following expression for :math:`J_n^i`:
+Where :math:`\mu_p^i = (\mu_{p_i}+\mu_{p_{i+1}})/2`. A similar procedure leads to the following expression for :math:`J_n^i`:
 
 .. math::
-    J_n^i = \frac{q^2/k_BT}{\Delta x^i}
-    \frac{\psi_{n_{i+1}}-\psi_{n_i}}{e^{-q\psi_{n_{i+1}}/k_BT}-e^{-q\psi_{n_i}/k_BT}}
-    \mu_n N_C e^{-b_l}  \left[e^{E_{F_n,i+1}/k_BT}-e^{E_{F_n,i}/k_BT}\right]
+    J_n^i = \frac{q\mu_n^i}{\Delta x^i}
+    \frac{\psi_{n_{i+1}}-\psi_{n_i}}{e^{-\psi_{n_{i+1}}/k_BT}-e^{-\psi_{n_i}/k_BT}}
+    \left[e^{E_{F_n,i+1}/k_BT}-e^{E_{F_n,i}/k_BT}\right]
    :label: jni
 
-where :math:`\psi_n=q\phi+\chi+k_BT \ln(N_V)`.  
+where :math:`\psi_n=q\phi+\chi+k_BT \ln(N_C)`.  
 
 
 

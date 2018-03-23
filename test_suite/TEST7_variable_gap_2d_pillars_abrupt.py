@@ -74,8 +74,6 @@ def runTest7():
     sys.add_acceptor(nD2, region3)
     sys.add_acceptor(nD2, region4)
 
-    sesame.plot(sys, sys.rho)
-
     # Define the surface recombination velocities for electrons and holes [m/s]
     sys.contact_type('Ohmic','Ohmic')
     SS = 1e50
@@ -130,7 +128,7 @@ def runTest7():
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (2e-4)
         j.append(tj)
-        print(tj)
+
 
     jcomsol = np.array([0.50272, 0.48515, 0.40623, -0.16696, -5.1204, -58.859, -819.11, -7024.4, -27657])
     jcomsol = jcomsol * 1e-4
