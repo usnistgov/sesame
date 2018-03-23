@@ -114,9 +114,14 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     -------
     jn: numpy array of floats
     """
+
+    # tol1 controls the minimum value of dv.  all values less than tol1 are set equal to tol1
     tol1 = 1e-12
+    # tol2 controls threshold for taylor series expansion of jp in terms of dv0: series expansion is used if dv0<tol2
     tol2 = 1e-5
+    # tol3 controls threshold for taylor series expansion of jp in terms of defp: series expansion is used if defp<tol3
     tol3 = 1e-9
+    # this description of tol variables applies for the jp function, and jn and jp derivative functions
 
     vp0 = v[sites_i] + sys.bl[sites_i] + np.log(sys.Nc[sites_i])
     dv = vp0 - (v[sites_ip1] + sys.bl[sites_ip1] + np.log(sys.Nc[sites_ip1]))

@@ -29,7 +29,7 @@ for link :math:`i` (link :math:`i` connects discretized points :math:`i` and
     J_p^i & = q\mu_p p_i \frac{\partial E_{F_p,i}}{\partial x}
    :label: ji
 
-Note that here, link indices are denoted with a superscript, while site indices
+Note that link indices are denoted with a superscript, while site indices
 are denoted with a subscript.
 
 Next, a key step to ensure numerical stability is to integrate the above in order to
@@ -39,7 +39,7 @@ level.
 .. math::
     p(x) = e^{\left(-\chi(x)-E_g(x)-E_{F_p}(x)-q\phi(x)+k_BT \ln(N_V)\right)/k_BT}
 
-where :math:`\chi` is the electron affinity, :math:`E_g` is the band gap.  It's convenient to define :math:`\psi_p=\chi+E_g+E_g-k_BT\ln(N_V)`.  We plug this form of :math:`p` into Eq. :eq:`ji`:
+It's convenient to define :math:`\psi_p=\chi+E_g+E_g-k_BT\ln(N_V)`.  We plug this form of :math:`p` into Eq. :eq:`ji`:
 
 .. math::
     J_p^i = q \mu_p e^{-\psi_p(x)/k_BT}

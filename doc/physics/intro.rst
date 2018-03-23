@@ -21,7 +21,7 @@ the drift-diffusion-Poisson equations:
 .. math:: 
    \vec{\nabla}\cdot \vec{J}_n &= -q(G-R)\\
    \vec{\nabla}\cdot \vec{J}_p &= q(G-R)\\
-   \vec{\nabla}\cdot (\epsilon\vec{\nabla} \phi) &= \rho/\epsilon_0
+   \vec{\nabla}\cdot (\epsilon\vec{\nabla} \phi) &= -\rho/\epsilon_0
    :label: ddp
 
 with the currents
@@ -104,7 +104,7 @@ Auger mechanism has the form
 where :math:`C_n` (:math:`C_p`) is the electron (hole) Auger coefficient.
 
 Extended line and plane defects
-............................................
+...............................
 
 Additional charged defects can be added to the system to simulate, for example,
 grain boundaries or sample surfaces in a semiconductor. These extended planar
@@ -167,7 +167,7 @@ related to these quantities as
    :label: np
 
 where the term :math:`\chi` is the electron affinity, :math:`\phi` is the
-electrostatic potential. Quasi-Fermi levels are convenient in part because they
+electrostatic potential, and :math:`E_g` is the bandgap. Note that all of these quantities may vary with position. Quasi-Fermi levels are convenient in part because they
 guarantee that carrier densities are always positive. While carrier densities
 vary by many orders of magnitude, quasi-Fermi levels require much less variation
 to describe the system. 
