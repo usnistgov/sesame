@@ -53,7 +53,7 @@ def get_p(sys, efp, v, sites):
     bl = sys.bl[sites]
     Eg = sys.Eg[sites]
     Nv = sys.Nv[sites]
-    p = Nv * exp(-Eg - bl + efp[sites] - v[sites])
+    p = Nv * exp(-Eg - bl - efp[sites] - v[sites])
     return p
 
 
@@ -77,7 +77,7 @@ def get_bulk_rr_derivs(sys, n, p):
            + sys.Cn * n * (2 * _np - ni2) + sys.Cp * _np * p \
            + sys.B * _np
 
-    defp = (_np * (sys.tau_h * (n + sys.n1) + sys.tau_e * (p + sys.p1)) - (_np - ni2) * p * sys.tau_e) \
+    defp = -(_np * (sys.tau_h * (n + sys.n1) + sys.tau_e * (p + sys.p1)) - (_np - ni2) * p * sys.tau_e) \
            / (sys.tau_h * (n + sys.n1) + sys.tau_e * (p + sys.p1)) ** 2 \
            + sys.Cn * n * _np + sys.Cp * p * (2 * _np - ni2) \
            + sys.B * _np
@@ -171,8 +171,8 @@ def get_jp(sys, efp, v, sites_i, sites_ip1, dl):
     dv0 = dv
     dv = dv + (np.abs(dv) < tol1) * tol1
 
-    efpp0 = efp[sites_i]
-    efpp1 = efp[sites_ip1]
+    efpp0 = -efp[sites_i]
+    efpp1 = -efp[sites_ip1]
     defp = efpp1 - efpp0
 
     mu = sys.mu_h[sites_i]
@@ -247,8 +247,8 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     dv0 = dv
     dv = dv + (np.abs(dv) < tol1) * tol1
 
-    efpp0 = efp[sites_i]
-    efpp1 = efp[sites_ip1]
+    efpp0 = -efp[sites_i]
+    efpp1 = -efp[sites_ip1]
     defp = efpp1 - efpp0
     mu = sys.mu_h[sites_i]
 
@@ -256,14 +256,14 @@ def get_jp_derivs(sys, efp, v, sites_i, sites_ip1, dl):
     ep1 = exp(efpp1)
     ep0 = exp(efpp0)
 
-    defp_i = (exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
+    defp_i = -(exp(efpp0 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
               exp(efpp0 - vp0) / (dl) / (1 - .5*(vp0-vp1) + 1/6.*(vp0-vp1)**2.) * (np.abs(dv0) < tol2)) * (np.abs(defp)>=tol3) + \
-             (exp(efpp1) * exp(-vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
+             -(exp(efpp1) * exp(-vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
               exp(efpp1) * exp(-vp0) / (dl) / (1 - .5 * (vp0 - vp1) + 1 / 6. * (vp0 - vp1) ** 2.) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
-    defp_ip1 = (-exp(efpp1 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
+    defp_ip1 = -(-exp(efpp1 - vp0) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
                 -exp(efpp1 - vp0)  / (dl) / (1 - .5*(vp0-vp1) + 1/6.*(vp0-vp1)**2.) * (np.abs(dv0) < tol2)) * (np.abs(defp)>=tol3) + \
-               (-exp(efpp1) * exp(-vp0)*(1-(efpp0 - efpp1)) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
+               -(-exp(efpp1) * exp(-vp0)*(1-(efpp0 - efpp1)) * dv / (dl * (1 - exp(-dv))) * (np.abs(dv0) >= tol2) + \
                 -exp(efpp1) * exp(-vp0)*(1-(efpp0 - efpp1)) / (dl) / (1 - .5*(vp0-vp1) + 1/6.*(vp0-vp1)**2.) * (np.abs(dv0) < tol2)) * (np.abs(defp) < tol3)
 
     dv_i = (-exp(efpp0)*(1 - exp(efpp1-efpp0)) * ev0 * (exp(-dv) + (-1 + dv)) / (dl * exp(2 * vp0) * (1 - exp(-dv)) ** 2) * (np.abs(dv0) >= tol2) + \
@@ -290,7 +290,7 @@ def get_srh_rr_derivs(sys, n, p, n1, p1, tau_e, tau_h):
 
     defn = (_np * (tau_h * (n + n1) + tau_e * (p + p1)) - (_np - ni2) * n * tau_h) \
            / (tau_h * (n + n1) + tau_e * (p + p1)) ** 2
-    defp = (_np * (tau_h * (n + n1) + tau_e * (p + p1)) - (_np - ni2) * p * tau_e) \
+    defp = -(_np * (tau_h * (n + n1) + tau_e * (p + p1)) - (_np - ni2) * p * tau_e) \
            / (tau_h * (n + n1) + tau_e * (p + p1)) ** 2
     dv = (_np - ni2) * (tau_e * p - tau_h * n) / (tau_h * (n + n1) + tau_e * (p + p1)) ** 2
 

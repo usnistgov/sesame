@@ -50,11 +50,11 @@ def getJ(sys, v, efn, efp):
 
     # carrier densities
     n = sys.Nc * np.exp(+sys.bl + efn + v)
-    p = sys.Nv * exp(-sys.Eg - sys.bl + efp - v)
+    p = sys.Nv * exp(-sys.Eg - sys.bl - efp - v)
 
     # bulk charges
     drho_defn_s = - n
-    drho_defp_s = + p
+    drho_defp_s = - p
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates
@@ -198,7 +198,7 @@ def getJ(sys, v, efn, efp):
     #--------------------------------------------------------------------------
     defp_s, defp_sp1, dv_s, dv_sp1 = get_jp_derivs(sys, efp, v, 0, 1, sys.dx[0])
 
-    defp_s += sys.Scp[0] * p[0]
+    defp_s -= sys.Scp[0] * p[0]
     dv_s -= sys.Scp[0] * p[0]
 
     # update the sparse matrix row and columns
@@ -267,7 +267,7 @@ def getJ(sys, v, efn, efp):
     dv_sm1 = djpx_sm1_dv_sm1
 
     defn_s = - dxbar * dr_defn_s[Nx-1]
-    defp_s = djpx_sm1_defp_s - dxbar * dr_defp_s[Nx-1] - sys.Scp[1] * p[Nx-1]
+    defp_s = djpx_sm1_defp_s - dxbar * dr_defp_s[Nx-1] + sys.Scp[1] * p[Nx-1]
     dv_s = djpx_sm1_dv_s - dxbar * dr_dv_s[Nx-1] + sys.Scp[1] * p[Nx-1]
 
     # update the sparse matrix row and columns

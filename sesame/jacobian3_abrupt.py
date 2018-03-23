@@ -64,11 +64,11 @@ def getJ(sys, v, efn, efp):
 
     # carrier densities
     n = sys.Nc * np.exp(+sys.bl + efn + v)
-    p = sys.Nv * np.exp(-sys.Eg - sys.bl + efp - v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl - efp - v)
 
     # bulk charges
     drho_defn_s = - n
-    drho_defp_s = + p
+    drho_defp_s = - p
     drho_dv_s = - n - p
 
     # derivatives of the bulk recombination rates

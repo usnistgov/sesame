@@ -147,7 +147,7 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 res =  (b-a) * se*ve[sdx]*_n[sdx] * (se*ve[sdx]*_n1 + sh*vh[sdx]*_p[sdx])
 
             if var == 'efp':
-                res = -(b-a) * (se*ve[sdx]*_n[sdx] + sh*vh[sdx]*_p1) * sh*vh[sdx]*_p[sdx]
+                res = (b-a) * (se*ve[sdx]*_n[sdx] + sh*vh[sdx]*_p1) * sh*vh[sdx]*_p[sdx]
 
             res /= (se*ve[sdx]*(_n[sdx]+_n1)+sh*vh[sdx]*(_p[sdx]+_p1))**2
 
@@ -167,7 +167,7 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                        - (_np[sdx] - ni2[sdx])*_n[sdx]/(sh*vh[sdx])
 
             if var == 'efp':
-                res = _np[sdx]*((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))\
+                res = -_np[sdx]*((_n[sdx]+_n1)/(sh*vh[sdx]) + (_p[sdx]+_p1)/(se*ve[sdx]))\
                         - (_np[sdx] - ni2[sdx])*_p[sdx]/(se*ve[sdx])
 
             if var == 'v':
@@ -193,12 +193,12 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
 
             if drho_defn is not None:
                 drho_defn[sites] += N/dl * (b-a) * se*ve*_n * (se*ve*_n1 + sh*vh*_p) / d
-                drho_defp[sites] += -N/dl * (b-a) * (se*ve*_n + sh*vh*_p1) * sh*vh*_p / d
+                drho_defp[sites] += N/dl * (b-a) * (se*ve*_n + sh*vh*_p1) * sh*vh*_p / d
                 
                 tau_e, tau_h = 1/(se*ve*N/dl), 1/(sh*vh*N/dl)
                 dr_defn[sites] += (_np*(tau_h*(_n+_n1) + tau_e*(_p+_p1)) - (_np-ni2)*_n*tau_h)\
                                   / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
-                dr_defp[sites] += (_np*(tau_h*(_n+_n1) + tau_e*(_p+_p1)) - (_np-ni2)*_p*tau_e)\
+                dr_defp[sites] -= (_np*(tau_h*(_n+_n1) + tau_e*(_p+_p1)) - (_np-ni2)*_p*tau_e)\
                                   / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
                 dr_dv[sites]   += (_np-ni2) * (tau_e*_p - tau_h*_n)\
                                   / (tau_h*(_n+_n1) + tau_e*(_p+_p1))**2
@@ -214,7 +214,7 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                                           args=(sdx, s, 'efn'))[0] \
                                      for sdx, s in enumerate(sites)]
 
-                drho_defp[sites] += [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
+                drho_defp[sites] -= [quad(drho, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                           args=(sdx, s, 'efp'))[0] \
                                      for sdx, s in enumerate(sites)]
 
@@ -222,7 +222,7 @@ def defectsJ(sys, defects_list, n, p, drho_dv, drho_defn=None, drho_defp=None,\
                 dr_defn[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                         args=(sdx, s, 'efn'))[0] \
                                    for sdx, s in enumerate(sites)]
-                dr_defp[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
+                dr_defp[sites] -= [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\
                                         args=(sdx, s, 'efp'))[0] \
                                    for sdx, s in enumerate(sites)]
                 dr_dv[sites] += [quad(dr, -sys.Eg[s]/2., sys.Eg[s]/2.,\

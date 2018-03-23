@@ -40,7 +40,7 @@ def getF(sys, v, efn, efp, veq):
     ###########################################################################
     # carrier densities
     n = sys.Nc * np.exp(+sys.bl + efn + v)
-    p = sys.Nv * np.exp(-sys.Eg - sys.bl + efp - v)
+    p = sys.Nv * np.exp(-sys.Eg - sys.bl - efp - v)
 
     # equilibrium carrier densities
     n_eq = sys.Nc * np.exp(+sys.bl + veq)
