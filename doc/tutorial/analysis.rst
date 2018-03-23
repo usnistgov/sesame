@@ -4,10 +4,10 @@ Tutorial 4: Saving, loading, and analyzing simulation data
 In this tutorial we describe the input and output data formats of Sesame, and show how to use Sesame's built-in tools to analyze the solution.
 
 .. seealso:: The examples treated here are in the files ``analyze_data.py`` and ``plot_data.py``, located in the
-   ``examples\tutorial4`` directory of the distribution. 
+   ``examples\tutorial4`` directory of the distribution.  This tutorial uses the output files from ``examples\tutorial3`` python script, so it's necessary to copy these gzip data files to ``examples\tutorial4``. 
 
 Saving data
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^
 
 In the previous tutorials, detailed solution data was saved automatically in the :func:`~sesame.solvers.Solver.IVcurve` function.  It's also possible to manually save simulations with Sesame's :func:`~sesame.utils.save_sim` function.  This function saves both the system object containing all of the simulation settings, and the solution dictionary.  (The solution dictionary contains the keys ``'v'``, ``'efn'``, and ``'efp'``.)  An example of :func:`~sesame.utils.save_sim` is shown below::
 
@@ -29,14 +29,14 @@ In this case the arrays defining the system properties (including ``Eg``, ``Nc``
 The postprocessing tools packaged with Sesame are built to work with python data files.  It's therefore more convenient to save the data in python format if substantial postprocessing and analysis will be performed.
 
 Loading data
-^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^
 
 Loading a saved simulation is accomplished with the ``load_sim`` command.  This returns the system object and result dictionary::
 
 	sys, result = sesame.load_sim("my_sim")
 
 Analysis of data: the Analyzer object
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 Next we show how to extract and analyze the data computed by the solvers.  To facilitate data analysis, Sesame has an :func:`~sesame.analyzer.Analyzer` class which contains many methods to compute typical quantities of interest, such as total defect, radiative, or radiative recombination, total current, carrier densities, grain boundary recombination, etc.  A summary and the descriptions of the methods available via the
 :func:`~sesame.analyzer.Analyzer` object are detailed in
 Sec. :ref:`label_code`.
@@ -46,6 +46,9 @@ We'll demonstrate the use of some of these methods, using the system created in 
     import numpy as np
     import sesame
    
+.. note::
+	In the rest of this tutorial, it's necessary to copy the output gzip files you obtained in tutorial3 to the ``examples\tutorial4`` directory
+
 
 Our data analysis will begin with computing carrier densities and currents, and plotting data.  In the
 code below we load a data file and create an instance of Analyzer class.  The :func:`~sesame.analyzer.Analyzer` object is initialized with a system and a dictionary of

@@ -70,7 +70,7 @@ f = lambda x: phi0*alpha*np.exp(-x*alpha)   # f is an "inline" function
 sys.generation(f)
 
 # Specify the applied voltage values
-voltages = np.linspace(0,.1,2)
+voltages = np.linspace(0,1,21)
 # Perform I-V calculation
 j = sesame.IVcurve(sys, voltages, result, '1dhetero_V')
 j = j * sys.scaling.current

@@ -54,7 +54,7 @@ The GUI is launched with the command from the sesame install directory::
     
      python app.py
 
-Note: some distributions of Anaconda are packaged with older versions of PyQt.  If you find that graphics do not render, or that the GUI does not run, it may be because PyQt is not up to date.  You can try this command to update PyQt::
+Note: some distributions of Anaconda are packaged with older versions of PyQt.  If you find that graphics do not render, or that the GUI does not run, it may be because PyQt is not up to date (Sesame uses PyQt5).  You can try this command to update PyQt if you have difficulty using graphics::
 
      conda install -c anaconda pyqt
 

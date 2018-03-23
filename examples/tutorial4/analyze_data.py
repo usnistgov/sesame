@@ -5,12 +5,12 @@ from scipy.io import savemat
 
 
 J = []
-for i in range(3):
-    filename = "2dGB_IV_%d.gzip"%i
+for i in range(10):
+    filename = "../tutorial3/2dGB_V_%d.gzip"%i
     sys, results = sesame.load_sim(filename)
     az = sesame.Analyzer(sys,results)
-    J.append(az.full_current())
-print(J)
+    J.append(az.full_current() * sys.scaling.current * sys.scaling.length)
+print("current [A/cm] = ",J)
 
 ##################
 
@@ -36,4 +36,5 @@ defect = sys.defects_list[0]
 R = az.defect_rr(defect)
 
 # Compute the integrated recombination along the line defect
-J = az.integrated_defect_recombination(defect)
+J = az.integrated_defect_recombination(defect) * sys.scaling.generation * sys.scaling.length**2
+print("GB recombination at Jsc [1/(cm s)] = ", J)
