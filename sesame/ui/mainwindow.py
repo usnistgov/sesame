@@ -307,8 +307,43 @@ class Window(QMainWindow):
         with open(self.cfgFile, 'r') as f:
             try:
                 config.read(self.cfgFile)
-            except:
+
+                grid = config.get('System', 'Grid')
+                materials = config.get('System', 'Materials')
+                defects = config.get('System', 'Defects')
+                gen, param = config.get('System', 'Generation rate'),\
+                             config.get('System', 'Generation parameter')
+                self.setSystem(ev(grid), ev(materials), ev(defects), gen, param)
+
+                voltageLoop = config.getboolean('Simulation', 'Voltage loop')
+                loopValues = config.get('Simulation', 'Loop values')
+                workDir = config.get('Simulation', 'Working directory')
+                fileName = config.get('Simulation', 'Simulation name')
+                ext = config.get('Simulation', 'Extension')
+                BCs = config.getboolean('Simulation', 'Transverse boundary conditions')
+                ScnL = config.get('Simulation', 'Electron recombination velocity in 0')
+                ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
+                ScnR = config.get('Simulation', 'Electron recombination velocity in L')
+                ScpR = config.get('Simulation', 'Hole recombination velocity in L')
+                L_contact = config.get('Simulation', 'Contact boundary condition in 0')
+                R_contact = config.get('Simulation', 'Contact boundary condition in L')
+                L_WF = config.get('Simulation', 'Contact work function in 0')
+                R_WF = config.get('Simulation', 'Contact work function in L')
+                precision = config.get('Simulation', 'Newton precision')
+                maxSteps = config.get('Simulation', 'Maximum steps')
+                useMumps = config.getboolean('Simulation', 'Use Mumps')
+                iterative = config.getboolean('Simulation', 'Iterative solver')
+                ramp = config.get('Simulation', 'Generation ramp')
+                iterPrec = config.get('Simulation', 'Iterative solver precision')
+                htpy = config.get('Simulation', 'Newton homotopy')
+                self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
+                                   ext, BCs, L_contact, R_contact, L_WF, R_WF,\
+                                   ScnL, ScpL, ScnR, ScpR, precision,\
+                                   maxSteps, useMumps, iterative, ramp,\
+                                   iterPrec, htpy)
                 f.close()
+
+            except Exception:
                 msg = QMessageBox()
                 msg.setWindowTitle("Processing error")
                 msg.setIcon(QMessageBox.Critical)
@@ -317,40 +352,6 @@ class Window(QMainWindow):
                 msg.exec_()
                 return
 
-            grid = config.get('System', 'Grid')
-            materials = config.get('System', 'Materials')
-            defects = config.get('System', 'Defects')
-            gen, param = config.get('System', 'Generation rate'),\
-                         config.get('System', 'Generation parameter')
-            self.setSystem(ev(grid), ev(materials), ev(defects), gen, param)
-
-            voltageLoop = config.getboolean('Simulation', 'Voltage loop')
-            loopValues = config.get('Simulation', 'Loop values')
-            workDir = config.get('Simulation', 'Working directory')
-            fileName = config.get('Simulation', 'Simulation name')
-            ext = config.get('Simulation', 'Extension')
-            BCs = config.getboolean('Simulation', 'Transverse boundary conditions')
-            ScnL = config.get('Simulation', 'Electron recombination velocity in 0')
-            ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
-            ScnR = config.get('Simulation', 'Electron recombination velocity in L')
-            ScpR = config.get('Simulation', 'Hole recombination velocity in L')
-            L_contact = config.get('Simulation', 'Contact boundary condition in 0')
-            R_contact = config.get('Simulation', 'Contact boundary condition in L')
-            L_WF = config.get('Simulation', 'Contact work function in 0')
-            R_WF = config.get('Simulation', 'Contact work function in L')
-            precision = config.get('Simulation', 'Newton precision')
-            maxSteps = config.get('Simulation', 'Maximum steps')
-            useMumps = config.getboolean('Simulation', 'Use Mumps')
-            iterative = config.getboolean('Simulation', 'Iterative solver')
-            ramp = config.get('Simulation', 'Generation ramp')
-            iterPrec = config.get('Simulation', 'Iterative solver precision')
-            htpy = config.get('Simulation', 'Newton homotopy')
-            self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
-                               ext, BCs, L_contact, R_contact, L_WF, R_WF,\
-                               ScnL, ScpL, ScnR, ScpR, precision,\
-                               maxSteps, useMumps, iterative, ramp,\
-                               iterPrec, htpy)
-            f.close()
 
     def saveAsConfig(self):
         self.cfgFile = QFileDialog.getSaveFileName(self, 'Save File', '.ini', \
