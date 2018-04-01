@@ -6,7 +6,11 @@
 import numpy as np
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
+from PyQt5.QtWidgets import QMessageBox
 import logging
+import traceback
+from functools import wraps
+import types
 
 import sesame
 from ..solvers import Solver
@@ -39,7 +43,30 @@ class SimulationWorker(QObject):
     def abortSim(self):
         self.abort = True
 
+    def threadError(*args):
+        # a decorator to handle all exceptions that may occur in the run
+        # function below
+        if len(args) == 0 or isinstance(args[0], types.FunctionType):
+            args = []
+        @QtCore.pyqtSlot(*args)
+        def slotdecorator(func):
+            @wraps(func)
+            def wrapper(*args, **kwargs):
+                try:
+                    func(*args)
+                except:
+                    # logger message, args contains this class instance only
+                    msg = "**  An unhandled error occured.  **"
+                    args[0].logger.error(msg)
+                    p = traceback.format_exc()
+                    args[0].logger.error(p)
+                    args[0].simuDone.emit()
+            return wrapper
+
+        return slotdecorator
+
     @pyqtSlot()
+    @threadError("bool")
     def run(self):
         loop = self.loop
         system = self.system
@@ -247,3 +274,5 @@ class SimulationWorker(QObject):
 
         # tell main thread to quit this thread
         self.simuDone.emit()
+
+
