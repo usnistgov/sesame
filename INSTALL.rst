@@ -10,9 +10,9 @@ Building Sesame requires
  * `Python <http://python.org>`_ 3.4 or above,
  * `SciPy <http://scipy.org>`_ 0.9 or newer,
  * `LAPACK <http://netlib.org/lapack/>`_ and `BLAS <http://netlib.org/blas/>`_,
-   (For best performance the free `OpenBLAS
+   (other options are the free `OpenBLAS
    <http://xianyi.github.com/OpenBLAS/>`_ or the nonfree `MKL
-   <http://software.intel.com/en-us/intel-mkl>`_ can be used.)
+   <http://software.intel.com/en-us/intel-mkl>`_.)
 
 The following software is highly recommended though not strictly required:
  * `Matplotlib <http://matplotlib.sourceforge.net/>`_ 1.1 or newer, for Sesame's
@@ -31,6 +31,8 @@ The graphical user interface requires `PyQt5
 
 For users with no python installation, a convenient standalone installation which automatically includes all of the requisiste libraries and packages is `Anaconda <https://www.anaconda.com/>`_ .
 
+Sesame may be downloaded from https://github.com/usnistgov/sesame
+
 Generic instructions
 .....................
 Standard build and install
@@ -39,14 +41,14 @@ Sesame can be built  and installed following the `usual Python conventions
 <http://docs.python.org/install/index.html>`_ by running the following commands
 in the root directory of the Sesame distribution::
 
-    python3 setup.py build
-    python3 setup.py install
+    python setup.py build
+    python setup.py install
 
 Depending on your system, you might have to run the second command with
 administrator privileges. The installation
 step can be done locally either by using the ``--user`` prefix::
 
-    python3 setup.py install --user
+    python setup.py install --user
 
 or by specifying the location where to install the package files with
 ``--prefix=/path/of/directory``.
@@ -88,11 +90,11 @@ appear.
 As an alternative if ``make`` is not available, the HTML documentation can be built
 using the command from the root directory::
 
-    python3 setup.py build_sphinx
+    python setup.py build_sphinx
 
 The documentation is produced in ``doc/build/html``. To build the PDF file::
 
-    python3 setup.py build_sphinx -b latex
+    python setup.py build_sphinx -b latex
     cd doc/build/latex
     make all-pdf
 
@@ -110,10 +112,10 @@ Sesame should run on all recent Unix-like systems.
 
 2. Inside the Sesame source distribution's root directory run ::
 
-       python3 setup.py build
-       sudo python3 setup.py install
+       python setup.py build
+       sudo python setup.py install
 
-Run ``python3 setup.py --help install`` for installation options.
+Run ``python setup.py --help install`` for installation options.
 
 
 Microsoft Windows

@@ -29,7 +29,7 @@ To obtain Sesame, first open the Anaconda Prompt: ``Start`` :math:`\rightarrow` 
 
 Once you have ``git``, obtain Sesame with the command::
 
-	git clone http://githum.com/usnistgov/sesame
+	git clone http://github.com/usnistgov/sesame
 
 The git repository of Sesame is cloned in the directory where the command was
 issued. Enter the sesame repository, build and install Sesame with the commands::

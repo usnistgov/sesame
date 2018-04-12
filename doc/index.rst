@@ -37,3 +37,8 @@ Sesame |version| documentation
 
 
 * :ref:`genindex`
+
+
+.. topic:: Disclaimer
+
+   The full description of the procedures used in this documentation requires the identification of certain commercial products.  The inclusion of such information should in no way be construed as indicating that such products are endorsed by NIST or are recommended by NIST or that they are necessarily the best software for the purposes described.
