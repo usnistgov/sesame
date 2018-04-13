@@ -81,7 +81,6 @@ class MplWindow(QWidget):
 
                 if sys.dimension == 1:
                     self.ax.plot(xpts[x[-1]], np.ones_like(xpts[x[-1]]) / 2., lw=50)
-                    #self.ax.plot(xpts[x], np.ones_like(xpts[x])/2., lw=50)
                     self.ax.margins(0)
             # create an array of fake data to be plotted
             d = np.zeros((nx, ny)) - 1
