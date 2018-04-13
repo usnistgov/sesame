@@ -126,8 +126,8 @@ class Analyzer():
         vt = self.sys.scaling.energy
         X = X * 1e4  # in um
 
-        l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cfff', ls='--')
-        l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392eff', ls='--')
+        l1, = ax.plot(X, vt*self.efn[sites], lw=2, color='#2e89cf', ls='--')
+        l2, = ax.plot(X, vt*self.efp[sites], lw=2, color='#cf392e', ls='--')
         l3, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites]), lw=2, color='k', ls='-')
         l4, = ax.plot(X, -vt * (self.v[sites] + self.sys.bl[sites] + self.sys.Eg[sites]), lw=2, color='k', ls='-')
 
