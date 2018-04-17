@@ -121,7 +121,7 @@ class Analysis(QWidget):
         "Auger recombination", \
         "Electron current along x", "Electron current along y",\
         "Hole current along x", "Hole current along y",\
-        "Integrated defects recombination", "Integrated total recombination",\
+        "Integrated planar defects recomb.", "Integrated total recombination",\
         "Full steady state current"]
         self.quantity2.addItems(quantities)
         form.addRow("Y data", self.quantity2)
@@ -458,7 +458,7 @@ class Analysis(QWidget):
             if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
-            if txt == "Integrated planar defects recombination":
+            if txt == "Integrated planar defects recomb.":
                 if system.dimension == 1:
                     Ydata.append(G * x0 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
@@ -490,6 +490,7 @@ class Analysis(QWidget):
             # plot
             if txt not in ["Full steady state current",\
                            "Integrated total recombination",\
+                           "Integrated planar defects recomb.",\
                            "Integrated defects recombination"]:
                 if txt != "Band diagram":
                     ax = self.linearFig.figure.add_subplot(111)
@@ -503,6 +504,7 @@ class Analysis(QWidget):
         # For quantities looped over
         if txt in ["Full steady state current",\
                    "Integrated total recombination",\
+                   "Integrated planar defects recomb.",\
                    "Integrated defects recombination"]:
             try:
                 c = next(self.iterColors)
