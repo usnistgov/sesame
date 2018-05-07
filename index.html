@@ -1,10 +1,114 @@
-<p><img src="sesameLogo.png" alt="sesameLogo" /></a></p>
-<h2>About: Sesame is an open source drift-diffusion-Poisson solver for 1 and 2-dimensional systems.&nbsp; It can describe optoelectronic devices such as solar cells and LED's.&nbsp; Sesame is designed to easily model planar defects such as grain boundaries and sample surfaces.</h2>
-<p><strong><a href="https://www.github.com/usnistgov/sesame/">Source code</a></strong> (Python)</p>
-<p><strong><a href="https://www.github.com/usnistgov/sesame/releases/download/v1.0/sesameInstall.exe">Executable download</a></strong> (for Windows)</p>
-<p><strong><a href="http://sesame.readthedocs.io/en/latest/">Technical documentation</a></strong> (includes tutorials)</p>
-<p>&nbsp;</p>
-<p>&nbsp;</p>
-<p><img src="nistLogo.png" alt="nistLogo" /></p>
-<p>&nbsp;</p>
-<p>Certain commercial equipment, instruments, materials, systems, software, and trade names may be identified throughout this site in order to specify or identify technologies adequately. Such identification is not intended to imply recommendation or endorsement by NIST or any other party, nor is it intended to imply that the systems or products identified are necessarily the best available for the purpose. All data and other information posted on this site is provided as a public service and is provided &ldquo;AS IS.&rdquo; NIST MAKES NO WARRANTY OF ANY KIND, EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE IMPLIED WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT AND DATA ACCURACY.&nbsp;</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Home | Sesame</title>
+  <link rel="icon" href="logo-icon_sesame.ico">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="bootstrap.min.css">
+  <style>
+ 
+    /* Set height of the grid so .sidenav can be 100% (adjust as needed) */
+    .row.content {height: 950px} /* height of the page */
+ 
+    /* First paragraph starts away from the top */
+    .col-sm-8 {
+      top:30px;
+    }
+    
+    /* Set black background color, white text and some padding */
+    footer { 
+      background-color: #555; 
+      color: white; 
+      padding: 15px; 
+    } 
+    
+    /* On small screens, set height to 'auto' for sidenav and grid */
+    @media screen and (max-width: 767px) {
+      .sidenav {
+        height: auto;
+        padding: 15px;
+      }
+      .row.content {height:auto;} 
+    }
+  </style>
+</head>
+<body>
+
+ 
+<div class="container-fluid text-center">    
+  <div class="row content">
+    <div class="col-sm-2 sidenav">
+    <!-- keep the right column white -->
+    </div>
+    <div class="col-sm-8 text-justify"> 
+
+       <img src="sesameLogo.png"
+       style="width:400px;height:48px;margin-bottom:30px;" class="img-responsive" />
+      <hr>
+
+      <h2>Optoelectronic modeling in multiple dimensions</h2>
+      <p>Sesame is an open source drift-diffusion-Poisson solver in one and
+      two dimensions.  It can describe optoelectronic devices such as
+      solar cells and LED's. Sesame is designed to easily model planar defects
+      such as grain boundaries and sample surfaces.</p>
+
+      <img src="model.png" class="img-responsive" style="padding-left:25px;" />
+
+      <h3>Download and install</h3>
+      <p>Sesame is free software covered by the <strong><a
+      href="https://sesame.readthedocs.io/en/latest/pre/license.html">3-clause
+      BSD license</a></strong>. The source code is available on Github.  
+      <ul> 
+      <strong><a
+      href="https://www.github.com/usnistgov/sesame/">Source code</a></strong>
+      </ul>
+      
+      A compiled version of the code has been built for Microsoft
+      Windows. The executable contains all the dependencies necessary to
+      run Sesame together with the tutorials. An installer of this distribution
+      is available. 
+      <ul>
+      <strong><a
+      href="https://www.github.com/usnistgov/sesame/releases/download/v1.0/sesameInstall.exe">sesameInstall.exe</a></strong>
+      </ul>
+      </p>
+
+
+      <h3>Doumentation and tutorials</h3>
+      <p>A complete documentation of the distribution is available <strong><a
+      href="https://sesame.readthedocs.io/en/latest/pre/index.html">here</a></strong>.
+      It contains examples on how to run Sesame both from the command line and
+      the graphical user interface.</p>
+
+      <hr>
+
+      <img src="nistLogo.png" class="img-responsive"/>
+
+      <small> 
+      Certain commercial equipment, instruments, materials, systems, software, and
+      trade names may be identified throughout this site in order to specify or
+      identify technologies adequately. Such identification is not intended to imply
+      recommendation or endorsement by NIST or any other party, nor is it intended to
+      imply that the systems or products identified are necessarily the best available
+      for the purpose. All data and other information posted on this site is provided
+      as a public service and is provided “AS IS.” NIST MAKES NO WARRANTY OF ANY KIND,
+      EXPRESS, IMPLIED OR STATUTORY, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+      WARRANTY OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT
+      AND DATA ACCURACY.  
+      </small> 
+    </div>
+    <div class="col-sm-2 sidenav">
+    <!-- keep the right column white -->
+    </div>
+  </div>
+</div>
+
+<footer class="container-fluid text-center">
+Contents © 2017-2018 University of Maryland
+</footer>
+
+</body>
+
+</html>
+
