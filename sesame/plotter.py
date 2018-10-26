@@ -83,7 +83,7 @@ def plot_line_defects(sys, ls='-o', fig=None):
         xa, ya = c.location[0]
         xb, yb = c.location[1]
 
-        _, _, xcoord, ycoord, _ = utils.Bresenham(sys, (xa, ya,0), (xb,yb,0))
+        _, _, xcoord, ycoord = utils.Bresenham(sys, (xa, ya,0), (xb,yb,0))
 
         # plot the path of added charges
         ax.plot(sys.xpts[xcoord], sys.ypts[ycoord], ls)

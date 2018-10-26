@@ -54,7 +54,7 @@ class Analyzer():
             self.efp = 0 * self.v
 
         # sites of the system
-        self.sites = np.arange(sys.nx*sys.ny*sys.nz, dtype=int)
+        self.sites = np.arange(sys.nx*sys.ny, dtype=int)
 
     @staticmethod
     def line(system, p1, p2):
@@ -87,7 +87,7 @@ class Analyzer():
 
         p1 = (p1[0], p1[1], 0)
         p2 = (p2[0], p2[1], 0)
-        s, x, _, _, _ = Bresenham(system, p1, p2)
+        s, x, _, _ = Bresenham(system, p1, p2)
         return x, s
 
     def band_diagram(self, location, fig=None):
@@ -305,7 +305,7 @@ class Analyzer():
 
         # Update r (and rho but we don't use it)
         defectsF(self.sys, [defect], n, p, rho, r=r)
-        r = r[defect.sites]
+        r = np.multiply(r[defect.sites],defect.perp_dl)
 
         return r
 
@@ -634,11 +634,11 @@ class Analyzer():
         """
 
         # System number of sites
-        nx, ny, nz = self.sys.nx, self.sys.ny, self.sys.nz
+        nx, ny= self.sys.nx, self.sys.ny
 
         # Define the sites between which computing the currents
-        sites_i = [nx//2 + j*nx + k*nx*ny for k in range(nz) for j in range(ny)]
-        sites_ip1 = [nx//2+1+j*nx+k*nx*ny for k in range(nz) for j in range(ny)]
+        sites_i = [nx//2 + j*nx  for j in range(ny)]
+        sites_ip1 = [nx//2+1+j*nx  for j in range(ny)]
         # And the corresponding lattice dimensions
         dl = self.sys.dx[self.sys.nx//2]
 
@@ -648,17 +648,10 @@ class Analyzer():
 
         if ny == 1:
             j = jn[0] + jp[0]
-        if ny > 1 and nz == 1:
+        if ny > 1:
             # Interpolate the results and integrate over the y-direction
             y = self.sys.ypts / self.sys.scaling.length
             j = spline(y, jn+jp).integral(y[0], y[-1])
-        if nz > 1:
-            y = self.sys.ypts / self.sys.scaling.length
-            z = self.sys.zpts / self.sys.scaling.length
-            jz = []
-            for k in range(nz):
-                jy = jn[k*ny:(k+1)*ny] + jp[k*ny:(k+1)*ny]
-                jz.append(spline(y, jy).integral(y[0], y[-1]))
-            j = spline(z, jz).integral(z[0], z[-1])
+
 
         return j

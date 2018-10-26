@@ -6,11 +6,7 @@
 import numpy as np
 from PyQt5.QtCore import *
 from PyQt5 import QtCore
-from PyQt5.QtWidgets import QMessageBox
 import logging
-import traceback
-from functools import wraps
-import types
 
 import sesame
 from ..solvers import Solver
@@ -25,7 +21,7 @@ class SimulationWorker(QObject):
     newFile = pyqtSignal(str)
 
     def __init__(self, loop, system, solverSettings,\
-                       generation, paramName, parent=None):
+                       use_manual_g, generation, paramName, parent=None):
         super(SimulationWorker, self).__init__()
 
         self.parent = parent
@@ -35,6 +31,7 @@ class SimulationWorker(QObject):
         self.solverSettings = solverSettings
         self.generation = generation
         self.paramName = paramName
+        self.use_manual_g = use_manual_g
 
         self.logger = logging.getLogger(__name__)
         self.abort = False
@@ -43,30 +40,7 @@ class SimulationWorker(QObject):
     def abortSim(self):
         self.abort = True
 
-    def threadError(*args):
-        # a decorator to handle all exceptions that may occur in the run
-        # function below
-        if len(args) == 0 or isinstance(args[0], types.FunctionType):
-            args = []
-        @QtCore.pyqtSlot(*args)
-        def slotdecorator(func):
-            @wraps(func)
-            def wrapper(*args, **kwargs):
-                try:
-                    func(*args)
-                except:
-                    # logger message, args contains this class instance only
-                    msg = "**  An unhandled error occured.  **"
-                    args[0].logger.error(msg)
-                    p = traceback.format_exc()
-                    args[0].logger.error(p)
-                    args[0].simuDone.emit()
-            return wrapper
-
-        return slotdecorator
-
     @pyqtSlot()
-    @threadError("bool")
     def run(self):
         loop = self.loop
         system = self.system
@@ -118,23 +92,29 @@ class SimulationWorker(QObject):
         #===========================================================
         if loop == "voltage":
             self.logger.info("Nonequilibrium calculation starting now")
-            if generation != "":
+
+            if generation != "" and self.use_manual_g is True:
                 # create callable 
                 if system.dimension == 1:
                     f = eval('lambda x:' + generation)
                 elif system.dimension == 2:
                     f = eval('lambda x, y:' + generation)
-                elif system.dimension == 3:
-                    f = eval('lambda x, y, z:' + generation)
                 # update generation rate of the system
                 try:
                     system.generation(f)
+                    has_generation = True
                 except Exception:
                     msg = "**  The generation rate could not be interpreted  **"
                     self.logger.error(msg)
                     self.simuDone.emit()
                     return
 
+            if self.use_manual_g is False and system.g.any():
+                has_generation = True
+            else:
+                has_generation = False
+
+            if has_generation is True:
                 # Loop at zero bias with increasing defect density of states
                 if ramp >  0:
                     self.logger.info("A generation rate is used with a non-zero ramp.")
@@ -158,8 +138,7 @@ class SimulationWorker(QObject):
             # Loop over voltages
             # sites of the right contact
             nx = system.nx
-            s = [nx-1 + j*nx + k*nx*system.ny for k in range(system.nz)\
-                                           for j in range(system.ny)]
+            s = [nx-1 + j*nx  for j in range(system.ny)]
 
             # sign of the voltage to apply
             if system.rho[nx-1] < 0:
@@ -249,7 +228,7 @@ class SimulationWorker(QObject):
                     name = simName + "_{0}".format(idx)
                     # add some system settings to the saved results
                     solution.update({'x': system.xpts, 'y': system.ypts,\
-                                     'z': system.zpts, 'affinity': system.bl,\
+                                     'affinity': system.bl,\
                                      'Eg': system.Eg, 'Nc': system.Nc,\
                                      'Nv': system.Nv, 'epsilon': system.epsilon})
 
@@ -274,5 +253,3 @@ class SimulationWorker(QObject):
 
         # tell main thread to quit this thread
         self.simuDone.emit()
-
-

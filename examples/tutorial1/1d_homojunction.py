@@ -1,4 +1,11 @@
 import sesame
+#import utils.py
+#from utils import *
+#from analyzer import *
+#import analyzer.py
+#from solvers import *
+#import solvers.py
+
 import numpy as np
 
 L = 3e-4 # length of the system in the x-direction [cm]
@@ -18,13 +25,16 @@ material = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'affinity':3.9, 'epsilon':9.4,
 sys.add_material(material)
 
 junction = 50e-7 # extent of the junction from the left contact [m]
-def n_region(pos):
-    x = pos
-    return x < junction
+n_region = lambda pos: pos < junction
+p_region = lambda pos: pos >= junction
 
-def p_region(pos):
-    x = pos
-    return x >= junction
+#def n_region(pos):
+#    x = pos
+#    return x < junction
+
+#def p_region(pos):
+#    x = pos
+#    return x >= junction
 
 # Add the donors
 nD = 1e17 # [cm^-3]
@@ -44,19 +54,23 @@ sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 # First find the equilibrium solution
 solution = sesame.solve_equilibrium(sys)
 
+import matplotlib.pyplot as plt
+plt.plot(sys.xpts, sys.rho)#solution['v'])
+plt.show()
+
 # Define a function for the generation rate
 phi = 1e17         # photon flux [1/(cm^2 s)]
 alpha = 2.3e4      # absorption coefficient [1/cm]
 
 # Define a function for the generation rate
-def gfcn(x):
+def gfcn(x,y):
     return phi * alpha * np.exp(-alpha * x)
 
 # add generation to system
 sys.generation(gfcn)
 
 # IV curve
-voltages = np.linspace(0, 0.95, 40)
+voltages = np.linspace(0, 0.95, 10)
 j = sesame.IVcurve(sys, voltages, solution, '1dhomo_V')
 
 # convert dimensionless current to dimension-ful current

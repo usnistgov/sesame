@@ -64,7 +64,7 @@ class MplWindow(QWidget):
             # find all relevant coordinates
             nx, ny = sys.nx, sys.ny
             xpts, ypts = sys.xpts, sys.ypts
-            if ypts is None:
+            if ny == 1:
                 ypts = np.array([0, 1])
                 ny = 2
             x, y = [], []
@@ -81,37 +81,38 @@ class MplWindow(QWidget):
 
                 if sys.dimension == 1:
                     self.ax.plot(xpts[x[-1]], np.ones_like(xpts[x[-1]]) / 2., lw=50)
+                    #self.ax.plot(xpts[x], np.ones_like(xpts[x])/2., lw=50)
                     self.ax.margins(0)
             # create an array of fake data to be plotted
             d = np.zeros((nx, ny)) - 1
             for idx, (posx, posy) in enumerate(zip(x, y)):
                 d[posx, posy] = idx + 1
 
-            if sys.dimension == 2:
+            if sys.ny > 1:
                 if (d > 0).all():
                     cmap = 'Set2'
                 self.ax.pcolormesh(xpts, ypts, d.T, cmap=cmap)
                 plotter.plot_line_defects(sys, fig=self.figure)
 
             # plot grid on top
-            if sys.dimension == 1:
+            if sys.ny == 1:
                 self.ax.plot([xpts[0],xpts[0]],[0,1],'k',linewidth=.25)
                 for xpt in xpts[1:]:
                     self.ax.plot([xpt,xpt],[0.4,0.6],'k',linewidth=.25)
                 
-            if sys.dimension == 2:
+            if sys.ny > 1:
                 for xpt in xpts:
                     self.ax.plot([xpt,xpt],[ypts[0],ypts[-1]],'k',linewidth=.25)
                 for ypt in ypts:
                     self.ax.plot([xpts[0],xpts[-1]],[ypt,ypt],'k',linewidth=.25)
             
-            if sys.dimension == 1:
+            if sys.ny == 1:
                 self.ax.get_yaxis().set_visible(False)
             else:
                 self.ax.get_yaxis().set_visible(True)
 
             self.ax.set_xlabel('x [cm]')
-            if sys.dimension == 2:
+            if sys.ny > 1:
                 self.ax.set_ylabel('y [cm]')
 
             self.figure.tight_layout()

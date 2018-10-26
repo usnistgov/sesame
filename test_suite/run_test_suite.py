@@ -14,6 +14,7 @@ from TEST8_variable_gap_2d_pillars_periodic import runTest8
 
 print("\nrunning test suite: error should be less than 0.01 for all sims")
 print("\n----------------------------------------------------------------")
+
 print("\nrunning test 1: 1d variable electronic structure")
 runTest1()
 
@@ -24,16 +25,16 @@ print("\nrunning test 3: 2d single GB periodic b.c.")
 runTest3()
 
 print("\nrunning test 4: 2d single GB abrupt b.c.")
-runTest4()
+#runTest4()
 
 print("\nrunning test 5: 2d variable epsilon abrupt b.c.")
-runTest5()
+#runTest5()
 
 print("\nrunning test 6: 2d variable epsilon periodic b.c.")
-runTest6()
+#runTest6()
 
 print("\nrunning test 7: 2d variable electronic structure abrupt b.c.")
-runTest7()
+#runTest7()
 
 print("\nrunning test 8: 2d variable electronic structure periodic b.c.")
-runTest8()
+#runTest8()

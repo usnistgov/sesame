@@ -4,13 +4,19 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 from .. import Builder
+from .. utils import isfloat
 from ast import literal_eval as ev
+from scipy.interpolate import interp1d
 import numpy as np
+from .onesun_data import *
 import traceback
 import types
 from functools import wraps
 from PyQt5 import QtCore
 from PyQt5.QtWidgets import QMessageBox
+import os.path
+
+import matplotlib.pyplot as plt
 
 
 def slotError(*args):
@@ -68,13 +74,92 @@ def parseLocation(location, dimension):
         elif dimension == 2:
             location = location.replace("x", "pos[0]")
             location = location.replace("y", "pos[1]")
-        elif dimension == 3:
-            location = location.replace("x", "pos[0]")
-            location = location.replace("y", "pos[1]")
-            location = location.replace("z", "pos[2]")
+        #elif dimension == 3:
+        #    location = location.replace("x", "pos[0]")
+        #    location = location.replace("y", "pos[1]")
+        #    location = location.replace("z", "pos[2]")
         # 2. define function
         function = lambda pos: eval(location)
     return function
+
+
+def parseAlphaFile(file):
+
+    _lambda = []
+    _alpha = []
+    # assumed units of file:  lambda in [nm], abdsorption in [1/m]
+    if os.path.isfile(file) is False:
+        msg = QMessageBox()
+        msg.setWindowTitle("Processing error")
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText("Absorption file not found")
+        msg.setEscapeButton(QMessageBox.Ok)
+        msg.exec_()
+        return
+
+    absfile = open(file,"r")
+    while True:
+        line = absfile.readline()
+        # end of file reached - break
+        if not line:
+            break
+        data = line.split()
+        if len(data) == 2:
+            # if line consists of two floats, read into lambda and alpha matrices
+            if isfloat(data[0]) and isfloat(data[1]):
+                _lambda.append(float(data[0]))
+                _alpha.append(float(data[1]))
+
+    _lambda = np.asarray(_lambda)
+    _alpha = np.asarray(_alpha)
+    _alpha = _alpha * 1e-2 # convert to 1/cm
+    return _lambda, _alpha
+
+
+def getgeneration(lambda_power, power, lambda_alpha, alpha, xpts):
+
+    gen = []
+    if alpha.size == 1:
+        lambda_alpha = np.linspace(300,3000,745)
+        alpha = float(alpha) * np.ones(745)
+
+    if power.size==0 or alpha.size==0:
+        gen = np.zeros(xpts.size)
+        return gen
+
+    #### interpolate absorption spectrum according to power spectrum
+    ind1 = np.abs(lambda_power - lambda_alpha[0]).argmin()
+    ind2 = np.abs(lambda_power - lambda_alpha[-1]).argmin()
+
+    f = interp1d(lambda_alpha, alpha, kind='cubic')
+    alpha = f(lambda_power[ind1:ind2])
+    power = power[ind1:ind2]
+    llambda = lambda_power[ind1:ind2]
+
+    ####################################################
+
+    hc = 6.62607004e-34 * 299792458  # units: [J m]
+    gen = np.zeros(xpts.size)
+    nP = power.size
+    # integrate over power/absorption spectra to get generation profile
+    # assume power is given in W/cm^2
+    for c in range(0, nP):
+        if alpha[c] < 0:
+            continue
+        if c == 0:
+            dl = .5*(llambda[c+1])
+        elif c == nP-1:
+            dl = .5*(llambda[-1] - llambda[-2])
+        else:
+            dl = .5*(llambda[c+1] - llambda[c-1])
+        # convert power to flux:  P = h*c/lambda * flux
+        flux = power[c] * llambda[c]*1e-9 / (hc)  # 1/(cm^2 * sec)
+        gen = gen + alpha[c] * flux * np.exp(-alpha[c]*xpts) * dl
+
+    #plt.plot(gen)
+    #plt.show()
+    fdsa = 1
+    return gen
 
 
 def parseSettings(settings):
@@ -84,16 +169,12 @@ def parseSettings(settings):
 
     xgrid = ev(grid[0].lstrip())
     xpts = parseGrid(xgrid)
-    ypts = None
-    zpts = None
-    if dimension == 2 or dimension == 3:
+    ypts = np.array([0])
+    if dimension == 2:
         ygrid = ev(grid[1].lstrip())
         ypts = parseGrid(ygrid)
-    if dimension == 3:
-        zgrid = ev(grid[2].lstrip())
-        zpts = parseGrid(zgrid)
     # build a sesame system
-    system = Builder(xpts, ypts, zpts)
+    system = Builder(xpts, ypts)
         
     # 2. set materials
     materials = settings['materials']
@@ -131,5 +212,56 @@ def parseSettings(settings):
         elif len(loc) == 4:
             system.add_plane_defects(loc, N, se, sigma_h=sh, E=E,\
                                      transition=transition)
+            
+    ##  ok i would go ahead and construct g for non-manual case here!
+    lambda_power = np.array([])
+    power = np.array([])
+    lambda_alpha = np.array([])
+    alpha = np.array([])
+    if settings['use_manual_g'] is False:
+
+        ########################################
+        # illumination properties
+        ########################################
+        # use one sun power spectrum
+        if settings['ill_onesun'] is True:
+            #onesundata = np.load('C:\\Users\\phaney\\PycharmProjects\\sesame-master__2\\sesame\\ui\\onesun2.dat.npy')
+            lambda_power = onesundata[:,0]
+            power = onesundata[:,1]* 1e-4  # converting to W/cm^2
+
+        # read lambda and power
+        if settings['ill_monochromatic'] is True:
+            laserlambda = float(settings['ill_wavelength'])
+            powertot = float(np.asarray(settings['ill_power']))
+            # generate a distribution, Gaussian with fixed spread of 10 nm
+            width = 100.
+            lambda_power = np.linspace(280,4000,745)
+            power = powertot/(2*np.pi*width**2)**.5 * np.exp(-(lambda_power-laserlambda)**2/(2*width**2))
+
+        if not power.any():
+            power = np.zeros(10)
+            lambda_power = np.linspace(280,4000,745)
+
+        ########################################
+        # absorption properties
+        ########################################
+        if settings['abs_usefile'] is True:
+            abs_file = settings['abs_file']
+            lambda_alpha, alpha = parseAlphaFile(abs_file)
+            # handle if no absorption file!
+        if settings['abs_useralpha'] is True:
+            alpha = np.asarray(settings['abs_alpha'])
+            lambda_alpha = []
+        if alpha.size == 0:
+            alpha = np.zeros(745)
+            lambda_alpha = np.linspace(280,4000,745)
+
+
+    g = getgeneration(lambda_power, power, lambda_alpha, alpha, xpts)
+    g = np.tile(g, system.ny)
+    system.generation(g)
+        
+
+    
     return system
 

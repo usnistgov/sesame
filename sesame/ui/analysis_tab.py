@@ -117,11 +117,11 @@ class Analysis(QWidget):
         quantities = ["Choose one", "Band diagram",\
         "Electron quasi-Fermi level", "Hole quasi-Fermi level",\
         "Electrostatic potential","Electron density",\
-        "Hole density", "Bulk SRH recombination", "Radiative recombination",\
+        "Hole density", "Generation rate density", "Bulk SRH recombination", "Radiative recombination",\
         "Auger recombination", \
         "Electron current along x", "Electron current along y",\
         "Hole current along x", "Hole current along y",\
-        "Integrated planar defects recomb.", "Integrated total recombination",\
+        "Integrated defects recombination", "Integrated total recombination",\
         "Full steady state current"]
         self.quantity2.addItems(quantities)
         form.addRow("Y data", self.quantity2)
@@ -205,7 +205,7 @@ class Analysis(QWidget):
         # give example in XData area
         settings = self.table.build.getSystemSettings()
         system = parseSettings(settings)
-        if system.dimension == 1:
+        if system.ny == 1:
             self.Xdata.setText("(0,0), ({}, 0)".format(system.xpts[-1]))
         else:
             self.Xdata.setText("(x1, y1), (x2, y2)")
@@ -422,6 +422,9 @@ class Analysis(QWidget):
                 X = Xdata
 
             # get the corresponding Y data
+            if txt == "Generation rate density":
+                Ydata = system.g[sites] * G
+                YLabel = r'G [$\mathregular{s^{-1}cm^{-3}}$]'
             if txt == "Electron quasi-Fermi level":
                 Ydata = vt * az.efn[sites]
                 YLabel = r'$\mathregular{E_{F_n}}$ [eV]'
@@ -458,7 +461,7 @@ class Analysis(QWidget):
             if txt == "Hole current along y":
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
-            if txt == "Integrated planar defects recomb.":
+            if txt == "Integrated planar defects recombination":
                 if system.dimension == 1:
                     Ydata.append(G * x0 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
@@ -480,17 +483,16 @@ class Analysis(QWidget):
                     Ydata.append(G * x0**2 * (j_srh + j_rad + j_aug + j_def))
                     YLabel = r'[$G_{tot}\ \mathregular{cm^{-1}\cdot s^{-1}}$]'
             if txt == "Full steady state current":
-                if system.dimension == 1:
+                if system.ypts.size == 1:
                     Ydata.append(J * az.full_current() * 1e3)
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-2}}$]'
-                if system.dimension == 2:
+                if system.ypts.size > 1:
                     Ydata.append(J * az.full_current() * 1e3 * x0)
                     YLabel = r'J [$\mathregular{mA\cdot cm^{-1}}$]'
 
             # plot
             if txt not in ["Full steady state current",\
                            "Integrated total recombination",\
-                           "Integrated planar defects recomb.",\
                            "Integrated defects recombination"]:
                 if txt != "Band diagram":
                     ax = self.linearFig.figure.add_subplot(111)
@@ -504,7 +506,6 @@ class Analysis(QWidget):
         # For quantities looped over
         if txt in ["Full steady state current",\
                    "Integrated total recombination",\
-                   "Integrated planar defects recomb.",\
                    "Integrated defects recombination"]:
             try:
                 c = next(self.iterColors)

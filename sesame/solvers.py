@@ -14,8 +14,12 @@ from .analyzer import Analyzer
 import scipy.sparse.linalg as lg
 from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
+from .getFandJ_eq import getFandJ_eq
+from .getF import getF
+from .jacobian import getJ
 
 import logging
+import warnings
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
 __all__ = ['solve_equilibrium', 'solve', 'IVcurve']
@@ -63,7 +67,7 @@ class Solver():
     equilibrium: numpy array of floats
         Electrostatic potential computed at thermal equilibrium.
     """
-
+    warnings.warn("Deprecated method, use common_solver instead", DeprecationWarning)
     def __init__(self, use_mumps=True):
 
         self.equilibrium = None
@@ -108,7 +112,7 @@ class Solver():
             (zeros) and the electrostatic potential. Keys are 'efn', 'efp' and
             'v'.  An exception is raised if no solution could be found.
         """
-
+        warnings.warn("Deprecated method, use common_solver instead", DeprecationWarning)
         res = self.common_solver('Poisson', system, guess, tol, periodic_bcs,\
                     maxiter, verbose, iterative, inner_tol, htp)
         return res
@@ -179,9 +183,7 @@ class Solver():
         if system.contacts_bcs[1] == 'Ohmic' or\
            system.contacts_bcs[1] == 'Neutral':
             if system.rho[nx-1] < 0:
-                v_right = -system.Eg[nx-1]\
-                          - np.log(abs(system.rho[nx-1])/system.Nv[nx-1])\
-                          - system.bl[nx-1]
+                v_right = -system.Eg[nx-1] - np.log(abs(system.rho[nx-1])/system.Nv[nx-1]) - system.bl[nx-1]
             else:
                 v_right = np.log(system.rho[nx-1]/system.Nc[nx-1]) - system.bl[nx-1]
         if system.contacts_bcs[1] == 'Schottky':
@@ -193,15 +195,13 @@ class Solver():
         if system.dimension == 2:
             # replicate the guess in the y-direction
             v = np.tile(v, system.ny) 
-        if system.dimension == 3:
-            # replicate the guess in the y and z-direction
-            v = np.tile(v, system.ny*system.nz) 
+
 
         return v
 
-    def common_solver(self, compute, system, guess, tol, periodic_bcs,\
-          maxiter, verbose, iterative, inner_tol, htp):
-
+    def common_solver(self, compute = 'all', system = None, guess=None, tol=1e-6, periodic_bcs=True,\
+          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
+        warnings.warn("parameters 'compute' and 'system' will be switched moving forward", FutureWarning)
         # Check if we only want the electrostatic potential
         if compute == 'Poisson': # Only Poisson is solved
             self.equilibrium = None # delete it to force its computation
@@ -235,7 +235,7 @@ class Solver():
         # Otherwise, keep going with the full problem
         if compute == 'all':
             # array to pass to Newton routine
-            x = np.zeros((3*system.nx*system.ny*system.nz,), dtype=np.float64)
+            x = np.zeros((3*system.nx*system.ny,), dtype=np.float64)
             if guess is None: # I will try with equilibrium
                 x[2::3] = np.copy(self.equilibrium)
             else:
@@ -283,45 +283,27 @@ class Solver():
                 msg = "**  Iterative sparse solver failed on wrong input. **"
                 logging.error(msg)
 
+
     def _get_system(self, x, system, periodic_bcs):
         # Compute the right hand side of J * x = f
         if self.equilibrium is None:
-            size = system.nx * system.ny * system.nz
-            if system.dimension != 1:
-                rhs = importlib.import_module('.getFandJ_eq{0}'\
-                               .format(system.dimension), 'sesame')
-                f, rows, columns, data = rhs.getFandJ_eq(system, x, periodic_bcs)
-            else:
-                rhs = importlib.import_module('.getFandJ_eq1'\
-                               .format(system.dimension), 'sesame')
-                f, rows, columns, data = rhs.getFandJ_eq(system, x)
-
+            size = system.nx * system.ny
+            f, rows, columns, data = getFandJ_eq(system, x)
         else:
-            size = 3 * system.nx * system.ny * system.nz
-            if periodic_bcs == False and system.dimension != 1:
-                rhs = importlib.import_module('.getF{0}_abrupt'\
-                               .format(system.dimension), 'sesame')
-                lhs = importlib.import_module('.jacobian{0}_abrupt'\
-                               .format(system.dimension), 'sesame')
-            else:
-                rhs = importlib.import_module('.getF{0}'\
-                               .format(system.dimension), 'sesame')
-                lhs = importlib.import_module('.jacobian{0}'\
-                               .format(system.dimension), 'sesame')
-
-            f = rhs.getF(system, x[2::3], x[0::3], x[1::3], self.equilibrium)
-            rows, columns, data = lhs.getJ(system, x[2::3], x[0::3], x[1::3])
+            f = getF(system, x[2::3], x[0::3], x[1::3], self.equilibrium)
+            rows, columns, data = getJ(system, x[2::3], x[0::3], x[1::3])
 
         # form the Jacobian
         if self.use_mumps and mumps_available:
-            J = coo_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
+            J = coo_matrix((data, (rows, columns)),  dtype=np.float64)
         else:
-            J = csr_matrix((data, (rows, columns)), shape=(size, size), dtype=np.float64)
+            J = csr_matrix((data, (rows, columns)), dtype=np.float64)
 
         return f, J
 
-    def _newton(self, system, x, tol=1e-6, periodic_bcs=True,\
-            maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
+
+    def _newton(self, system, x, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True,
+                iterative=False, inner_tol=1e-6, htp=1):
 
         htpy = np.linspace(1./htp, 1, htp)
 
@@ -378,7 +360,7 @@ class Solver():
                     break
 
                 except NewtonError:
-                    msg = "**  The Newton-Raphson algorithm diverged  **"
+                    msg = "**  The Newton-Raphson algorithm diverged, try a better guess or finer grid  **"
                     logging.error(msg)
                     break
                         
@@ -387,8 +369,7 @@ class Solver():
         else:
             return None
 
-    def IVcurve(self, system, voltages, guess, file_name, tol=1e-6,\
-                periodic_bcs=True, maxiter=300, verbose=True,\
+    def IVcurve(self, system, voltages, guess, file_name, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True,\
                 iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -450,8 +431,7 @@ class Solver():
 
         # sites of the right contact
         nx = system.nx
-        s = [nx-1 + j*nx + k*nx*system.ny for k in range(system.nz)\
-                                          for j in range(system.ny)]
+        s = [nx-1 + j*nx for j in range(system.ny)]
 
         # sign of the voltage to apply
         if system.rho[nx-1] < 0:
@@ -500,12 +480,12 @@ class Solver():
                     filename = "%s.gzip" % name
                     save_sim(system, result, filename)
                 # 2. Compute the steady state current
-                try:
-                    az = Analyzer(system, result)
-                    J[idx] = az.full_current()
-                except Exception:
-                    logging.info("Could not compute the current for the applied voltage"\
-                      + " {0} V (index {1}).".format(voltages[idx], idx))
+                #try:
+                az = Analyzer(system, result)
+                J[idx] = az.full_current()
+                #except Exception:
+                #    logging.info("Could not compute the current for the applied voltage"\
+                #     + " {0} V (index {1}).".format(voltages[idx], idx))
 
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
