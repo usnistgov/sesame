@@ -2,7 +2,6 @@ import sesame
 import numpy as np
 import scipy.io
 from scipy.io import savemat
-from matplotlib import pyplot as plt
 
 
 t1 = 25*1e-7    # thickness of CdS
@@ -89,4 +88,5 @@ try:
 # no matplotlib installed
 except ImportError:
     print("Matplotlib not installed, can't make plot")
+
 

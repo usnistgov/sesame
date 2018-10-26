@@ -23,7 +23,7 @@ y = np.concatenate((np.linspace(0, 1.75e-4, 50, endpoint=False),
                     np.linspace(2.75e-4, Ly, 50)))
 
 # Create a system
-sys = sesame.Builder(x, y)
+sys = sesame.Builder(x, y, periodic=False)
 
 # Dictionary with the material parameters
 mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,

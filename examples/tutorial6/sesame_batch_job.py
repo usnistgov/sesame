@@ -82,9 +82,9 @@ def system(params):
 if __name__ == '__main__':
 
     # Initiate MPI
-    mpi_comm = MPI.COMM_WORLD
-    mpirank = mpi_comm.Get_rank()
-    mpisize = mpi_comm.Get_size()
+    #mpi_comm = MPI.COMM_WORLD
+    mpirank =0# mpi_comm.Get_rank()
+    mpisize =1# mpi_comm.Get_size()
 
     # Set of parameters to vary - these parameters defines 180 simulations
     rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]

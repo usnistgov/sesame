@@ -133,6 +133,7 @@ def get_jn(sys, efn, v, sites_i, sites_ip1, dl):
     defn = efnp1 - efnp0
     mu = sys.mu_e[sites_i]
 
+
     jn = (    mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \
          -1 * mu * exp(efnp1)*(1 - exp(efnp0-efnp1)) / dl / (-exp(-vp0) * (1 + .5 * dv0 + 1/6.*(dv0)**2)) * (np.abs(dv0) < tol2)) * (np.abs(defn)>=tol3) + \
          (    mu * exp(efnp1)*(-(efnp0 - efnp1))     / dl * dv / (-exp(-vp0) * (1 - exp(dv))) * (np.abs(dv0) >= tol2) + \

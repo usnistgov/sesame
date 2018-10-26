@@ -16,7 +16,7 @@ def get_indices(sys, p, site=False):
     # p: list containing x,y,z coordinates, use zeros for unused dimensions
 
     x, y, z = p
-    xpts, ypts, zpts = sys.xpts, sys.ypts, sys.zpts
+    xpts, ypts = sys.xpts, sys.ypts
     nx = len(xpts)
     x = nx-len(xpts[xpts >= x])
     s = x
@@ -26,22 +26,16 @@ def get_indices(sys, p, site=False):
         y = ny-len(ypts[ypts >= y])
         s += nx*y
 
-    if zpts is not None:
-        nz = len(zpts)
-        z = nz-len(zpts[zpts >= z])
-        s += nx*ny*z
-
     if site:
         return s
     else:
-        return x, int(y), int(z)
+        return x, int(y)
 
 def get_xyz_from_s(sys, site):
-    nx, ny, nz = sys.nx, sys.ny, sys.nz
-    k = site // (nx * ny) * (nz > 1)
-    j = (site - k*nx*ny) // nx * (ny > 1)
-    i = site - j*nx - k*nx*ny
-    return i, j, k
+    nx, ny = sys.nx, sys.ny
+    j = (site - nx*ny) // nx * (ny > 1)
+    i = site - j*nx
+    return i, j
 
 def get_dl(sys, sites):
     sa, sb = sites
@@ -57,11 +51,19 @@ def get_dl(sys, sites):
     return s, np.asarray(X), np.asarray(xcoord), np.asarray(ycoord)
 
 
+def isfloat(value):
+    try:
+        float(value)
+        return True
+    except ValueError:
+        return False
+
+
 def Bresenham(system, p1, p2):
     # Compute a digital line contained in the plane (x,y) and passing by the
     # points p1 and p2.
-    i1, j1, k1 = get_indices(system, p1)
-    i2, j2, k2 = get_indices(system, p2)
+    i1, j1 = get_indices(system, p1)
+    i2, j2 = get_indices(system, p2)
 
     Dx = abs(i2 - i1)    # distance to travel in X
     Dy = abs(j2 - j1)    # distance to travel in Y
@@ -82,11 +84,11 @@ def Bresenham(system, p1, p2):
     error = lambda x, y: abs((p2[1]-p1[1])*x - (p2[0]-p1[0])*y + p2[0]*p1[1] - p2[1]*p1[0])
 
     i, j = i1, j1
-    sites = [i + j*system.nx + k1*system.nx*system.ny]
+    sites = [i + j*system.nx]
     X = [0]
     icoord = [i]
     jcoord = [j]
-    kcoord = [k1]
+
 
     for _ in range(Dx + Dy):
         e1 = error(system.xpts[i], system.ypts[j+incy])
@@ -107,14 +109,14 @@ def Bresenham(system, p1, p2):
                 break
             X.append(X[-1] + system.dx[i])
             i += incx
-        sites.append(i + j*system.nx + k1*system.nx*system.ny)
+        sites.append(i + j*system.nx)
         icoord.append(i)
         jcoord.append(j)
-        kcoord.append(k1)
+
 
     sites = np.asarray(sites)
     X = np.asarray(X)
-    return sites, X, icoord, jcoord, kcoord
+    return sites, X, icoord, jcoord
 
 def check_plane(P1, P2, P3, P4):
     # check if plane is within what can be handled
@@ -180,8 +182,8 @@ def get_line_defects_sites(system, location):
 
     xa, ya = location[0]
     xb, yb = location[1]
-    ia, ja, _ = get_indices(system, (xa, ya, 0))
-    ib, jb, _ = get_indices(system, (xb, yb, 0))
+    ia, ja = get_indices(system, (xa, ya, 0))
+    ib, jb = get_indices(system, (xb, yb, 0))
 
     Dx = abs(ib - ia)    # distance to travel in X
     Dy = abs(jb - ja)    # distance to travel in Y
@@ -493,3 +495,4 @@ def check_equal_sim_settings(system1, system2):
                 equivalent = False
 
     return equivalent
+

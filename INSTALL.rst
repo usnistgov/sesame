@@ -12,7 +12,7 @@ Building Sesame requires
  * `LAPACK <http://netlib.org/lapack/>`_ and `BLAS <http://netlib.org/blas/>`_,
    (other options are the free `OpenBLAS
    <http://xianyi.github.com/OpenBLAS/>`_ or the nonfree `MKL
-   <http://software.intel.com/en-us/intel-mkl>`_.)
+   <http://software.intel.com/en-us/intel-mkl>`_ can be used.)
 
 The following software is highly recommended though not strictly required:
  * `Matplotlib <http://matplotlib.sourceforge.net/>`_ 1.1 or newer, for Sesame's
@@ -31,7 +31,7 @@ The graphical user interface requires `PyQt5
 
 For users with no python installation, a convenient standalone installation which automatically includes all of the requisiste libraries and packages is `Anaconda <https://www.anaconda.com/>`_ .
 
-Sesame may be downloaded from https://github.com/usnistgov/sesame
+Sesame may be downloaded from https://github.com/usnistgov
 
 Generic instructions
 .....................

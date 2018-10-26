@@ -11,9 +11,9 @@ import os
 import sys
 import numpy as np 
 import logging
-import traceback
 from ast import literal_eval as ev
 from io import StringIO
+import traceback
 
 from .common import parseSettings
 from .sim import SimulationWorker
@@ -381,8 +381,24 @@ class Simulation(QWidget):
             system = parseSettings(settings)
             generation, paramName = settings['gen']
 
+            use_manual_g = settings['use_manual_g']
+
             # get solver settings
             solverSettings = self.getSolverSettings()
+
+            # define a thread in which to run the simulation
+            self.thread = QThread(self)
+
+            # add worker to thread and run simulation
+            self.simulation = SimulationWorker(loop, system, solverSettings,\
+                                                use_manual_g, generation, paramName)
+            self.simulation.moveToThread(self.thread)
+            self.simulation.simuDone.connect(self.thread_cleanup)
+            self.simulation.newFile.connect(self.updateDataList)
+            self.thread.started.connect(self.simulation.run)
+            # Disable run button
+            self.brun.setEnabled(False)
+            self.thread.start()
         except Exception:
             p = traceback.format_exc()
             # Dialog box
@@ -396,20 +412,6 @@ class Simulation(QWidget):
             # re enable run button
             self.brun.setEnabled(True)
             return
-
-        # define a thread in which to run the simulation
-        self.thread = QThread(self)
-
-        # add worker to thread and run simulation
-        self.simulation = SimulationWorker(loop, system, solverSettings,\
-                                            generation, paramName)
-        self.simulation.moveToThread(self.thread)
-        self.simulation.simuDone.connect(self.thread_cleanup)
-        self.simulation.newFile.connect(self.updateDataList)
-        self.thread.started.connect(self.simulation.run)
-        # Disable run button
-        self.brun.setEnabled(False)
-        self.thread.start()
 
     @pyqtSlot(str)
     def displayMessage(self, message):

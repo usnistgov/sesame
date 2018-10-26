@@ -106,8 +106,7 @@ def runTest8():
 
     # sites of the right contact
     nx = sys.nx
-    s = [nx - 1 + j * nx + k * nx * sys.ny for k in range(sys.nz) \
-         for j in range(sys.ny)]
+    s = [nx - 1 + j * nx for j in range(sys.ny)]
 
     # sign of the voltage to apply
     if sys.rho[nx - 1] < 0:
@@ -137,3 +136,4 @@ def runTest8():
     error = np.max(np.abs((jSesame_12_4_2017 - np.transpose(j)) / (.5 * (jSesame_12_4_2017 + np.transpose(j)))))
     print("error = {0}".format(error))
 
+runTest8()

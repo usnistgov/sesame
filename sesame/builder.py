@@ -8,6 +8,7 @@ import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
 from itertools import product
+import warnings
 
 from . import utils
 
@@ -110,8 +111,8 @@ class Builder():
         Mesh with original dimensions.
     dx, dy, dz: numpy arrays of floats
         Dimensionless lattice constants in the x, y, z directions.
-    nx, ny, nz: integers
-        Number of lattice nodes in the x, y, z directions.
+    nx, ny: integers
+        Number of lattice nodes in the x, y directions.
     Nc, Nv: numpy arrays of floats
         Dimensionless effective densities of states of the conduction and
         valence bands.
@@ -134,58 +135,63 @@ class Builder():
     gtot: float
         Dimensionless integral of the generation rate.
     defects_list: list of named tuples
-        List of named tuples containing the characteristics ofthe defects in the
+        List of named tuples containing the characteristics of the defects in the
         order they were added to the system. The field names are sites,
         location, dos, energy, sigma_e, sigma_h, transition, perp_dl.
     """
 
 
-    def __init__(self, xpts, ypts=None, zpts=None, input_length='cm', T=300):
+    def __init__(self, xpts, ypts=np.zeros(1), input_length='cm', T=300, periodic=True):
 
         self.scaling = Scaling(input_length, T)
         self.input_length = input_length
 
+
         self.xpts = xpts
         self.dx = (self.xpts[1:] - self.xpts[:-1]) / self.scaling.length
         self.nx = xpts.shape[0]
-        self.dimension = 1
 
         self.ypts = ypts
-        self.ny = 1
-        if ypts is not None:
-            self.ypts = ypts
-            self.dy = (self.ypts[1:] - self.ypts[:-1]) / self.scaling.length
-            self.ny = ypts.shape[0]
+        self.dy = (self.ypts[1:] - self.ypts[:-1]) / self.scaling.length
+
+        #if len(self.ypts) == 1:
+        #    self.dy = np.array([1.])
+        #else:
+        #    self.dy = (self.ypts[1:] - self.ypts[:-1]) / self.scaling.length
+            #self.dy = np.append(self.dy, self.dy[0])
+        if len(self.dy) == 0:
+            self.dy = np.append(self.dy, self.dx[0])
+            self.dimension = 1
+        else:
             self.dimension = 2
+            if periodic is True:
+                self.dy = np.append(self.dy, self.dy[0])
+            else:
+                self.dy = np.append(self.dy, np.inf)
 
-        self.zpts = zpts
-        self.nz = 1
-        if zpts is not None:
-            self.zpts = zpts
-            self.dz = (self.zpts[1:] - self.zpts[:-1]) / self.scaling.length
-            self.nz = zpts.shape[0]
-            self.dimension = 3
+        self.ny = ypts.shape[0]
+        #self.dimension = 2 # TODO remove this and make everything call generic
 
-        nx, ny, nz = self.nx, self.ny, self.nz
-        self.Nc      = np.zeros((nx*ny*nz,), dtype=float)
-        self.Nv      = np.zeros((nx*ny*nz,), dtype=float)
-        self.Eg      = np.zeros((nx*ny*nz,), dtype=float)
-        self.epsilon = np.zeros((nx*ny*nz,), dtype=float)
-        self.mass_e  = np.zeros((nx*ny*nz,), dtype=float)
-        self.mass_h  = np.zeros((nx*ny*nz,), dtype=float)
-        self.mu_e    = np.zeros((nx*ny*nz,), dtype=float)
-        self.mu_h    = np.zeros((nx*ny*nz,), dtype=float)
-        self.tau_e   = np.zeros((nx*ny*nz,), dtype=float)
-        self.tau_h   = np.zeros((nx*ny*nz,), dtype=float)
-        self.n1      = np.zeros((nx*ny*nz,), dtype=float)
-        self.p1      = np.zeros((nx*ny*nz,), dtype=float)
-        self.bl      = np.zeros((nx*ny*nz,), dtype=float)
-        self.rho     = np.zeros((nx*ny*nz,), dtype=float)
-        self.g       = np.zeros((nx*ny*nz,), dtype=float)
-        self.B       = np.zeros((nx*ny*nz,), dtype=float)
-        self.Cn      = np.zeros((nx*ny*nz,), dtype=float)
-        self.Cp      = np.zeros((nx*ny*nz,), dtype=float)
-        self.Etrap   = np.zeros((nx*ny*nz,), dtype=float)
+        nx, ny = self.nx, self.ny
+        self.Nc      = np.zeros((nx*ny,), dtype=float)
+        self.Nv      = np.zeros((nx*ny,), dtype=float)
+        self.Eg      = np.zeros((nx*ny,), dtype=float)
+        self.epsilon = np.zeros((nx*ny,), dtype=float)
+        self.mass_e  = np.zeros((nx*ny,), dtype=float)
+        self.mass_h  = np.zeros((nx*ny,), dtype=float)
+        self.mu_e    = np.zeros((nx*ny,), dtype=float)
+        self.mu_h    = np.zeros((nx*ny,), dtype=float)
+        self.tau_e   = np.zeros((nx*ny,), dtype=float)
+        self.tau_h   = np.zeros((nx*ny,), dtype=float)
+        self.n1      = np.zeros((nx*ny,), dtype=float)
+        self.p1      = np.zeros((nx*ny,), dtype=float)
+        self.bl      = np.zeros((nx*ny,), dtype=float)
+        self.rho     = np.zeros((nx*ny,), dtype=float)
+        self.g       = np.zeros((nx*ny,), dtype=float)
+        self.B       = np.zeros((nx*ny,), dtype=float)
+        self.Cn      = np.zeros((nx*ny,), dtype=float)
+        self.Cp      = np.zeros((nx*ny,), dtype=float)
+        self.Etrap   = np.zeros((nx*ny,), dtype=float)
 
         self.defects_list = []
 
@@ -299,6 +305,7 @@ class Builder():
         params = defect(s, location, f, E, sigma_e, sigma_h, transition, dl)
         self.defects_list.append(params)
 
+
     def add_point_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1, -1)):
         """
         Add additional charges (for a grain boundary for instance) to the total
@@ -331,11 +338,13 @@ class Builder():
 
         * We assume that no additional charge is on the contacts.
 
+        * Deprecated
+
         See Also
         --------
         add_line_defects
         """
-
+        warnings.warn("Use add_defects instead", FutureWarning)
         self.add_defects(location, N, sigma_e, sigma_h, E, transition)
 
     def add_line_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1,-1)):
@@ -370,11 +379,13 @@ class Builder():
 
         * We assume that no additional charge is on the contacts.
 
+        * Deprecated
+
         See Also
         --------
         add_plane_defects
         """
-           
+        warnings.warn("Use add_defects instead", FutureWarning)
         self.add_defects(location, N, sigma_e, sigma_h, E, transition)
 
     def add_plane_defects(self, location, N, sigma_e, sigma_h=None, E=None, transition=(1,-1)):
@@ -415,10 +426,13 @@ class Builder():
 
         * Plane defects are defined for three-dimensional systems only.
 
+        * Deprecated
+
         See Also
         --------
         add_line_defects
         """
+        warnings.warn("Use add_defects instead", FutureWarning)
         self.add_defects(location, N, sigma_e, sigma_h, E, transition)
  
     def doping_profile(self, density, location):
@@ -463,44 +477,41 @@ class Builder():
 
         Parameters
         ----------
-        f: function 
+        f: function
             Generation rate [cm\ :sup:`-3`].
         args: tuple
             Additional arguments to be passed to the function.
         """
-        if self.dimension == 1:
-            g = [f(x, *args) for x in self.xpts]
-        elif self.dimension == 2:
-            g = [f(x, y, *args) for y in self.ypts for x in self.xpts]
-        elif self.dimension == 3:
-            g = [f(x, y, z, *args) for z in self.zpts for y in self.ypts for x in self.xpts]
+
+        if callable(f):
+            if f.__code__.co_argcount == 1 and sys.ny==1:
+                g = [f(x, *args) for x in self.xpts]
+            else:
+                g = [f(x, y, *args) for y in self.ypts for x in self.xpts]
+        else:
+            g = f
+
         self.g = np.asarray(g) / self.scaling.generation
-        
+
         # compute the integral of the generation
         x = self.xpts / self.scaling.length
-        if self.ny > 1:
-            y = self.ypts / self.scaling.length
-        if self.nz > 1: 
-            z = self.zpts / self.scaling.length
+        y = self.ypts / self.scaling.length
 
         w = []
-        for k in range(self.nz):
-            u = []
-            for j in range(self.ny):
-                s = [i + j*self.nx + k*self.nx*self.ny  for i in range(self.nx)]
-                sp = spline(x, self.g[s])
-                u.append(sp.integral(x[0], x[-1]))
-            if self.dimension > 1:
-                sp = spline(y, u)
-                w.append(sp.integral(y[0], y[-1]))
-        if self.dimension == 1:
+        u = []
+        for j in range(self.ny):
+            s = [i + j*self.nx for i in range(self.nx)]
+            sp = spline(x, self.g[s])
+            u.append(sp.integral(x[0], x[-1]))
+        if self.ny > 1:
+            sp = spline(y, u)
+            w.append(sp.integral(y[0], y[-1]))
+        if self.ny == 1:
             self.gtot = u[-1]
-        if self.dimension == 2:
+        else:
             self.gtot = w[-1]
-        if self.dimension == 3:
-            sp = spline(z, u)
-            self.gtot = sp.integral(z[0], z[-1])
- 
+
+
 
     def contact_S(self, Scn_left, Scp_left, Scn_right, Scp_right):
         """
@@ -559,25 +570,14 @@ class Builder():
 
 def get_sites(sys, location):
     # find the sites which belong to a region
-    nx, ny, nz = sys.nx, sys.ny, sys.nz
-    sites = np.arange(nx*ny*nz, dtype=int)
- 
-    if sys.dimension == 1:
-        pos = (sys.xpts)
+    nx, ny = sys.nx, sys.ny
+    sites = np.arange(nx*ny, dtype=int)
 
-    if sys.dimension == 2:
-        pos = np.transpose([np.tile(sys.xpts, ny), np.repeat(sys.ypts, nx)])
+    pos = np.transpose([np.tile(sys.xpts, ny), np.repeat(sys.ypts, nx)])
+    if location.__code__.co_argcount == 1 and sys.ny==1:
+        pos = pos[:,0]
+    else:
         pos = (pos[:,0], pos[:,1])
-
-    if sys.dimension == 3:
-        pos = np.reshape(np.concatenate((np.tile(sys.xpts, ny*nz),
-                                         np.repeat(sys.ypts, nx*nz),
-                                         np.repeat(sys.zpts, nx*ny)
-                                        )
-                                       ),
-                         (3, nx*ny*nz)
-                        ).T
-        pos = (pos[:,0], pos[:,1], pos[:,2])
 
     mask = location(pos)
     if type(mask) == bool:

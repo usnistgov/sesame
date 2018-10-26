@@ -82,7 +82,7 @@ def runTest3():
 
     sys = system(rhoGBlist[0])
 
-    solution = sesame.solve_equilibrium(sys, verbose=False)
+    solution = sesame.solve_equilibrium(sys, verbose=True)
 
 
 
@@ -90,7 +90,7 @@ def runTest3():
     rhoGBlist = [1e6*1e-4, 1e18*1e-4]
     for idx, rhoGB in enumerate(rhoGBlist):
         sys = system(rhoGB,s0)
-        solution = sesame.solve_equilibrium(sys, solution, maxiter=5000, verbose=False)
+        solution = sesame.solve_equilibrium(sys, solution, maxiter=5000, verbose=True)
     veq = np.copy(solution['v'])
 
     efn = np.zeros((sys.nx * sys.ny,))
@@ -111,7 +111,7 @@ def runTest3():
     sys = system(rhoGBlist[1],slist[0])
 
     sys.generation(f)
-    solution = sesame.solve(sys, solution, maxiter=5000, verbose=False)
+    solution = sesame.solve(sys, solution, maxiter=5000, verbose=True)
     az = sesame.Analyzer(sys, solution)
     tj = -az.full_current()
 
@@ -122,8 +122,7 @@ def runTest3():
 
     # sites of the right contact
     nx = sys.nx
-    s = [nx - 1 + j * nx + k * nx * sys.ny for k in range(sys.nz) \
-         for j in range(sys.ny)]
+    s = [nx - 1 + j * nx for j in range(sys.ny)]
 
     # sign of the voltage to apply
     if sys.rho[nx - 1] < 0:
@@ -139,11 +138,12 @@ def runTest3():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q * vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, result, maxiter=1000, verbose=False)
+        result = sesame.solve(sys, result, maxiter=1000, verbose=True)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (3e-6*1e2)
         j.append(tj)
+        print(j)
 
 
     jSesame_12_4_2017 = np.array([135.14066065175203, 134.97430561196626, 134.70499402818209, 134.28271667573679, 133.27884008619145, 129.49875552490002, 119.14704988797484, 83.157765739151415, -114.57979137988193])
@@ -151,3 +151,4 @@ def runTest3():
     error = np.max(np.abs((jSesame_12_4_2017-np.transpose(j))/(.5*(jSesame_12_4_2017+np.transpose(j)))))
     print("error = {0}".format(error))
 
+runTest3()

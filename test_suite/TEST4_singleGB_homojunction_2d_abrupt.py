@@ -26,7 +26,7 @@ def system(N=0,s=1e-18*1e4):
 
 
     # Create a system
-    sys = sesame.Builder(x, y)
+    sys = sesame.Builder(x, y, periodic=False)
 
     def region(pos):
         x, y = pos
@@ -71,8 +71,8 @@ def system(N=0,s=1e-18*1e4):
     p2 = (2.9e-6*1e2, 1.5*1e-6*1e2)  #[m]
 
     # Pass the information to the system
-    sys.add_line_defects([p1, p2], N, s, E=E, transition=(1,0))
-    sys.add_line_defects([p1, p2], N, s, E=E, transition=(0,-1))
+    #sys.add_line_defects([p1, p2], N, s, E=E, transition=(1,0))
+    #sys.add_line_defects([p1, p2], N, s, E=E, transition=(0,-1))
 
     return sys
 
@@ -82,7 +82,7 @@ def runTest4():
 
     sys = system(rhoGBlist[0])
 
-    solution = sesame.solve_equilibrium(sys, periodic_bcs=False, verbose=False)
+    solution = sesame.solve_equilibrium(sys, periodic_bcs=False, verbose=True)
 
 
 
@@ -90,7 +90,7 @@ def runTest4():
     rhoGBlist = [1e6*1e-4, 1e18*1e-4]
     for idx, rhoGB in enumerate(rhoGBlist):
         sys = system(rhoGB,s0)
-        solution = sesame.solve_equilibrium(sys, solution, maxiter=5000, periodic_bcs=False, verbose=False)
+        solution = sesame.solve_equilibrium(sys, solution, maxiter=5000, periodic_bcs=False, verbose=True)
     veq = np.copy(solution['v'])
 
     efn = np.zeros((sys.nx * sys.ny,))
@@ -111,7 +111,7 @@ def runTest4():
     sys = system(rhoGBlist[1],slist[0])
 
     sys.generation(f)
-    solution = sesame.solve(sys, solution, maxiter=5000, verbose=False)
+    solution = sesame.solve(sys, solution, maxiter=5000, verbose=True)
     az = sesame.Analyzer(sys, solution)
     tj = -az.full_current()
 
@@ -121,8 +121,7 @@ def runTest4():
 
     # sites of the right contact
     nx = sys.nx
-    s = [nx - 1 + j * nx + k * nx * sys.ny for k in range(sys.nz) \
-         for j in range(sys.ny)]
+    s = [nx - 1 + j * nx for j in range(sys.ny)]
 
     # sign of the voltage to apply
     if sys.rho[nx - 1] < 0:
@@ -138,7 +137,7 @@ def runTest4():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q * vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, result, maxiter=1000, periodic_bcs=False, verbose=False)
+        result = sesame.solve(sys, result, maxiter=1000, periodic_bcs=False, verbose=True)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (3e-6*1e2) * 1e4
@@ -152,4 +151,4 @@ def runTest4():
     print("error = {0}".format(error))
 
 
-
+runTest4()

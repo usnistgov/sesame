@@ -115,7 +115,9 @@ class Window(QMainWindow):
         # Show the interface
         self.show()
 
-    def setSystem(self, grid, materials, defects, gen, param):
+    def setSystem(self, grid, materials, defects, gen, param, onesun, manual_generation, \
+                  ill_monochromatic, ill_wavelength, ill_power, abs_usefile, abs_file, \
+                           abs_useralpha, abs_alpha):
         """
         Fill out all fields of the interface system tab with the settings from
         the configuration file.  
@@ -130,6 +132,38 @@ class Window(QMainWindow):
         build.g3.setText(grid[2])
         build.gen.setText(gen)
         build.paramName.setText(param)
+
+        if onesun=='True':
+            build.onesun.setChecked(True)
+        else:
+            build.onesun.setChecked(False)
+
+        if manual_generation=='True':
+            build.man_gen.setChecked(True)
+        else:
+            build.man_gen.setChecked(False)
+
+        if abs_useralpha=='True':
+            build.useralpha.setChecked(True)
+        else:
+            build.useralpha.setChecked(False)
+
+        if abs_usefile=='True':
+            build.absfile.setChecked(True)
+        else:
+            build.absfile.setChecked(False)
+
+        if ill_monochromatic=='True':
+            build.monochromatic.setChecked(True)
+        else:
+            build.monochromatic.setChecked(False)
+
+        build.wavelength.setText(ill_wavelength)
+        build.power.setText(ill_power)
+        build.alpha.setText(abs_alpha)
+        build.alphafile.setText(abs_file)
+
+
 
         # set materials
         build.materials_list = materials
@@ -271,7 +305,8 @@ class Window(QMainWindow):
               'tau_e': 1e-6, 'tau_h': 1e-6, 'affinity': 0., \
               'B': 0., 'Cn': 0., 'Cp': 0., 'location': '', 'N_D':0., 'N_A':0.}]
 
-        self.setSystem(grid, materials, [], '', '')
+        self.setSystem(grid, materials, [], '', '',\
+                        'False', 'False', 'False', '', '', 'False', '', 'False', '')
         self.setSimulation(True, '', '', '',  '.npz', True, 'Ohmic', 'Ohmic',\
                            '', '', '1e5', '1e5', '1e5', '1e5', '1e-6',\
                            '100', False, False, '0', '1e-6', '1')
@@ -307,43 +342,8 @@ class Window(QMainWindow):
         with open(self.cfgFile, 'r') as f:
             try:
                 config.read(self.cfgFile)
-
-                grid = config.get('System', 'Grid')
-                materials = config.get('System', 'Materials')
-                defects = config.get('System', 'Defects')
-                gen, param = config.get('System', 'Generation rate'),\
-                             config.get('System', 'Generation parameter')
-                self.setSystem(ev(grid), ev(materials), ev(defects), gen, param)
-
-                voltageLoop = config.getboolean('Simulation', 'Voltage loop')
-                loopValues = config.get('Simulation', 'Loop values')
-                workDir = config.get('Simulation', 'Working directory')
-                fileName = config.get('Simulation', 'Simulation name')
-                ext = config.get('Simulation', 'Extension')
-                BCs = config.getboolean('Simulation', 'Transverse boundary conditions')
-                ScnL = config.get('Simulation', 'Electron recombination velocity in 0')
-                ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
-                ScnR = config.get('Simulation', 'Electron recombination velocity in L')
-                ScpR = config.get('Simulation', 'Hole recombination velocity in L')
-                L_contact = config.get('Simulation', 'Contact boundary condition in 0')
-                R_contact = config.get('Simulation', 'Contact boundary condition in L')
-                L_WF = config.get('Simulation', 'Contact work function in 0')
-                R_WF = config.get('Simulation', 'Contact work function in L')
-                precision = config.get('Simulation', 'Newton precision')
-                maxSteps = config.get('Simulation', 'Maximum steps')
-                useMumps = config.getboolean('Simulation', 'Use Mumps')
-                iterative = config.getboolean('Simulation', 'Iterative solver')
-                ramp = config.get('Simulation', 'Generation ramp')
-                iterPrec = config.get('Simulation', 'Iterative solver precision')
-                htpy = config.get('Simulation', 'Newton homotopy')
-                self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
-                                   ext, BCs, L_contact, R_contact, L_WF, R_WF,\
-                                   ScnL, ScpL, ScnR, ScpR, precision,\
-                                   maxSteps, useMumps, iterative, ramp,\
-                                   iterPrec, htpy)
+            except:
                 f.close()
-
-            except Exception:
                 msg = QMessageBox()
                 msg.setWindowTitle("Processing error")
                 msg.setIcon(QMessageBox.Critical)
@@ -352,6 +352,53 @@ class Window(QMainWindow):
                 msg.exec_()
                 return
 
+            grid = config.get('System', 'Grid')
+            materials = config.get('System', 'Materials')
+            defects = config.get('System', 'Defects')
+            gen, param = config.get('System', 'Generation rate'),\
+                         config.get('System', 'Generation parameter')
+            ill_onesun = config.get('System', 'One sun illumination')
+            man_gen = config.get('System', 'Use manual generation')
+
+            ill_monochromatic = config.get('System', 'Monochromatic illumination')
+            ill_wavelength = config.get('System', 'Illumination wavelength')
+            ill_power = config.get('System', 'Illumination power')
+            abs_usefile = config.get('System', 'Use absorption file')
+            abs_file = config.get('System', 'Absorption file')
+            abs_useralpha = config.get('System', 'Use user-defined alpha')
+            abs_alpha = config.get('System', 'Alpha')
+
+            self.setSystem(ev(grid), ev(materials), ev(defects), gen, param, ill_onesun, man_gen, \
+                           ill_monochromatic, ill_wavelength, ill_power, abs_usefile, abs_file, \
+                           abs_useralpha, abs_alpha)
+
+            voltageLoop = config.getboolean('Simulation', 'Voltage loop')
+            loopValues = config.get('Simulation', 'Loop values')
+            workDir = config.get('Simulation', 'Working directory')
+            fileName = config.get('Simulation', 'Simulation name')
+            ext = config.get('Simulation', 'Extension')
+            BCs = config.getboolean('Simulation', 'Transverse boundary conditions')
+            ScnL = config.get('Simulation', 'Electron recombination velocity in 0')
+            ScpL = config.get('Simulation', 'Hole recombination velocity in 0')
+            ScnR = config.get('Simulation', 'Electron recombination velocity in L')
+            ScpR = config.get('Simulation', 'Hole recombination velocity in L')
+            L_contact = config.get('Simulation', 'Contact boundary condition in 0')
+            R_contact = config.get('Simulation', 'Contact boundary condition in L')
+            L_WF = config.get('Simulation', 'Contact work function in 0')
+            R_WF = config.get('Simulation', 'Contact work function in L')
+            precision = config.get('Simulation', 'Newton precision')
+            maxSteps = config.get('Simulation', 'Maximum steps')
+            useMumps = config.getboolean('Simulation', 'Use Mumps')
+            iterative = config.getboolean('Simulation', 'Iterative solver')
+            ramp = config.get('Simulation', 'Generation ramp')
+            iterPrec = config.get('Simulation', 'Iterative solver precision')
+            htpy = config.get('Simulation', 'Newton homotopy')
+            self.setSimulation(voltageLoop, loopValues, workDir, fileName, \
+                               ext, BCs, L_contact, R_contact, L_WF, R_WF,\
+                               ScnL, ScpL, ScnR, ScpR, precision,\
+                               maxSteps, useMumps, iterative, ramp,\
+                               iterPrec, htpy)
+            f.close()
 
     def saveAsConfig(self):
         self.cfgFile = QFileDialog.getSaveFileName(self, 'Save File', '.ini', \
@@ -381,6 +428,20 @@ class Window(QMainWindow):
             defects = build.defects_list
             gen, param = build.gen.text(), build.paramName.text()
 
+            ill_onesun = build.onesun.isChecked()
+            ill_monochromatic = build.monochromatic.isChecked()
+            ill_wavelength = build.wavelength.text()
+            ill_power = build.power.text()
+            abs_usefile = build.absfile.isChecked()
+            abs_useralpha = build.useralpha.isChecked()
+            abs_alpha = build.alpha.text()
+            abs_file = build.alphafile.text()
+            manual_gen = build.man_gen.isChecked()
+
+            #generation = self.gen.text().replace('exp', 'np.exp')
+            #settings['gen'] = generation, self.paramName.text()
+
+
             L_WF, R_WF = '', ''
             if simu.L_Ohmic.isChecked():
                 L_contact = "Ohmic"
@@ -402,6 +463,15 @@ class Window(QMainWindow):
                 config.set('System', 'Grid', str(grid))
                 config.set('System', 'Materials', str(mat))
                 config.set('System', 'Defects', str(defects))
+                config.set('System', 'One sun illumination', str(ill_onesun))
+                config.set('System', 'Monochromatic illumination', str(ill_monochromatic))
+                config.set('System', 'Illumination Wavelength', ill_wavelength)
+                config.set('System', 'Illumination Power', ill_power)
+                config.set('System', 'Use absorption file', str(abs_usefile))
+                config.set('System', 'Absorption file', abs_file)
+                config.set('System', 'Use user-defined alpha', str(abs_useralpha))
+                config.set('System', 'Alpha', abs_alpha)
+                config.set('System', 'Use manual generation', str(manual_gen))
                 config.set('System', 'Generation rate', gen)
                 config.set('System', 'Generation parameter', param)
 

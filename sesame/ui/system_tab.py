@@ -7,8 +7,8 @@ import sys
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
- 
-import numpy as np 
+
+import numpy as np
 
 from .plotbox import *
 from .common import parseSettings, slotError
@@ -22,8 +22,8 @@ class BuilderBox(QWidget):
         self.setLayout(self.tabLayout)
 
         self.builder1()
-        self.builder2() 
-        self.builder3() 
+        self.builder2()
+        self.builder3()
 
 
     def builder1(self):
@@ -34,7 +34,7 @@ class BuilderBox(QWidget):
         # Grid settings
         #==============================
         gridBox = QGroupBox("Grid")
-        gridBox.setMaximumWidth(400)
+        gridBox.setMaximumWidth(500)
         gridLayout = QFormLayout()
 
         tip = QLabel("Each axis of the grid is a concatenation of sets of evenly spaced nodes. Edit the form with (x1, x2, number of nodes), (x2, x3, number of nodes),...")
@@ -57,7 +57,7 @@ class BuilderBox(QWidget):
 
         gridLayout.addRow("Grid x-axis", h1)
         gridLayout.addRow("Grid y-axis", h2)
-        gridLayout.addRow("Grid z-axis", h3)
+        #gridLayout.addRow("Grid z-axis", h3)
 
         gridBox.setLayout(gridLayout)
         layout.addWidget(gridBox)
@@ -66,7 +66,7 @@ class BuilderBox(QWidget):
         # Line and plane defects
         #=====================================================
         defectBox = QGroupBox("Planar Defects")
-        defectBox.setMinimumWidth(400)
+        defectBox.setMinimumWidth(500)
         vlayout = QVBoxLayout()
         defectBox.setLayout(vlayout)
         layout.addWidget(defectBox)
@@ -134,15 +134,87 @@ class BuilderBox(QWidget):
             item.setFlags(Qt.ItemIsEnabled)
             self.ctable.setItem(idx,1, item)
 
-        
+        #=====================================================
+        # Illumination
+        #=====================================================
+        genBox = QGroupBox("")
+        genBox.setMaximumWidth(500)
+        genLayout = QHBoxLayout()
+        genBox.setLayout(genLayout)
+        layout.addWidget(genBox)
+
+        illBox = QGroupBox("Illumination")
+        illLayout = QVBoxLayout()
+        illBox.setLayout(illLayout)
+        genLayout.addWidget(illBox)
+
+        illtypeLayout = QHBoxLayout()
+        illtype = QButtonGroup(illtypeLayout)
+        self.onesun = QRadioButton("1 sun")
+        self.monochromatic = QRadioButton("monochromatic")
+        illtype.addButton(self.onesun)
+        illtype.addButton(self.monochromatic)
+        illtypeLayout.addWidget(self.monochromatic)
+        illtypeLayout.addWidget(self.onesun)
+
+        self.onesun.toggled.connect(self.onesun_toggled)
+        self.monochromatic.toggled.connect(self.monochromatic_toggled)
+
+        illLayout.addLayout(illtypeLayout)
+
+        hlayout = QFormLayout()
+        self.wavelength = QLineEdit("", self)
+        hlayout.addRow("Wavelength [nm]", self.wavelength)
+        self.power = QLineEdit("", self)
+        hlayout.addRow("Power [W cm\u207B\u00B2]", self.power)
+        illLayout.addLayout(hlayout)
+
+        #=====================================================
+        # Absorption
+        #=====================================================
+
+        absBox = QGroupBox("Absorption")
+        absLayout = QVBoxLayout()
+        absBox.setLayout(absLayout)
+        genLayout.addWidget(absBox)
+
+        abstypeLayout = QHBoxLayout()
+        abstype = QButtonGroup(abstypeLayout)
+        self.useralpha = QRadioButton("User defined")
+        self.absfile = QRadioButton("from file")
+        abstype.addButton(self.useralpha)
+        abstype.addButton(self.absfile)
+        abstypeLayout.addWidget(self.useralpha)
+        abstypeLayout.addWidget(self.absfile)
+        absLayout.addLayout(abstypeLayout)
+
+        self.useralpha.toggled.connect(self.useralpha_toggled)
+        self.absfile.toggled.connect(self.absfile_toggled)
+
+        hlayout = QFormLayout()
+        self.alpha = QLineEdit("", self)
+        hlayout.addRow("alpha [cm\u207B\u00B9]", self.alpha)
+
+        self.alphafile = QLineEdit("", self)
+        self.browseBtn = QPushButton("Browse...")
+        self.browseBtn.clicked.connect(self.browse)
+
+        hlayout.addRow("absorption file", self.alphafile)
+        hlayout.addWidget(self.browseBtn)
+        absLayout.addLayout(hlayout)
+
         #=====================================================
         # Generation
         #=====================================================
-        genBox = QGroupBox("Generation rate")
-        genBox.setMaximumWidth(400)
+        genBox = QGroupBox("Manual Generation rate")
+        genBox.setMaximumWidth(500)
         genLayout = QVBoxLayout()
         genBox.setLayout(genLayout)
         layout.addWidget(genBox)
+
+        self.man_gen = QRadioButton("Use manual generation")
+        genLayout.addWidget(self.man_gen)
+        self.man_gen.toggled.connect(self.man_gen_toggled)
 
         lbl = QLabel("Provide a number for uniform illumation, or a space-dependent function, or simply nothing for dark conditions. \nA single variable parameter is allowed and will be looped over during the simulation.")
         lbl.setStyleSheet("qproperty-alignment: AlignJustify;")
@@ -154,7 +226,12 @@ class BuilderBox(QWidget):
         hlayout.addRow("Expression [cm\u207B\u00B3s\u207B\u00B9]", self.gen)
         self.paramName = QLineEdit("", self)
         hlayout.addRow("Paramater name", self.paramName)
+
+        self.gen.setEnabled(False)
+        self.paramName.setEnabled(False)
+
         genLayout.addLayout(hlayout)
+
 
 
     def builder2(self):
@@ -241,7 +318,7 @@ class BuilderBox(QWidget):
             item.setFlags(Qt.ItemIsEnabled)
             self.table.setItem(idx,1, item)
 
-        
+
         self.matNumber += 1
         idx = self.matNumber
         self.materials_list.append({})
@@ -272,7 +349,7 @@ class BuilderBox(QWidget):
         for idx, (val, unit) in enumerate(zip(values, self.units)):
             self.table.setItem(idx,0, QTableWidgetItem(str(val)))
 
-    # add new material 
+    # add new material
     def addMat(self):
         mt = {'Nc': 1e19, 'Nv': 1e19, 'Eg': 1, 'epsilon': 10, 'mass_e': 1,\
               'mass_h': 1, 'mu_e': 100, 'mu_h': 100, 'Et': 0,\
@@ -506,8 +583,69 @@ class BuilderBox(QWidget):
 
         settings['materials'] = self.materials_list
         settings['defects'] = self.defects_list
+
+        ##########################  UPDATE THIS  #############################
+        
+        settings['ill_onesun'] = self.onesun.isChecked()
+        settings['ill_monochromatic'] = self.monochromatic.isChecked()
+        settings['ill_wavelength'] = self.wavelength.text()
+        settings['ill_power'] = self.power.text()
+        
+        settings['abs_usefile'] = self.absfile.isChecked()
+        settings['abs_useralpha'] = self.useralpha.isChecked()
+        settings['abs_alpha'] = self.alpha.text()
+        settings['abs_file'] = self.alphafile.text()
+        
+        settings['use_manual_g'] = self.man_gen.isChecked()        
         generation = self.gen.text().replace('exp', 'np.exp')
         settings['gen'] = generation, self.paramName.text()
+        
+        ##########################  UPDATE THIS  #############################        
+        
         return settings
+
+    def browse(self):
+        dialog = QFileDialog()
+        tfile = dialog.getOpenFileName(None, "Select file", "")
+        self.alphafile.setText(tfile[0])
+
+    def onesun_toggled(self):
+        #  enable Metal work function input
+        self.wavelength.setDisabled(True)
+        self.power.setDisabled(True)
+
+    def monochromatic_toggled(self):
+        #  enable Metal work function input
+        self.wavelength.setEnabled(True)
+        self.power.setEnabled(True)
+
+    def useralpha_toggled(self):
+        self.alphafile.setDisabled(True)
+        self.alpha.setEnabled(True)
+        self.browseBtn.setDisabled(True)
+
+    def absfile_toggled(self):
+        self.alphafile.setEnabled(True)
+        self.alpha.setDisabled(True)
+        self.browseBtn.setEnabled(True)
+
+    def man_gen_toggled(self):
+        if self.man_gen.isChecked() == True:
+            value = True
+            #self.tabsTable.simulation.other.setChecked(False)
+        else:
+            value = False
+
+        self.alphafile.setDisabled(value)
+        self.alpha.setDisabled(value)
+        self.wavelength.setDisabled(value)
+        self.power.setDisabled(value)
+        self.useralpha.setDisabled(value)
+        self.alpha.setDisabled(value)
+        self.absfile.setDisabled(value)
+        self.onesun.setDisabled(value)
+        self.monochromatic.setDisabled(value)
+        self.gen.setEnabled(value)
+        self.paramName.setEnabled(value)
 
 
