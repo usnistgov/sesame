@@ -134,3 +134,25 @@ The current can be saved and plotted as in the previous tutorial::
 
 .. image:: jv_hetero.*
    :align: center
+
+
+Adding contact and shunt resistance
+...................................
+
+We next demonstrate how to include the effect of series and shunt resistance.  The example treated here is in the file ``1d_heterojunction_with_Rs_Rsh`` located in the ``examples\tutorial2`` directory of the distribution.  The classic equivalent circuit model for a solar cell is given below (note we use current density :math:`J` and resistance-area product to characterize the circuit).
+
+.. image:: Solar_cell_equivalent_circuitJ.png
+   :align: center
+
+For our model, the diode in this circuit is replaced by the numerically computed current-voltage relation shifted by the computed short-circuit current, so that :math:`J_{{\rm diode}}^{{\rm dark}}(0)=0`). The light source current :math:`J_L` is given by the numerically computed short-circuit current density.  The current-voltage relation of the above circuit is given by the following implicit equation:
+
+.. math::
+    J  = J_L - J_{{\rm diode}}^{{\rm dark}}(V-J R_{\rm s}A) - \frac{V+J R_{\rm s} A}{R_{{\rm sh}}A}.
+
+For a fixed potential drop across the circuit :math:`V`, the above equation is solved numerically to find the total current through the circuit :math:`J`.  Below we show the effect of finite series and contact resistance values (given by :math:`R_{\rm s}` and :math:`R_{\rm sh}` respectively) on the current-voltage relation computed in the first part of the tutorial:
+
+.. image:: JV_contacts.*
+   :align: center
+
+We refer the reader to the example script for more details of how the mathematics of the equivalent circuit model is implemented.
+
