@@ -484,7 +484,7 @@ class Builder():
         """
 
         if callable(f):
-            if f.__code__.co_argcount == 1 and sys.ny==1:
+            if f.__code__.co_argcount == 1 and self.ny==1:
                 g = [f(x, *args) for x in self.xpts]
             else:
                 g = [f(x, y, *args) for y in self.ypts for x in self.xpts]
