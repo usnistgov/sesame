@@ -58,7 +58,7 @@ Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
 # First find the equilibrium solution
-result = sesame.solve_equilibrium(sys)
+result = sesame.solve(sys, 'Poisson')
 
 # Add illumination
 phi0 = 1e17     # incoming flux [1/(cm^2 sec)]
