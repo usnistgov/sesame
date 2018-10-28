@@ -16,7 +16,7 @@ for module in __all__:
     exec('from . import {0}'.format(module))
 
 available = [('builder', ['Scaling', 'Builder']),
-             ('solvers', ['solve', 'IVcurve']),
+             ('solvers', ['solve_equilibrium', 'solve', 'IVcurve']),
              ('analyzer', ['Analyzer'])]
 for module, names in available:
     exec('from .{0} import {1}'.format(module, ', '.join(names)))
@@ -24,11 +24,12 @@ for module, names in available:
 
 try:
     from . import plotter
-    from .plotter import plot_line_defects, plot
+    from .plotter import plot_line_defects, plot, plot_plane_defects
     from . import utils
     from .utils import save_sim, load_sim
 except:
     pass
 else:
-    __all__.extend(['plotter', 'plot_line_defects', 'plot'])
+    __all__.extend(['plotter', 'plot_line_defects', 'plot',
+    'plot_plane_defects'])
 

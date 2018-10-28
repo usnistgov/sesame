@@ -118,6 +118,53 @@ def Bresenham(system, p1, p2):
     X = np.asarray(X)
     return sites, X, icoord, jcoord
 
+def check_plane(P1, P2, P3, P4):
+    # check if plane is within what can be handled
+    msg = "Acceptable planes are rectangles with at least one edge parallel " +\
+          "to either x, or y or z. The rectangles must be defined by two lines " +\
+          "perpendicular to the z-axis."
+
+    # vectors within the plane
+    v1 = P2 - P1
+    v2 = P3 - P1
+    vperp = np.cross(v1, v2)
+
+    check = True
+
+    # 1. check if the two lines are perpendicular to th z-axis
+    if np.dot(v1, (0,0,1)) != 0 and np.dot(v2, (0,0,1)):
+        check = False
+        print("The lines defining the plane defects defined by the four points "\
+            + "{0}, {1}, {2}, {3}".format(P1, P2, P3, P4) +\
+            " are not perpendicular to the z-axis.")
+
+    # 2. check if the plane is a rectangle
+    center = (P1 + P2 + P3 + P4) / 4.  # compute center of the figure
+    d1 = np.linalg.norm(P1 - center)
+    d2 = np.linalg.norm(P2 - center)
+    d3 = np.linalg.norm(P3 - center)
+    d4 = np.linalg.norm(P4 - center)
+
+    if not all(abs(d-d1) < 1e-15 for d in (d2, d3, d4)):
+        check = False
+        print("The plane defects defined by the four points " +\
+              "{0}, {1}, {2}, {3}".format(P1, P2, P3, P4) +\
+              " is not a rectangle.")
+
+    # 3. check if the plane is parallel to at least one axis
+    c = abs(np.dot(vperp, (1,0,0))) > 1e-30 and\
+        abs(np.dot(vperp, (0,1,0))) > 1e-30 and\
+        abs(np.dot(vperp, (0,0,1))) > 1e-30
+    if c:
+        check = False
+        print("The plane defects defined by the four points " +\
+              "{0}, {1}, {2}, {3}".format(P1, P2, P3, P4) +\
+              " is not a parallel to at least one main axis.")
+
+    if not check:
+        print(msg)
+        exit(1)
+
 
 def get_point_defects_sites(system, location):
     # find the site closest to a given point
@@ -181,6 +228,186 @@ def get_line_defects_sites(system, location):
     perp_dl = np.asarray(perp_dl)
     return sites, perp_dl
 
+
+def plane_defects_sites(sys, location):
+    """
+    Get sites and coordinates of the locations containing additional charges
+    distributed on a plane.
+
+    Parameters
+    ----------
+
+    sys: Builder
+        The discretized system.
+    location: list of four array_like coordinates [(x1, y1, z1), (x2, y2, z2), (x3, y3, z3), (x4, y4, z4)]
+        The coordinates in [m] define a plane of defects in 3D. The first two
+        coordinates define a line that must be parallel to the line defined by
+        the last two points.
+
+    Returns
+    -------
+
+    s: numpy array of integers
+        Sites numbers.
+    xccord: numpy array of floats
+        Grid of the x-coordinates of the sites [m].
+    yccord: numpy array of floats
+        Grid of the y-coordinates of the sites [m].
+    perp_dl: numpy array of floats
+        Lattice constants localy orthogonal to the plane.
+
+    Notes
+    -----
+    This only works in 3D.
+    """
+
+    # transform points into numpy arrays if not the case
+        
+    P1, P2, P3, P4 = [np.asarray(P) for P in location]
+
+    # check plane first
+    check_plane(P1, P2, P3, P4)
+
+    # points indices on the grid
+    i1, j1, k1 = get_indices(sys, P1)
+    i2, j2, k2 = get_indices(sys, P2)
+    # check if the two lines are in the same sense, if not, flip the second line
+    if np.dot(P2 - P1, P4 - P3) > 0:
+        i3, j3, k3 = get_indices(sys, P3)
+    else:
+        i3, j3, k3 = get_indices(sys, P4)
+
+    ## vector perpendicular to the plane
+    A, B, C = np.cross(P2 - P1, P3 - P1)
+    D = -A*P1[0] - B*P1[1] - C*P1[2]
+
+    error = lambda x, y, z: abs(A*x + B*y + C*z + D)
+    
+    Dx = abs(i3 - i1)    # distance to travel in X
+    Dy = abs(j3 - j1)    # distance to travel in Y
+    Dz = abs(k3 - k1)    # distance to travel in Z
+    travel = Dx + Dy + Dz
+
+    # increment in x
+    incx = 0
+    if i1 < i3:
+        incx = 1
+    elif i1 > i3:
+        incx = -1
+    # increment in y
+    incy = 0
+    if j1 < j3:
+        incy = 1
+    elif j1 > j3:
+        incy = -1
+    # increment in z
+    incz = 0
+    if k1 < k3:
+        incz = 1
+    elif k1 > k3:
+        incz = -1
+       
+    sites, xcoord, ycoord, zcoord = [], [], [], []
+    perp_dl = np.array([])
+
+    s, _, ic, jc, kc = Bresenham(sys, P1, P2)
+
+    sites.extend(s)
+    xcoord.append(sys.xpts[ic])
+    ycoord.append(sys.ypts[jc])
+    zcoord.append(sys.zpts[kc])
+    for _ in range(travel-1):
+        # find the coordinates of the next line
+        e1 = error(sys.xpts[i1+incx], sys.ypts[j1], sys.zpts[k1])
+        e2 = error(sys.xpts[i1], sys.ypts[j1+incy], sys.zpts[k1])
+        e3 = error(sys.xpts[i1], sys.ypts[j1], sys.zpts[k1+incz])
+
+        if incz == 0:
+            if e1 < e2:
+                if i1 == sys.nx-1 or i2 == sys.nx-1:
+                    break
+                else:
+                    i1, j1, k1 = i1 + incx, j1, k1
+                    i2, j2, k2 = i2 + incx, j2, k2
+                    dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
+            else:
+                if j1 == sys.ny-1 or j2 == sys.ny-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1 + incy, k1
+                    i2, j2, k2 = i2, j2 + incy, k2
+                    dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
+
+        if incy == 0 and incx != 0:
+            if e1 == e3:
+                condition = incz == 0
+            else:
+                condition = e1 < e3
+            if condition:
+                if i1 == sys.nx-1 or i2 == sys.nx-1:
+                    break
+                else:
+                    i1, j1, k1 = i1 + incx, j1, k1
+                    i2, j2, k2 = i2 + incx, j2, k2
+                    dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
+            else:
+                if k1 == sys.nz-1 or k2 == sys.nz-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1, k1 + incz
+                    i2, j2, k2 = i2, j2, k2 + incz
+                    dl = (sys.dx[i1] + sys.dx[i1+1])/2. #and repeat that
+
+        if incx == 0 and incy != 0:
+            if e2 == e3:
+                condition = incz == 0
+            else:
+                condition = e2 < e3
+            if condition:
+                if j1 == sys.ny-1 or j2 == sys.ny-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1 + incy, k1
+                    i2, j2, k2 = i2, j2 + incy, k2
+                    dl = (sys.dz[k1] + sys.dz[k1+1])/2. #and repeat that
+            else:
+                if k1 == sys.nz-1 or k2 == sys.nz-1:
+                    break
+                else:
+                    i1, j1, k1 = i1, j1, k1 + incz
+                    i2, j2, k2 = i2, j2, k2 + incz
+                    dl = (sys.dy[j1] + sys.dy[j1+1])/2. #and repeat that
+
+        if incx == 0 and incy == 0:
+            if k1 == sys.nz-1 or k2 == sys.nz-1:
+                break
+            else:
+                i1, j1, k1 = i1, j1, k1 + incz
+                i2, j2, k2 = i2, j2, k2 + incz
+            if j1 == j2:
+                dl = (sys.dy[j1] + sys.dy[j1+1])/2.
+            if i1 == i2:
+                dl = (sys.dx[i1] + sys.dx[i1+1])/2.
+
+        x1, x2 = sys.xpts[i1], sys.xpts[i2]
+        y1, y2 = sys.ypts[j1], sys.ypts[j2]
+        z1, z2 = sys.zpts[k1], sys.zpts[k2]
+
+        s, _, ic, jc, kc = Bresenham(sys, (x1, y1, z1), (x2, y2, z2))
+
+        sites.extend(s)
+        xcoord.append(sys.xpts[ic])
+        ycoord.append(sys.ypts[jc])
+        zcoord.append(sys.zpts[kc])
+
+        # replicate perp_dl for all sites on the line
+        perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
+
+    xcoord = np.asarray(xcoord)
+    ycoord = np.asarray(ycoord)
+    zcoord = np.asarray(zcoord)
+    perp_dl = np.concatenate((perp_dl, np.repeat(np.array([dl]), len(s))))
+    return sites, xcoord, ycoord, zcoord, perp_dl
 
 def save_sim(sys, result, filename, fmt='npy'):
     """
