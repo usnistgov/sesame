@@ -34,7 +34,7 @@ class BuilderBox(QWidget):
         # Grid settings
         #==============================
         gridBox = QGroupBox("Grid")
-        gridBox.setMaximumWidth(500)
+        gridBox.setMinimumWidth(500)
         gridLayout = QFormLayout()
 
         tip = QLabel("Each axis of the grid is a concatenation of sets of evenly spaced nodes. Edit the form with (x1, x2, number of nodes), (x2, x3, number of nodes),...")
@@ -138,7 +138,7 @@ class BuilderBox(QWidget):
         # Illumination
         #=====================================================
         genBox = QGroupBox("")
-        genBox.setMaximumWidth(500)
+        genBox.setMinimumWidth(500)
         genLayout = QHBoxLayout()
         genBox.setLayout(genLayout)
         layout.addWidget(genBox)
@@ -207,7 +207,7 @@ class BuilderBox(QWidget):
         # Generation
         #=====================================================
         genBox = QGroupBox("Manual Generation rate")
-        genBox.setMaximumWidth(500)
+        #genBox.setMaximumWidth(500)
         genLayout = QVBoxLayout()
         genBox.setLayout(genLayout)
         layout.addWidget(genBox)

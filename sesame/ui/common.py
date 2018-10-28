@@ -87,7 +87,7 @@ def parseAlphaFile(file):
 
     _lambda = []
     _alpha = []
-    # assumed units of file:  lambda in [nm], abdsorption in [1/m]
+    # assumed units of file:  lambda in [nm], absorption in [1/m]
     if os.path.isfile(file) is False:
         msg = QMessageBox()
         msg.setWindowTitle("Processing error")
@@ -121,7 +121,11 @@ def getgeneration(lambda_power, power, lambda_alpha, alpha, xpts):
     gen = []
     if alpha.size == 1:
         lambda_alpha = np.linspace(300,3000,745)
-        alpha = float(alpha) * np.ones(745)
+        if type(alpha) is np.ndarray:
+            alpha = np.asarray(alpha, dtype='float64')
+            alpha = alpha * np.ones(745)
+        else:
+            alpha = float(alpha) * np.ones(745)
 
     if power.size==0 or alpha.size==0:
         gen = np.zeros(xpts.size)
@@ -156,9 +160,6 @@ def getgeneration(lambda_power, power, lambda_alpha, alpha, xpts):
         flux = power[c] * llambda[c]*1e-9 / (hc)  # 1/(cm^2 * sec)
         gen = gen + alpha[c] * flux * np.exp(-alpha[c]*xpts) * dl
 
-    #plt.plot(gen)
-    #plt.show()
-    fdsa = 1
     return gen
 
 
@@ -204,15 +205,12 @@ def parseSettings(settings):
         transition = (ev(transition))
 
         if isinstance(loc, float):
-            system.add_point_defects(loc, N, se, sigma_h=sh, E=E, \
+            system.add_defects(loc, N, se, sigma_h=sh, E=E, \
                                     transition=transition)
         elif len(loc) == 2:
-            system.add_line_defects(loc, N, se, sigma_h=sh, E=E,\
+            system.add_defects(loc, N, se, sigma_h=sh, E=E,\
                                     transition=transition)
-        elif len(loc) == 4:
-            system.add_plane_defects(loc, N, se, sigma_h=sh, E=E,\
-                                     transition=transition)
-            
+
     ##  ok i would go ahead and construct g for non-manual case here!
     lambda_power = np.array([])
     power = np.array([])
@@ -225,7 +223,6 @@ def parseSettings(settings):
         ########################################
         # use one sun power spectrum
         if settings['ill_onesun'] is True:
-            #onesundata = np.load('C:\\Users\\phaney\\PycharmProjects\\sesame-master__2\\sesame\\ui\\onesun2.dat.npy')
             lambda_power = onesundata[:,0]
             power = onesundata[:,1]* 1e-4  # converting to W/cm^2
 
@@ -248,7 +245,6 @@ def parseSettings(settings):
         if settings['abs_usefile'] is True:
             abs_file = settings['abs_file']
             lambda_alpha, alpha = parseAlphaFile(abs_file)
-            # handle if no absorption file!
         if settings['abs_useralpha'] is True:
             alpha = np.asarray(settings['abs_alpha'])
             lambda_alpha = []

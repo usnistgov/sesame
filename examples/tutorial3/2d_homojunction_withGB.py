@@ -64,13 +64,13 @@ p2 = (2.9e-4, 1.5*1e-4)     # [cm]
 
 
 # add donor defect along GB
-sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1,-1))
+sys.add_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1,0))
 # add acceptor defect along GB
-#sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0,-1))
+sys.add_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0,-1))
 
 
 # Solve equilibirum problem first
-solution = sesame.solve_equilibrium(sys)
+solution = sesame.solve(sys, 'Poisson')
 
 
 # define a function for generation profile
@@ -79,7 +79,7 @@ f = lambda x, y: 2.3e21*np.exp(-2.3e4*x)
 sys.generation(f)
 
 # Solve problem under short-circuit current conditions
-solution = sesame.solve(sys,solution)
+solution = sesame.solve(sys, guess=solution)
 # Get analyzer object to compute observables
 az = sesame.Analyzer(sys, solution)
 # Compute short-circuit current
@@ -91,7 +91,7 @@ print(j*sys.scaling.current*sys.scaling.length*1e3)
 # specify applied voltages
 voltages = np.linspace(0,.9,10)
 # find j-v
-j = sesame.IVcurve(sys, voltages, solution, '2dGB_V')
+j = sesame.IVcurve(sys, voltages, '2dGB_V', guess=solution)
 
 j = j * sys.scaling.current*sys.scaling.length*1e3
 import matplotlib.pyplot as plt

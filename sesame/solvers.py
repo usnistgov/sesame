@@ -4,25 +4,22 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
-import importlib
 from scipy.io import savemat
 from . import analyzer
-from . utils import save_sim
+from .utils import save_sim
 
 from .analyzer import Analyzer
 
 import scipy.sparse.linalg as lg
-from scipy.sparse import spdiags
 from scipy.sparse import coo_matrix, csr_matrix
 from .getFandJ_eq import getFandJ_eq
 from .getF import getF
 from .jacobian import getJ
 
 import logging
-import warnings
 logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
-__all__ = ['solve_equilibrium', 'solve', 'IVcurve']
+__all__ = ['solve', 'IVcurve']
 
 # check if MUMPS is available
 mumps_available = False
@@ -67,103 +64,10 @@ class Solver():
     equilibrium: numpy array of floats
         Electrostatic potential computed at thermal equilibrium.
     """
-    warnings.warn("Deprecated method, use common_solver instead", DeprecationWarning)
-    def __init__(self, use_mumps=True):
 
+    def __init__(self, use_mumps=True):
         self.equilibrium = None
         self.use_mumps = use_mumps
-
-    def solve_equilibrium(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
-        
-        """
-        Solve the Poisson equation.
-
-        Parameters
-        ----------
-        system: Builder
-            The discretized system.
-        guess: numpy array of floats
-            Contains the electrostatic potential.
-        tol: float
-            Accepted error made by the Newton-Raphson scheme.
-        periodic_bcs: boolean
-            Defines the choice of boundary conditions in the y-direction. True
-            (False) corresponds to periodic (abrupt) boundary conditions.
-        maxiter: integer
-            Maximum number of steps taken by the Newton-Raphson scheme.
-        verbose: boolean
-            The solver returns the step number and the associated error at every
-            step if set to True (default).
-        iterative: boolean
-            Defines if an iterative method should be used to solve for the Newton
-            correction instead of a direct method. Default is False.
-        inner_tol: float
-            Error of the inner iterative solver when used.
-        htp: integer
-            Number of homotopic Newton loops to perform.
-
-        Returns
-        -------
-
-        solution: dictionary with  numpy arrays of floats
-            Dictionary containing the one-dimensional arrays of the solution:
-            the electron quasi-Fermi level (zeros), the hole quasi-Fermi level
-            (zeros) and the electrostatic potential. Keys are 'efn', 'efp' and
-            'v'.  An exception is raised if no solution could be found.
-        """
-        warnings.warn("Deprecated method, use common_solver instead", DeprecationWarning)
-        res = self.common_solver('Poisson', system, guess, tol, periodic_bcs,\
-                    maxiter, verbose, iterative, inner_tol, htp)
-        return res
-
-    def solve(self, system, guess=None, tol=1e-6, periodic_bcs=True,\
-          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
-
-        """
-        Solve the drift diffusion Poisson equation on a given discretized
-        system out of equilibrium. If the equilibrium electrostatic potential is
-        not yet computed, the routine will compute it and save it for further
-        computations.
-
-        Parameters
-        ----------
-        system: Builder
-            The discretized system.
-        guess: dictionary of numpy arrays of floats
-            Contains the one-dimensional arrays of the initial guesses for the
-            electron quasi-Fermi level, the hole quasi-Fermi level and the
-            electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
-        tol: float
-            Accepted error made by the Newton-Raphson scheme.
-        periodic_bcs: boolean
-            Defines the choice of boundary conditions in the y-direction. True
-            (False) corresponds to periodic (abrupt) boundary conditions.
-        maxiter: integer
-            Maximum number of steps taken by the Newton-Raphson scheme.
-        verbose: boolean
-            The solver returns the step number and the associated error at every
-            step if set to True (default).
-        iterative: boolean
-            Defines if an iterative method should be used to solve for the Newton
-            correction instead of a direct method. Default is False.
-        inner_tol: float
-            Error of the inner iterative solver when used.
-        htp: integer
-            Number of homotopic Newton loops to perform.
-
-        Returns
-        -------
-
-        solution: dictionary with  numpy arrays of floats
-            Dictionary containing the one-dimensional arrays of the solution. The
-            keys are the same as the ones for the guess. An exception is raised
-            if no solution could be found.
-        """
-
-        res = self.common_solver('all', system, guess, tol, periodic_bcs,\
-                    maxiter, verbose, iterative, inner_tol, htp)
-        return res
     
     def make_guess(self, system):
         # Make a linear assumption based on Dirichlet contacts
@@ -199,9 +103,48 @@ class Solver():
 
         return v
 
-    def common_solver(self, compute = 'all', system = None, guess=None, tol=1e-6, periodic_bcs=True,\
-          maxiter=300, verbose=True, iterative=False, inner_tol=1e-6, htp=1):
-        warnings.warn("parameters 'compute' and 'system' will be switched moving forward", FutureWarning)
+    def solve(self, system,  compute='all', guess=None, tol=1e-6, periodic_bcs=True,\
+              maxiter=300, verbose=True, htp=1):
+        """
+        Solve the drift diffusion Poisson equation on a given discretized
+        system out of equilibrium. If the equilibrium electrostatic potential is
+        not yet computed, the routine will compute it and save it for further
+        computations.
+
+        Parameters
+        ----------
+        system: Builder
+            The discretized system.
+        compute: string
+            Set to 'all' to solve the full drift-diffusion-Poisson equations, or
+            to 'Poisson' to only solve the Poisson equation. Default is set to
+            'all'.
+        guess: dictionary of numpy arrays of floats
+            Contains the one-dimensional arrays of the initial guesses for the
+            electron quasi-Fermi level, the hole quasi-Fermi level and the
+            electrostatic potential. Keys should be 'efn', 'efp' and 'v'.
+        tol: float
+            Accepted error made by the Newton-Raphson scheme.
+        periodic_bcs: boolean
+            Defines the choice of boundary conditions in the y-direction. True
+            (False) corresponds to periodic (abrupt) boundary conditions.
+        maxiter: integer
+            Maximum number of steps taken by the Newton-Raphson scheme.
+        verbose: boolean
+            The solver returns the step number and the associated error at every
+            step if set to True (default).
+        htp: integer
+            Number of homotopic Newton loops to perform.
+
+        Returns
+        -------
+
+        solution: dictionary with  numpy arrays of floats
+            Dictionary containing the one-dimensional arrays of the solution. The
+            keys are the same as the ones for the guess. An exception is raised
+            if no solution could be found.
+        """
+
         # Check if we only want the electrostatic potential
         if compute == 'Poisson': # Only Poisson is solved
             self.equilibrium = None # delete it to force its computation
@@ -220,8 +163,7 @@ class Solver():
             # Compute the potential (Newton returns an array)
             self.equilibrium = self._newton(system, guess, tol=tol,\
                               periodic_bcs=periodic_bcs,\
-                              maxiter=maxiter, verbose=verbose,\
-                              iterative=iterative, inner_tol=inner_tol, htp=htp)
+                              maxiter=maxiter, verbose=verbose, htp=htp)
 
             if self.equilibrium is None:
                 return None
@@ -245,13 +187,13 @@ class Solver():
 
             # Compute solution (Newton returns an array)
             x = self._newton(system, x, tol=tol, periodic_bcs=periodic_bcs,\
-                       maxiter=maxiter, verbose=verbose,\
-                       iterative=iterative, inner_tol=inner_tol, htp=htp)
+                             maxiter=maxiter, verbose=verbose, htp=htp)
 
             if x is not None:
                 return {'efn': x[0::3], 'efp': x[1::3], 'v': x[2::3]}
             else:
                 return None
+
 
     def _damping(self, dx):
         # This damping procedure is inspired from Solid-State Electronics, vol. 19,
@@ -261,27 +203,14 @@ class Solver():
         dx[b] = np.log(1+np.abs(dx[b])*1.72)*np.sign(dx[b])
 
 
-    def _sparse_solver(self, J, f, iterative, inner_tol):
-        if not iterative:
-            spsolve = lg.spsolve
-            if self.use_mumps and mumps_available: 
-                spsolve = mumps.spsolve
-            else:
-                J = J.tocsr()
-            dx = spsolve(J, f)
-            return dx
+    def _sparse_solver(self, J, f):
+        spsolve = lg.spsolve
+        if self.use_mumps and mumps_available: 
+            spsolve = mumps.spsolve
         else:
-            n = len(f)
-            M = spdiags(1.0 / J.diagonal(), [0], n, n)
-            dx, info = lg.lgmres(J, f, M=M, tol=inner_tol)
-            if info == 0:
-                return dx
-            elif info > 0:
-                msg = "**  Iterative sparse solver failed after {0} iterations. **".format(info)
-                logging.error(msg)
-            else:
-                msg = "**  Iterative sparse solver failed on wrong input. **"
-                logging.error(msg)
+            J = J.tocsr()
+        dx = spsolve(J, f)
+        return dx
 
 
     def _get_system(self, x, system, periodic_bcs):
@@ -295,15 +224,14 @@ class Solver():
 
         # form the Jacobian
         if self.use_mumps and mumps_available:
-            J = coo_matrix((data, (rows, columns)),  dtype=np.float64)
+            J = coo_matrix((data, (rows, columns)), dtype=np.float64)
         else:
             J = csr_matrix((data, (rows, columns)), dtype=np.float64)
 
         return f, J
 
 
-    def _newton(self, system, x, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True,
-                iterative=False, inner_tol=1e-6, htp=1):
+    def _newton(self, system, x, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True, htp=1):
 
         htpy = np.linspace(1./htp, 1, htp)
 
@@ -334,7 +262,7 @@ class Solver():
                     f -= (1-gamma)*f0
 
                 try:
-                    dx = self._sparse_solver(J, -f, iterative, inner_tol)
+                    dx = self._sparse_solver(J, -f)
                     if dx is None:
                         raise SparseSolverError
                         break
@@ -369,8 +297,8 @@ class Solver():
         else:
             return None
 
-    def IVcurve(self, system, voltages, guess, file_name, tol=1e-6, periodic_bcs=True, maxiter=300, verbose=True,\
-                iterative=False, inner_tol=1e-6, htp=1, fmt='npz'):
+    def IVcurve(self, system, voltages, file_name, guess=None, tol=1e-6, 
+                periodic_bcs=True, maxiter=300, verbose=True, htp=1, fmt='npz'):
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
         results are stored in files with ``.npz`` format by default (See below for
@@ -384,13 +312,13 @@ class Solver():
             The discretized system.
         voltages: array-like
             List of voltages for which the current should be computed.
-        guess: dictionary of numpy arrays of floats
-            Starting point of the solver. Keys of the dictionary must be 'efn',
-            'efp', 'v' for the electron and quasi-Fermi levels, and the
-            electrostatic potential respectively.
         file_name: string
             Name of the file to write the data to. The file name will be appended
             the index of the voltage list, e.g. ``file_name_0.npz``.
+        guess: dictionary of numpy arrays of floats (optional)
+            Starting point of the solver. Keys of the dictionary must be 'efn',
+            'efp', 'v' for the electron and quasi-Fermi levels, and the
+            electrostatic potential respectively.
         tol: float
             Accepted error made by the Newton-Raphson scheme.
         periodic_bcs: boolean
@@ -401,11 +329,6 @@ class Solver():
         verbose: boolean
             The solver returns the step number and the associated error at every
             step, and this function prints the current applied voltage if set to True (default).
-        iterative: boolean
-            Defines if an iterative method should be used to solve for the Newton
-            correction instead of a direct method. Default is False.
-        inner_tol: float
-            Error of the inner iterative solver when used.
         htp: integer
             Number of homotopic Newton loops to perform.
         fmt: string
@@ -427,7 +350,12 @@ class Solver():
         >>> v = results['v']
         """
         # create a dictionary 'result' with efn and efp
-        result = guess
+        if guess is None:
+            result = self.solve(system, compute='Poisson', tol=tol,
+                                periodic_bcs=periodic_bcs, maxiter=maxiter, 
+                                verbose=verbose, htp=htp)
+        else:
+            result = guess
 
         # sites of the right contact
         nx = system.nx
@@ -443,12 +371,10 @@ class Solver():
         if self.equilibrium is not None:
             if verbose:
                 logging.info("Equilibrium potential already computed. Moving on.")
-
         else:
-            self.solve_equilibrium(system, tol=tol, periodic_bcs=periodic_bcs,\
-                           maxiter=maxiter, verbose=verbose,\
-                           iterative=iterative, inner_tol=inner_tol, htp=htp)
-
+            self.solve(system, compute='Poisson', tol=tol,
+                       periodic_bcs=periodic_bcs, maxiter=maxiter, 
+                       verbose=verbose, htp=htp)
 
         # Applied potentials made dimensionless
         Vapp = [i / system.scaling.energy for i in voltages]
@@ -465,9 +391,8 @@ class Solver():
             result['v'][s] = self.equilibrium[s] + q*vapp
 
             # Call the Drift Diffusion Poisson solver
-            result = self.solve(system, result, tol=tol, periodic_bcs=periodic_bcs,\
-                           maxiter=maxiter, verbose=verbose,\
-                           iterative=iterative, inner_tol=inner_tol, htp=htp)
+            result = self.solve(system, guess=result, tol=tol, periodic_bcs=periodic_bcs,\
+                                maxiter=maxiter, verbose=verbose, htp=htp)
 
             if result is not None:
                 # 1. Save efn, efp, v
@@ -480,12 +405,12 @@ class Solver():
                     filename = "%s.gzip" % name
                     save_sim(system, result, filename)
                 # 2. Compute the steady state current
-                #try:
-                az = Analyzer(system, result)
-                J[idx] = az.full_current()
-                #except Exception:
-                #    logging.info("Could not compute the current for the applied voltage"\
-                #     + " {0} V (index {1}).".format(voltages[idx], idx))
+                try:
+                    az = Analyzer(system, result)
+                    J[idx] = az.full_current()
+                except Exception:
+                   logging.info("Could not compute the current for the applied voltage"\
+                    + " {0} V (index {1}).".format(voltages[idx], idx))
 
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
@@ -497,5 +422,4 @@ class Solver():
 
 default = Solver()
 solve = default.solve
-solve_equilibrium = default.solve_equilibrium
 IVcurve = default.IVcurve

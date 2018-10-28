@@ -48,7 +48,7 @@ class Analysis(QWidget):
         self.hlayout.addLayout(prepare)
 
         FileBox = QGroupBox("Import data")
-        FileBox.setMaximumWidth(width)
+        FileBox.setMinimumWidth(width)
         dataLayout = QVBoxLayout()
 
         # Select and remove buttons
@@ -71,7 +71,7 @@ class Analysis(QWidget):
 
         # Surface plot
         twoDBox = QGroupBox("Surface plot")
-        twoDBox.setMaximumWidth(width)
+        twoDBox.setMinimumWidth(width)
         twoDLayout = QVBoxLayout()
         self.quantity = QComboBox()
         quantities = ["Choose one", "Electron quasi-Fermi level",\
@@ -92,7 +92,7 @@ class Analysis(QWidget):
 
         # Linear plot
         oneDBox = QGroupBox("Linear plot")
-        oneDBox.setMaximumWidth(width)
+        oneDBox.setMinimumWidth(width)
         oneDLayout = QVBoxLayout()
         oneDBox.setLayout(oneDLayout)
         form = QFormLayout()

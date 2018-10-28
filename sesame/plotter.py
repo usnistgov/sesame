@@ -101,54 +101,6 @@ def plot_line_defects(sys, ls='-o', fig=None):
     if show:
         plt.show()
 
-def plot_plane_defects(sys, fig=None):
-    """
-    Plot the sites containing additional charges located on planes in 3D. The
-    length scale of the graph is 1 micrometer by default.
-
-    Parameters
-    ----------
-    sys: Builder
-        The discretized system.
-    fig: Maplotlib figure
-        A plot is added to it if given. If not given, a new one is created and 
-        displayed.
-    """
-    if not mpl_enabled:
-        raise RuntimeError("matplotlib was not found, but is required "
-                           "for plotting")
-
-    show = False
-    if fig is None:
-        fig = plt.figure()
-        show = True
-    # add axis to figure
-    ax = fig.add_subplot(1,1,1, projection='3d')
-
-    for c in sys.defects_list:
-
-        _, X, Y, Z, _ = utils.plane_defects_sites(sys, c.location) 
-
-        ax.plot_surface(X, Y, Z)
-
-    ax.mouse_init(rotate_btn=1, zoom_btn=3)
-
-    if sys.input_length == 'm':
-        ax.set_xlabel('x [m]')
-        ax.set_ylabel('y [m]')
-        ax.set_zlabel('z [m]')
-    if sys.input_length == 'cm':
-        ax.set_xlabel('x [cm]')
-        ax.set_ylabel('y [cm]')
-        ax.set_zlabel('z [cm]')
-
-    ax.set_xlim3d(0, sys.xpts[-1])
-    ax.set_ylim3d(0, sys.ypts[-1])
-    ax.set_zlim3d(0, sys.zpts[-1])
-
-    if show:
-        plt.show()
-
 def plot(sys, data, cmap='gnuplot', alpha=1, fig=None, title=''):
     """
     Plot a 2D map of a parameter (like mobility) across the system.

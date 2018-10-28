@@ -57,9 +57,6 @@ Sn_left, Sp_left, Sn_right, Sp_right = Scontact, Scontact, Scontact, Scontact
 # This function specifies the simulation contact recombination velocity
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
-# First find the equilibrium solution
-result = sesame.solve_equilibrium(sys)
-
 # Add illumination
 phi0 = 1e17     # incoming flux [1/(cm^2 sec)]
 alpha = 2.3e4   # absorbtion coefficient [1/cm]
@@ -71,7 +68,7 @@ sys.generation(f)
 # Specify the applied voltage values
 voltages = np.linspace(0,1,21)
 # Perform I-V calculation
-j = sesame.IVcurve(sys, voltages, result, '1dhetero_V')
+j = sesame.IVcurve(sys, voltages, '1dhetero_V')
 j = j * sys.scaling.current
 
 result = {'v':voltages, 'j':j}

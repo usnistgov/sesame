@@ -1,11 +1,4 @@
 import sesame
-#import utils.py
-#from utils import *
-#from analyzer import *
-#import analyzer.py
-#from solvers import *
-#import solvers.py
-
 import numpy as np
 
 L = 3e-4 # length of the system in the x-direction [cm]
@@ -49,9 +42,6 @@ sys.contact_type('Ohmic', 'Ohmic')
 Sn_left, Sp_left, Sn_right, Sp_right = 1e7, 0, 0, 1e7
 sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
-# First find the equilibrium solution
-solution = sesame.solve_equilibrium(sys)
-
 # Define a function for the generation rate
 phi = 1e17         # photon flux [1/(cm^2 s)]
 alpha = 2.3e4      # absorption coefficient [1/cm]
@@ -65,7 +55,7 @@ sys.generation(gfcn)
 
 # IV curve
 voltages = np.linspace(0, 0.95, 10)
-j = sesame.IVcurve(sys, voltages, solution, '1dhomo_V')
+j = sesame.IVcurve(sys, voltages, '1dhomo_V')
 
 # convert dimensionless current to dimension-ful current
 j = j * sys.scaling.current
