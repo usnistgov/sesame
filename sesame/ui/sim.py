@@ -69,7 +69,8 @@ class SimulationWorker(QObject):
         # Equilibrium guess
         guess = solver.make_guess(system)
         # Solve Poisson equation
-        solver.solve(system, 'Poisson', guess, tol, BCs, maxiter, True, htpy)
+        solver.common_solver('Poisson', system, guess, tol, BCs, maxiter,\
+                             True, iterative, iterPrec, htpy)
 
         if solver.equilibrium is not None:
             self.logger.info("Equilibrium electrostatic potential obtained")
@@ -121,8 +122,8 @@ class SimulationWorker(QObject):
                 for a in range(ramp):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
-                    solution = solver.solve(system, 'all', solution,\
-                            tol, BCs, maxiter, True, htpy)
+                    solution = solver.common_solver('all', system, solution,\
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                     system.g *= 10 # the last one will be computed as part of
                                    # the voltage loop
                     if solution is None:
@@ -155,8 +156,8 @@ class SimulationWorker(QObject):
                 solution['v'][s] = solver.equilibrium[s] + q*vapp
 
                 # Call the Drift Diffusion Poisson solver
-                solution = solver.solve(system, 'all',solution,\
-                                        tol, BCs, maxiter, True, htpy)
+                solution = solver.common_solver('all', system, solution,\
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                 if self.abort:
                     self.simuDone.emit()
                     return
@@ -189,12 +190,15 @@ class SimulationWorker(QObject):
             self.logger.info("Generation rate loop starting now")
             for idx, p in enumerate(loopValues):
                 # give the named parameter its value
+                exec(paramName + '=' + str(p), globals())
                 self.logger.info("Parameter value: {0} = {1}".format(paramName, p))
                 # create callable 
                 if system.dimension == 1:
                     f = eval('lambda x, {0}:'.format(paramName) + generation)
                 elif system.dimension == 2:
                     f = eval('lambda x, y, {0}:'.format(paramName) + generation)
+                elif system.dimension == 3:
+                    f = eval('lambda x, y, z, {0}:'.format(paramName) + generation)
                 # update generation rate of the system
                 try:
                     system.generation(f, args=(p,))
@@ -208,8 +212,8 @@ class SimulationWorker(QObject):
                 for a in range(ramp+1):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
-                    solution = solver.solve(system, 'all', solution, tol, BCs, 
-                                            maxiter, True, htpy)
+                    solution = solver.common_solver('all', system, solution,\
+                            tol, BCs, maxiter, True, iterative, iterPrec, htpy)
                     system.g *= 10
                     if solution is None:
                         msg = "**  The calculations failed  **"
