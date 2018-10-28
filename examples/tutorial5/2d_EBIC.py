@@ -63,10 +63,10 @@ p1 = (0, Ly)
 p2 = (Lx, Ly)
 
 # add neutral defect along surface (surface recombination boundary condition)
-sys.add_defects([p1, p2], rhoGB, s, E=E, transition=(0,0))
+sys.add_line_defects([p1, p2], rhoGB, s, E=E, transition=(0,0))
 
 # find equilibrium solution with GB.  Note we provide the GB-free equilibrium solution as a starting guess
-solution = sesame.solve(sys, compute='Poisson', periodic_bcs=False)
+solution = sesame.solve_equilibrium(sys, periodic_bcs=False)
 
 ######################################################
 ##      EBIC generation profile parameters
@@ -90,6 +90,8 @@ y0 = 0.3 * Rbulb
 # get diffusion length to scale generation density
 vt = .0258
 Ld = np.sqrt(sys.mu_e[0] * sys.tau_e[0]) * sys.scaling.length
+# converting Gtot to a 2-d quantity
+Gtot = Gtot
 
 ######################################################
 ##      vary position of the electron beam

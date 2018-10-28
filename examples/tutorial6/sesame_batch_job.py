@@ -70,9 +70,9 @@ def system(params):
     p2 = (2.9e-4, 1.5e-4)    # [cm]
 
     # Add donor defect along GB
-    sys.add_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1, 0))
+    sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(1, 0))
     # Add acceptor defect along GB
-    sys.add_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0, -1))
+    sys.add_line_defects([p1, p2], rho_GB, S_GB, E=E_GB, transition=(0, -1))
 
     return sys
 
@@ -82,14 +82,14 @@ def system(params):
 if __name__ == '__main__':
 
     # Initiate MPI
-    mpi_comm = MPI.COMM_WORLD
-    mpirank = mpi_comm.Get_rank()
-    mpisize = mpi_comm.Get_size()
+    #mpi_comm = MPI.COMM_WORLD
+    mpirank =0# mpi_comm.Get_rank()
+    mpisize =1# mpi_comm.Get_size()
 
     # Set of parameters to vary - these parameters defines 180 simulations
-    rho_GBlist = [1e11, 1e12, 1e13]          # [1/cm^2]
+    rho_GBlist = [1e11, 1e12, 1e13]           # [1/cm^2]
     E_GBlist = [-.3, 0, .3]                  # [eV]
-    S_GBlist = [1e-14, 1e-15, 1e-16]         # [cm^2]
+    S_GBlist = [1e-14, 1e-15, 1e-16]           # [cm^2]
     taulist = [1e-7, 1e-8, 1e-9]             # [s]
 
     # Specify applied voltages
@@ -103,6 +103,9 @@ if __name__ == '__main__':
     jvset_local = np.zeros([njobs, len(voltages)])
     jvset = np.zeros([njobs, len(voltages)])
 
+    # or params = [rho_GBlist, E_GBlist, S_GBlist, taulist]
+    # paramlist = itertools.product(*params)
+
     my_param_indices = range(mpirank,njobs,mpisize)
 
     # cycle over all parameter sets
@@ -113,7 +116,7 @@ if __name__ == '__main__':
         sys = system(params)
 
         # Get equilibrium solution
-        eqsolution = sesame.solve(sys, 'Poisson')
+        eqsolution = sesame.solve_equilibrium(sys)
 
         # Define a function for generation profile
         f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)
