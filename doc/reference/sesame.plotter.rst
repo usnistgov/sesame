@@ -8,4 +8,3 @@
 
    plot
    plot_line_defects
-   plot_plane_defects

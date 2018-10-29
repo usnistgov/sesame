@@ -109,7 +109,7 @@ Extended line and plane defects
 Additional charged defects can be added to the system to simulate, for example,
 grain boundaries or sample surfaces in a semiconductor. These extended planar
 defects occupy a reduced dimensionality space: a point in a 1D model, a line in
-a 2D model, a plane in a 3D model). The extended defect energy level spectrum
+a 2D model). The extended defect energy level spectrum
 can be discrete or continuous. For a discrete spectrum, we label a defect with
 the subscript :math:`d`. The occupancy of the defect level :math:`f_d` is given
 by [1]_

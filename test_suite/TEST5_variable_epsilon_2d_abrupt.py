@@ -14,7 +14,6 @@ def runTest5():
                         np.linspace(L/2+dd,L, 100)))
 
     y = np.linspace(0,Ly,30)
-    #x = np.linspace(0,L, 1000)
 
     # Create a system
     sys = sesame.Builder(x,y)
@@ -66,7 +65,7 @@ def runTest5():
 
     # Electrostatic potential dimensionless
 
-    solution = sesame.solve_equilibrium(sys, periodic_bcs=False, verbose=False)
+    solution = sesame.solve(sys, compute='Poisson', periodic_bcs=False, verbose=False)
     veq = np.copy(solution['v'])
 
     solution.update({'x': sys.xpts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, 'epsilon': sys.epsilon})
@@ -78,7 +77,7 @@ def runTest5():
     f = lambda x, y: G
     sys.generation(f)
 
-    solution = sesame.solve(sys, solution, periodic_bcs=False, verbose=False)
+    solution = sesame.solve(sys, guess=solution, periodic_bcs=False, verbose=False)
     solution.update({'x': sys.xpts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
 
     voltages = np.linspace(0, 0.9, 10)
@@ -87,8 +86,7 @@ def runTest5():
 
     # sites of the right contact
     nx = sys.nx
-    s = [nx-1 + j*nx + k*nx*sys.ny for k in range(sys.nz)\
-                                   for j in range(sys.ny)]
+    s = [nx-1 + j*nx for j in range(sys.ny)]
 
     # sign of the voltage to apply
     if sys.rho[nx-1] < 0:
@@ -103,7 +101,7 @@ def runTest5():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q*vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, result, maxiter=1000, periodic_bcs=False, verbose=False)
+        result = sesame.solve(sys, guess=result, maxiter=1000, periodic_bcs=False, verbose=False)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current()* sys.scaling.current * sys.scaling.length / (Ly)

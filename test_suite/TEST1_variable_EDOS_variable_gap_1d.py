@@ -60,14 +60,14 @@ def runTest1():
     Sn_left, Sp_left, Sn_right, Sp_right = SS, SS, SS, SS
     sys.contact_S(Sn_left, Sp_left, Sn_right, Sp_right)
 
-    solution = sesame.solve_equilibrium(sys, verbose=False)
+    solution = sesame.solve(sys, compute='Poisson', verbose=False)
     veq = np.copy(solution['v'])
 
     G = 1*1e24*1e-6
     f = lambda x: G
     sys.generation(f)
 
-    solution = sesame.solve(sys, solution,verbose=False)
+    solution = sesame.solve(sys, guess=solution, verbose=False)
     solution.update({'x': sys.xpts, 'chi': sys.bl, 'eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv})
 
     voltages = np.linspace(0, 0.8, 9)
@@ -92,7 +92,7 @@ def runTest1():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q*vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, result, maxiter=1000, verbose=False)
+        result = sesame.solve(sys, guess=result, maxiter=1000, verbose=False)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current()* sys.scaling.current
@@ -108,4 +108,3 @@ def runTest1():
     error = np.max(np.abs((jcomsol-np.transpose(j))/(.5*(jcomsol+np.transpose(j)))))
     print("error = {0}".format(error))
 
-runTest1()

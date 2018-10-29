@@ -12,9 +12,8 @@ the solution.
 
 The functions below belong to the default solver `sesame.solvers.default` which
 is created upon loading sesame. We made these functions available once sesame is
-loaded making the solver completely transparent for the user (e.g. one can call
-`sesame.solve_equilibrium`). The solver stores the equilibrium potential of the
-system as soon as it has been computed.
+loaded making the solver completely transparent for the user. The solver stores
+the equilibrium potential of the system as soon as it has been computed.
 
 .. module:: sesame.solvers
 .. module:: sesame.solvers.default
@@ -22,7 +21,6 @@ system as soon as it has been computed.
 .. autosummary::
    :toctree: generated/
 
-   solve_equilibrium
    solve
    IVcurve
 

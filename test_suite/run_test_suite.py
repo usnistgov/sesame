@@ -1,7 +1,3 @@
-import sesame
-import numpy as np
-import scipy.io
-
 from TEST1_variable_EDOS_variable_gap_1d import runTest1
 from TEST2_variable_epsilon_1d import runTest2
 from TEST3_singleGB_homojunction_2d_periodic import runTest3
@@ -25,16 +21,16 @@ print("\nrunning test 3: 2d single GB periodic b.c.")
 runTest3()
 
 print("\nrunning test 4: 2d single GB abrupt b.c.")
-#runTest4()
+runTest4()
 
 print("\nrunning test 5: 2d variable epsilon abrupt b.c.")
-#runTest5()
+runTest5()
 
 print("\nrunning test 6: 2d variable epsilon periodic b.c.")
-#runTest6()
+runTest6()
 
 print("\nrunning test 7: 2d variable electronic structure abrupt b.c.")
-#runTest7()
+runTest7()
 
 print("\nrunning test 8: 2d variable electronic structure periodic b.c.")
-#runTest8()
+runTest8()

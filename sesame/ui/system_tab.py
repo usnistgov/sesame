@@ -63,7 +63,7 @@ class BuilderBox(QWidget):
         layout.addWidget(gridBox)
 
         #=====================================================
-        # Line and plane defects
+        # Line defects
         #=====================================================
         defectBox = QGroupBox("Planar Defects")
         defectBox.setMinimumWidth(500)

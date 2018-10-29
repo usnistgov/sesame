@@ -305,7 +305,7 @@ class Builder():
 
         else:
             msg = "Wrong definition for the defects location: "\
-            "the list must contain one number for a point, two points for a line, four points for a plane."
+                  "the list must contain one number for a point, two points for a line."
             logging.error(msg)
             return
 

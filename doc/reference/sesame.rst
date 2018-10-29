@@ -26,7 +26,6 @@ From `sesame.plotter`
 
    plot
    plot_line_defects
-   plot_plane_defects
 
 .. currentmodule:: sesame.solvers.default
 
@@ -34,7 +33,6 @@ From `sesame.solvers.default`
 -----------------------------
 .. autosummary::
 
-   solve_equilibrium
    solve
    IVcurve
 

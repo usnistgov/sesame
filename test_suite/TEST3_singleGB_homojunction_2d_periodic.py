@@ -17,7 +17,6 @@ def system(N=0,s=1e-18*1e4):
                         np.linspace(1.4e-6*1e2, 2.7e-6*1e2, 60, endpoint=False),
                         np.linspace(2.7e-6*1e2, Lx-0.02e-6*1e2, 30, endpoint=False),
                         np.linspace(Lx-0.02e-6*1e2, Lx, 10)))
-    #y = np.linspace(0, 1.25e-6, 40)
 
     y = np.concatenate((np.linspace(0, 1.25e-6*1e2, 60, endpoint=False),
                         np.linspace(1.25e-6*1e2, 1.75e-6*1e2, 50, endpoint=False),
@@ -63,7 +62,7 @@ def system(N=0,s=1e-18*1e4):
 
 
     # gap state characteristics
-    #s = 1e-24         # trap capture cross section [m^2]
+    s = 1e-24         # trap capture cross section [m^2]
     E = 0.4 + .5*vt*np.log(Nc/Nv)                # energy of gap state (eV) from midgap
 
     # Specify the two points that make the line containing additional charges
@@ -71,8 +70,8 @@ def system(N=0,s=1e-18*1e4):
     p2 = (2.9e-6*1e2, 1.5*1e-6*1e2)  #[m]
 
     # Pass the information to the system
-    sys.add_line_defects([p1, p2], N, s, E=E, transition=(1,0))
-    sys.add_line_defects([p1, p2], N, s, E=E, transition=(0,-1))
+    sys.add_defects([p1, p2], N, s, E=E, transition=(1,0))
+    sys.add_defects([p1, p2], N, s, E=E, transition=(0,-1))
 
     return sys
 
@@ -82,7 +81,7 @@ def runTest3():
 
     sys = system(rhoGBlist[0])
 
-    solution = sesame.solve_equilibrium(sys, verbose=True)
+    solution = sesame.solve(sys, compute='Poisson', verbose=True)
 
 
 
@@ -90,7 +89,7 @@ def runTest3():
     rhoGBlist = [1e6*1e-4, 1e18*1e-4]
     for idx, rhoGB in enumerate(rhoGBlist):
         sys = system(rhoGB,s0)
-        solution = sesame.solve_equilibrium(sys, solution, maxiter=5000, verbose=True)
+        solution = sesame.solve(sys, compute='Poisson', guess=solution, maxiter=5000, verbose=True)
     veq = np.copy(solution['v'])
 
     efn = np.zeros((sys.nx * sys.ny,))
@@ -111,7 +110,7 @@ def runTest3():
     sys = system(rhoGBlist[1],slist[0])
 
     sys.generation(f)
-    solution = sesame.solve(sys, solution, maxiter=5000, verbose=True)
+    solution = sesame.solve(sys, guess=solution, maxiter=5000, verbose=True)
     az = sesame.Analyzer(sys, solution)
     tj = -az.full_current()
 
@@ -138,7 +137,7 @@ def runTest3():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q * vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, result, maxiter=1000, verbose=True)
+        result = sesame.solve(sys, guess=result, maxiter=1000, verbose=True)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (3e-6*1e2)
@@ -151,4 +150,3 @@ def runTest3():
     error = np.max(np.abs((jSesame_12_4_2017-np.transpose(j))/(.5*(jSesame_12_4_2017+np.transpose(j)))))
     print("error = {0}".format(error))
 
-runTest3()
