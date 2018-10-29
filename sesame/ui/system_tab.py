@@ -34,7 +34,7 @@ class BuilderBox(QWidget):
         # Grid settings
         #==============================
         gridBox = QGroupBox("Grid")
-        gridBox.setMinimumWidth(500)
+        gridBox.setMinimumWidth(300)
         gridLayout = QFormLayout()
 
         tip = QLabel("Each axis of the grid is a concatenation of sets of evenly spaced nodes. Edit the form with (x1, x2, number of nodes), (x2, x3, number of nodes),...")
@@ -57,89 +57,15 @@ class BuilderBox(QWidget):
 
         gridLayout.addRow("Grid x-axis", h1)
         gridLayout.addRow("Grid y-axis", h2)
-        #gridLayout.addRow("Grid z-axis", h3)
 
         gridBox.setLayout(gridLayout)
         layout.addWidget(gridBox)
 
         #=====================================================
-        # Line defects
-        #=====================================================
-        defectBox = QGroupBox("Planar Defects")
-        defectBox.setMinimumWidth(500)
-        vlayout = QVBoxLayout()
-        defectBox.setLayout(vlayout)
-        layout.addWidget(defectBox)
-
-        # Combo box to keep track of defects
-        self.hbox = QHBoxLayout()
-        self.defectBox = QComboBox()
-        self.hbox.addWidget(self.defectBox)
-        self.defectBox.currentIndexChanged.connect(self.comboSelect2)
-        self.defectNumber = -1
-
-        # Add and save buttons
-        self.defectButton = QPushButton("New")
-        self.defectButton.clicked.connect(self.addDefects)
-        self.saveButton2 = QPushButton("Save")
-        self.saveButton2.clicked.connect(self.saveDefect)
-        self.saveButton2.setEnabled(False) # disabled on start
-        self.removeButton2 = QPushButton("Remove")
-        self.removeButton2.setEnabled(False) # disabled on start
-        self.removeButton2.clicked.connect(self.removeDefect)
-        self.hbox.addWidget(self.defectButton)
-        self.hbox.addWidget(self.saveButton2)
-        self.hbox.addWidget(self.removeButton2)
-
-        vlayout.addLayout(self.hbox)
-
-        # Reminder to save
-        vlayout.addWidget(QLabel("Save a defect before adding a new one."))
-
-        self.clocLayout = QHBoxLayout()
-        self.cloc = QLineEdit("(x1, y1), (x2, y2)")
-        self.clbl = QLabel("Location")
-        self.clocLayout.addWidget(self.clbl)
-        self.clocLayout.addWidget(self.cloc)
-        self.cloc.hide()
-        self.clbl.hide()
-        vlayout.addLayout(self.clocLayout)
-
-        # Table for defect properties
-        self.ctable = QTableWidget()
-        self.ctable.setRowCount(5)
-        self.ctable.setColumnCount(2)
-        self.ctable.hide()
-        cheader = self.ctable.horizontalHeader()
-        cheader.setStretchLastSection(True)
-        vlayout.addWidget(self.ctable)
-        vlayout.addStretch()
-
-
-        # set table
-        self.defects_list = []
-
-        self.rows2 = ("Energy", "Density", "sigma_e", "sigma_h", "Transition")
-        self.ctable.setVerticalHeaderLabels(self.rows2)
-
-        columns = ("Value", "Unit")
-        self.ctable.setHorizontalHeaderLabels(columns)
-
-        self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
-        self.units2 = ["eV", u"cm\u207B\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
-
-        for idx, (val, unit) in enumerate(zip(self.defectValues, self.units2)):
-            self.ctable.setItem(idx,0, QTableWidgetItem(val))
-            item = QTableWidgetItem(unit)
-            item.setFlags(Qt.ItemIsEnabled)
-            self.ctable.setItem(idx,1, item)
-
-        #=====================================================
         # Illumination
         #=====================================================
         genBox = QGroupBox("")
-        genBox.setMinimumWidth(500)
-        genLayout = QHBoxLayout()
+        genLayout = QVBoxLayout()
         genBox.setLayout(genLayout)
         layout.addWidget(genBox)
 
@@ -172,7 +98,6 @@ class BuilderBox(QWidget):
         #=====================================================
         # Absorption
         #=====================================================
-
         absBox = QGroupBox("Absorption")
         absLayout = QVBoxLayout()
         absBox.setLayout(absLayout)
@@ -207,7 +132,6 @@ class BuilderBox(QWidget):
         # Generation
         #=====================================================
         genBox = QGroupBox("Manual Generation rate")
-        #genBox.setMaximumWidth(500)
         genLayout = QVBoxLayout()
         genBox.setLayout(genLayout)
         layout.addWidget(genBox)
@@ -335,6 +259,80 @@ class BuilderBox(QWidget):
 
         self.box.addItem("Material " + str(self.matNumber + 1))
         self.box.setCurrentIndex(self.matNumber)
+
+
+        #=====================================================
+        # Line defects
+        #=====================================================
+        defectBox = QGroupBox("Planar Defects")
+        #defectBox.setMinimumWidth(500)
+        dvlayout = QVBoxLayout()
+        defectBox.setLayout(dvlayout)
+        vlayout.addWidget(defectBox)
+
+        # Combo box to keep track of defects
+        self.hbox = QHBoxLayout()
+        self.defectBox = QComboBox()
+        self.hbox.addWidget(self.defectBox)
+        self.defectBox.currentIndexChanged.connect(self.comboSelect2)
+        self.defectNumber = -1
+
+        # Add and save buttons
+        self.defectButton = QPushButton("New")
+        self.defectButton.clicked.connect(self.addDefects)
+        self.saveButton2 = QPushButton("Save")
+        self.saveButton2.clicked.connect(self.saveDefect)
+        self.saveButton2.setEnabled(False) # disabled on start
+        self.removeButton2 = QPushButton("Remove")
+        self.removeButton2.setEnabled(False) # disabled on start
+        self.removeButton2.clicked.connect(self.removeDefect)
+        self.hbox.addWidget(self.defectButton)
+        self.hbox.addWidget(self.saveButton2)
+        self.hbox.addWidget(self.removeButton2)
+
+        dvlayout.addLayout(self.hbox)
+
+
+        # Reminder to save
+        vlayout.addWidget(QLabel("Save a defect before adding a new one."))
+
+        self.clocLayout = QHBoxLayout()
+        self.cloc = QLineEdit("(x1, y1), (x2, y2)")
+        self.clbl = QLabel("Location")
+        self.clocLayout.addWidget(self.clbl)
+        self.clocLayout.addWidget(self.cloc)
+        self.cloc.hide()
+        self.clbl.hide()
+        dvlayout.addLayout(self.clocLayout)
+
+        # Table for defect properties
+        self.ctable = QTableWidget()
+        self.ctable.setRowCount(5)
+        self.ctable.setColumnCount(2)
+        self.ctable.hide()
+        cheader = self.ctable.horizontalHeader()
+        cheader.setStretchLastSection(True)
+        dvlayout.addWidget(self.ctable)
+        dvlayout.addStretch()
+
+
+        # set table
+        self.defects_list = []
+
+        self.rows2 = ("Energy", "Density", "sigma_e", "sigma_h", "Transition")
+        self.ctable.setVerticalHeaderLabels(self.rows2)
+
+        columns = ("Value", "Unit")
+        self.ctable.setHorizontalHeaderLabels(columns)
+
+        self.defectValues = ["0.1", "1e13", "1e-15", "1e-15", "1/0"]
+        self.units2 = ["eV", u"cm\u207B\u00B2", u"cm\u00B2", u"cm\u00B2", "NA"]
+
+        for idx, (val, unit) in enumerate(zip(self.defectValues, self.units2)):
+            self.ctable.setItem(idx,0, QTableWidgetItem(val))
+            item = QTableWidgetItem(unit)
+            item.setFlags(Qt.ItemIsEnabled)
+            self.ctable.setItem(idx,1, item)
 
 
     # display params of selected material
