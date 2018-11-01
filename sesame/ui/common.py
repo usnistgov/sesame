@@ -68,16 +68,12 @@ def parseLocation(location, dimension):
     if location == "": # a single material
         function = lambda pos: True
     else:
-        # 1. replace x, y, z by pos or pos[0], pos[1], pos[2] in the string
+        # 1. replace x, y by pos or pos[0], pos[1] in the string
         if dimension == 1:
             location = location.replace("x", "pos")
         elif dimension == 2:
             location = location.replace("x", "pos[0]")
             location = location.replace("y", "pos[1]")
-        #elif dimension == 3:
-        #    location = location.replace("x", "pos[0]")
-        #    location = location.replace("y", "pos[1]")
-        #    location = location.replace("z", "pos[2]")
         # 2. define function
         function = lambda pos: eval(location)
     return function

@@ -14,13 +14,13 @@ The first step in performing simulations with the GUI is defining the system.  T
 The upper left frame contains inputs for the user-defined grid.  The dimensionality of the system is inferred from the grid entries: entering a grid for the x-axis only implies a 1-d system.  Adding a grid for the y-axis implies a 2-d system, etc.  
 
 **Materials**:  
-The middle frame contains the entries for the bulk material properties.  Multiple materials can be added to the system.  Their location is specified in the ``Location`` field.  
+The middle-top frame contains the entries for the bulk material properties.  Multiple materials can be added to the system.  Their location is specified in the ``Location`` field.  
 
 **View system**:  
 Provides a depiction of the system geometry, including the x and y meshes, different materials regions, and the planar defects (grain boundaries).
 
 **Planar Defects**:  
-Planar defects are added in the middle-left frame.  For a 1-d system, a planar defect location is specified by 1 point.  For a 2-d system, a planar defect is specified by 2 points.  The energy level of the defect (with respect to the intrinsic energy level), the defect density, capture cross sections, and charge states are specified here.
+Planar defects are added in the middle-bottom frame.  For a 1-d system, a planar defect location is specified by 1 point.  For a 2-d system, a planar defect is specified by 2 points.  The energy level of the defect (with respect to the intrinsic energy level), the defect density, capture cross sections, and charge states are specified here.
 
 **Illumination**
 Specify the illumination on the system.  Options are 1. monochromatic, with user-defined wavelength and power, and 2. 1 sun illumination, where the spectral density is taken from https://www.nrel.gov/grid/solar-resource/spectra-am1.5.html (Direct+circumsolar spectrum).

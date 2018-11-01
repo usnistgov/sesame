@@ -5,10 +5,25 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 from sesame.ui import mainwindow
-from PyQt5.QtWidgets import QApplication
-from PyQt5 import QtGui
+from PyQt5.QtWidgets import QApplication, QMessageBox, qApp
+from PyQt5 import QtCore
 import sys
 import ctypes
+import traceback
+
+def _exception_handler(type_, value, traceback_):
+    if qApp.thread() is QtCore.QThread.currentThread():
+        p = traceback.format_exception(type_, value, traceback_)
+        log = ''.join(p)
+        msg = QMessageBox()
+        msg.setWindowTitle("Sesame error")
+        msg.setIcon(QMessageBox.Critical)
+        msg.setText("An error occured. More information in the following log.")
+        msg.setDetailedText(log)
+        msg.setEscapeButton(QMessageBox.Ok)
+        msg.exec_()
+sys.excepthook = _exception_handler
+
 
 if sys.platform == 'win32':
     appID = 'sesameGUI'
@@ -30,7 +45,6 @@ QGroupBox::title {
 }
 """
 app.setStyleSheet(stylesheet)
-
 
 window = mainwindow.Window()
 

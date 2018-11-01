@@ -375,6 +375,19 @@ class Simulation(QWidget):
                 self.brun.setEnabled(True)
                 return
 
+        # Make sure the working directory is set and writable
+        wd = self.workDirName.text()
+        if not os.access(wd, os.W_OK):
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("The working directory is either not set properly or is not writable.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            self.brun.setEnabled(True)
+            return
+
+
         # get system settings and build system without generation
         try:
             settings = self.tabsTable.build.getSystemSettings()

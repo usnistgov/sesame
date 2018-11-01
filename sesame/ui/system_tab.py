@@ -159,11 +159,14 @@ class BuilderBox(QWidget):
 
 
     def builder2(self):
+        builderLayout = QVBoxLayout()
+        self.tabLayout.addLayout(builderLayout)
+
         matBox = QGroupBox("Materials")
         matBox.setMinimumWidth(400)
         vlayout = QVBoxLayout()
         matBox.setLayout(vlayout)
-        self.tabLayout.addWidget(matBox)
+        builderLayout.addWidget(matBox)
 
 
         # Combo box to keep track of materials
@@ -262,13 +265,12 @@ class BuilderBox(QWidget):
 
 
         #=====================================================
-        # Line defects
+        # Defects
         #=====================================================
         defectBox = QGroupBox("Planar Defects")
-        #defectBox.setMinimumWidth(500)
         dvlayout = QVBoxLayout()
         defectBox.setLayout(dvlayout)
-        vlayout.addWidget(defectBox)
+        builderLayout.addWidget(defectBox)
 
         # Combo box to keep track of defects
         self.hbox = QHBoxLayout()
@@ -294,7 +296,7 @@ class BuilderBox(QWidget):
 
 
         # Reminder to save
-        vlayout.addWidget(QLabel("Save a defect before adding a new one."))
+        dvlayout.addWidget(QLabel("Save a defect before adding a new one."))
 
         self.clocLayout = QHBoxLayout()
         self.cloc = QLineEdit("(x1, y1), (x2, y2)")
