@@ -103,8 +103,6 @@ def runTest1():
     jcomsol = np.array([0.32117,0.31672,0.31198,0.30683,0.30031,0.28562,0.20949,-0.39374,-7.0681])
     jcomsol = jcomsol * 1e-4 # converting to A/cm^2
 
-    print(j)
-
     error = np.max(np.abs((jcomsol-np.transpose(j))/(.5*(jcomsol+np.transpose(j)))))
     print("error = {0}".format(error))
 

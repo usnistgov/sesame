@@ -62,7 +62,6 @@ def system(N=0,s=1e-18*1e4):
 
 
     # gap state characteristics
-    s = 1e-24         # trap capture cross section [m^2]
     E = 0.4 + .5*vt*np.log(Nc/Nv)                # energy of gap state (eV) from midgap
 
     # Specify the two points that make the line containing additional charges
@@ -81,7 +80,7 @@ def runTest4():
 
     sys = system(rhoGBlist[0])
 
-    solution = sesame.solve(sys, compute='Poisson', periodic_bcs=False, verbose=True)
+    solution = sesame.solve(sys, compute='Poisson', verbose=False)
 
 
 
@@ -89,7 +88,7 @@ def runTest4():
     rhoGBlist = [1e6*1e-4, 1e18*1e-4]
     for idx, rhoGB in enumerate(rhoGBlist):
         sys = system(rhoGB,s0)
-        solution = sesame.solve(sys, compute='Poisson', guess=solution, maxiter=5000, periodic_bcs=False, verbose=True)
+        solution = sesame.solve(sys, compute='Poisson', guess=solution, maxiter=5000, verbose=False)
     veq = np.copy(solution['v'])
 
     efn = np.zeros((sys.nx * sys.ny,))
@@ -110,7 +109,7 @@ def runTest4():
     sys = system(rhoGBlist[1],slist[0])
 
     sys.generation(f)
-    solution = sesame.solve(sys, guess=solution, maxiter=5000, verbose=True)
+    solution = sesame.solve(sys, guess=solution, maxiter=5000, verbose=False)
     az = sesame.Analyzer(sys, solution)
     tj = -az.full_current()
 
@@ -136,11 +135,12 @@ def runTest4():
         # Apply the voltage on the right contact
         result['v'][s] = veq[s] + q * vapp
         # Call the Drift Diffusion Poisson solver
-        result = sesame.solve(sys, guess=result, maxiter=1000, periodic_bcs=False, verbose=True)
+        result = sesame.solve(sys, guess=result, maxiter=1000, verbose=False)
         # Compute current
         az = sesame.Analyzer(sys, result)
         tj = az.full_current() * sys.scaling.current * sys.scaling.length / (3e-6*1e2) * 1e4
         j.append(tj)
+        #print(tj)
         
 
 
@@ -148,5 +148,4 @@ def runTest4():
     jcomsol = -jcomsol
     error = np.max(np.abs((jcomsol - np.transpose(j)) / (.5 * (jcomsol + np.transpose(j)))))
     print("error = {0}".format(error))
-
 
