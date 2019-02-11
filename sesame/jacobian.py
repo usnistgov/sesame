@@ -122,9 +122,9 @@ def getJ(sys, v, efn, efp):
         infind = np.where(np.isinf(dybar))
         for i in infind[0]:
             if np.isinf(dy[i]):
-                dybar[i] = dy[i-Nx]
+                dybar[i] = dy[i-Nx] / 2.
             else:
-                dybar[i] = dy[i]
+                dybar[i] = dy[i] / 2.
 
         p1y_ind = np.mod(sites + Nx, Nx * Ny)
         m1y_ind = np.mod(sites - Nx, Nx * Ny)
@@ -169,9 +169,9 @@ def getJ(sys, v, efn, efp):
     infind = np.where(np.isinf(dybar))
     for i in infind[0]:
         if np.isinf(dy[i]):
-            dybar[i] = dy[i-Nx]
+            dybar[i] = dy[i-Nx] / 2.
         else:
-            dybar[i] = dy[i]
+            dybar[i] = dy[i] / 2.
 
     # ------------------------ fn derivatives ----------------------------------
     # get the derivatives of jx_s, jx_sm1, jy_s, jy_smN

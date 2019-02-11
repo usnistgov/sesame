@@ -82,9 +82,9 @@ def getFandJ_eq(sys, v):
     infind = np.where(np.isinf(dybar))
     for i in infind[0]:
         if np.isinf(dy[i]):
-            dybar[i] = dy[i-Nx]
+            dybar[i] = dy[i-Nx] / 2
         else:
-            dybar[i] = dy[i]
+            dybar[i] = dy[i] / 2
 
 
     #------------------------------ fv ----------------------------------------
