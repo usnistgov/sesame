@@ -108,8 +108,8 @@ class Analyzer():
         """
         p1, p2 = location
         if self.sys.dimension == 1:
-            idx1, _, _ = get_indices(self.sys, (p1[0],0,0))
-            idx2, _, _ = get_indices(self.sys, (p2[0],0,0))
+            idx1, _ = get_indices(self.sys, (p1[0],0,0))
+            idx2, _ = get_indices(self.sys, (p2[0],0,0))
             X = self.sys.xpts[idx1:idx2]
             sites = np.arange(idx1, idx2, 1, dtype=int)
         if self.sys.dimension == 2:
