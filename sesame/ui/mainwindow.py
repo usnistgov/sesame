@@ -229,6 +229,7 @@ class Window(QMainWindow):
         # plot system
         if grid != ['', '', '']:
             settings = build.getSystemSettings()
+            settings['periodicBCs'] = True
             system = parseSettings(settings)
             build.Fig.plotSystem(system, materials, defects)
         else:

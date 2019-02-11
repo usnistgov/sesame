@@ -171,7 +171,10 @@ def parseSettings(settings):
         ygrid = ev(grid[1].lstrip())
         ypts = parseGrid(ygrid)
     # build a sesame system
-    system = Builder(xpts, ypts)
+    if 'periodicBCs' in settings:
+        system = Builder(xpts, ypts, periodic=settings['periodicBCs'])
+    else:
+        system = Builder(xpts, ypts)
         
     # 2. set materials
     materials = settings['materials']

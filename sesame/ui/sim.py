@@ -208,7 +208,7 @@ class SimulationWorker(QObject):
                 for a in range(ramp+1):
                     self.logger.info("Amplitude divided by {0}"\
                                                 .format(10**(ramp-a)))
-                    solution = solver.solve(system, 'all', solution, tol, BCs, 
+                    solution = solver.solve(system, 'all', solution, tol, BCs,
                                             maxiter, True, htpy)
                     system.g *= 10
                     if solution is None:

@@ -390,14 +390,19 @@ class Simulation(QWidget):
 
         # get system settings and build system without generation
         try:
+            # get system
             settings = self.tabsTable.build.getSystemSettings()
+
+            # get solver settings
+            solverSettings = self.getSolverSettings()
+
+            settings['periodicBCs'] = solverSettings[3]
+
             system = parseSettings(settings)
             generation, paramName = settings['gen']
 
             use_manual_g = settings['use_manual_g']
 
-            # get solver settings
-            solverSettings = self.getSolverSettings()
 
             # define a thread in which to run the simulation
             self.thread = QThread(self)
