@@ -14,7 +14,7 @@ For this case we'll need to define a system as before, and then define a custom 
 Building the system
 ........................
 
-The system we want to build is a 2-dimensional p-n junction in which the "top" of the system represents the exposed sample surface.  Building the 2-d pn junction proceeds as in the previous tutorials, and the code is shown below::
+The system we want to build is a 2-dimensional p-n junction in which the "top" of the system represents the exposed sample surface.  Building the 2-d pn junction proceeds as in the previous tutorials, and the code is shown below.  One important difference for this example is that the top/bottom boundary conditions are "hard-wall" (in the previous cases, we used periodic boundary conditions, which are the default).  This is specified by calling ``Builder()`` with an extra argument ``Periodic=False``::
 
 
     	## dimensions of the system
@@ -35,7 +35,7 @@ The system we want to build is a 2-dimensional p-n junction in which the "top" o
 	                    np.linspace(1.25e-4, Ly, 50)))
 	
 	# Create a system
-	sys = sesame.Builder(x, y)
+	sys = sesame.Builder(x, y, periodic=False)
 	
 	# Dictionary with the material parameters
 	mat = {'Nc':8e17, 'Nv':1.8e19, 'Eg':1.5, 'epsilon':9.4, 'Et': 0,
@@ -57,7 +57,7 @@ The system we want to build is a 2-dimensional p-n junction in which the "top" o
 	nD = 1e17 # [cm^-3]
 	sys.add_donor(nD, n_region)
 	# Add the acceptors
-	nA = 1e15 # [m^-3]
+	nA = 1e15 # [cm^-3]
 	sys.add_acceptor(nA, p_region)
 	
 	# Use Ohmic contacts
@@ -161,9 +161,7 @@ Next we scan over :math:`x_0` with a ``for`` loop.  At each value of :math:`x_0`
 	
 Now we solve the system::
 
-	    solution = sesame.solve(sys, periodic_bcs=False)
-
-Notice that we provided the optional input argument ``periodic_bcs=False`` to the ``solve()`` function.  This ensures that the top and bottom boundary conditions are "hardwall".  The default boundary condition is periodic, such that :math:`f(x,y=0)=f(x,y=L)` for all system properties.
+	    solution = sesame.solve(sys)
 
 
 We obtain the current and store it in the array::
