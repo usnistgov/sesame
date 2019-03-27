@@ -200,28 +200,23 @@ def save_sim(sys, result, filename, fmt='npy'):
     """
 
     if fmt=='mat':
-        if sys.dimension == 1:
-            system = {'xpts': sys.xpts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
+        system = {'xpts': sys.xpts, 'ypts': sys.ypts, 'Eg': sys.Eg, 'Nc': sys.Nc, 'Nv': sys.Nv, \
                   'affinity': sys.bl, 'epsilon': sys.epsilon, 'g': sys.g, 'mu_e': sys.mu_e, 'mu_h': sys.mu_h, \
                   'm_e': sys.mass_e, 'm_h': sys.mass_h, 'tau_e': sys.tau_e, 'tau_h': sys.tau_h, \
                   'B': sys.B, 'Cn': sys.Cn, 'Cp': sys.Cp, 'n1': sys.n1, 'p1': sys.p1, 'ni': sys.ni, 'rho': sys.rho}
-        if sys.dimension==2:
-            system = {'xpts': sys.xpts, 'ypts': sys.ypts}
-            result['v'] = np.reshape(result['v'], (sys.ny, sys.nx))
-            result['efn'] = np.reshape(result['efn'], (sys.ny, sys.nx))
-            result['efp'] = np.reshape(result['efp'], (sys.ny, sys.nx))
-            for attr in dir(sys):
-                tfield = getattr(sys, attr)
-                # determine if element is an array of proper size
-                if type(tfield) is np.ndarray:
-                    if(np.size(tfield) == sys.nx*sys.ny):
-                        tdata = np.reshape(tfield, (sys.ny, sys.nx))
-                        system.update({attr: tdata})
-        if sys.dimension==3:
-            system = {'xpts': sys.xpts, 'ypts': sys.ypts, 'zpts': sys.zpts}
+        results = result.copy()
+        results['v'] = np.reshape(result['v'], (sys.ny, sys.nx))
+        results['efn'] = np.reshape(result['efn'], (sys.ny, sys.nx))
+        results['efp'] = np.reshape(result['efp'], (sys.ny, sys.nx))
+        for attr in dir(sys):
+            tfield = getattr(sys, attr)
+            # determine if element is an array of proper size
+            if type(tfield) is np.ndarray:
+                if(np.size(tfield) == sys.nx*sys.ny):
+                    tdata = np.reshape(tfield, (sys.ny, sys.nx))
+                    system.update({attr: tdata})
 
-
-        savemat(filename, {'sys': system, 'results': result}, do_compression=True)
+        savemat(filename, {'sys': system, 'results': results}, do_compression=True)
     else:
         file = gzip.GzipFile(filename, 'wb')
         file.write(pickle.dumps((sys, result)))
