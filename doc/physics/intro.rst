@@ -49,10 +49,10 @@ the following system
 
    \widetilde{\vec{\nabla}} \cdot \left(-\bar p \widetilde{\vec{\nabla}}\bar \phi - \widetilde{\vec{\nabla}}\bar p \right) &= -\bar U
 
-   \widetilde{\vec{\nabla}} \cdot (\epsilon \vec{\nabla} \bar \phi) &= \bar n - \bar p
+   \widetilde{\vec{\nabla}} \cdot (\epsilon \vec{\nabla} \bar \phi) &= (\bar n - \bar p) + (\bar{N_A} - \bar{N_D})
 
 where :math:`\widetilde{\vec{\nabla}}` is the dimensionless spatial first
-derivative operator, and the dimensionless variables are
+derivative operator.  :math:`\bar{N}_{A,(D)}` are the dimensionless ionized acceptor (donor) impurity concentration.  The dimensionless variables are given below:
 
 .. math::
    \bar \phi &= \frac{q\phi}{k_BT}\\
