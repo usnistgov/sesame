@@ -454,7 +454,7 @@ class Analyzer():
         s = np.asarray([i + j*self.sys.nx for j in range(self.sys.ny-1)\
                                      for i in range(self.sys.nx-1)])
         dx = np.tile(self.sys.dx, ny)
-        dy = np.repeat(self.sys.dy, nx)
+        dy = np.repeat(self.sys.dy[:-1], nx)
 
         if electron:
             Jx = get_jn(self.sys, self.efn, self.v, s, s+1, dx)
