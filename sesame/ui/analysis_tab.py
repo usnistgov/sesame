@@ -121,7 +121,7 @@ class Analysis(QWidget):
         "Auger recombination", \
         "Electron current along x", "Electron current along y",\
         "Hole current along x", "Hole current along y",\
-        "Integrated defects recombination", "Integrated total recombination",\
+        "Integrated planar defects recombination", "Integrated total recombination",\
         "Full steady state current"]
         self.quantity2.addItems(quantities)
         form.addRow("Y data", self.quantity2)
@@ -194,12 +194,12 @@ class Analysis(QWidget):
             item = self.dataList.item(i)
             item.setSelected(True)
         # disable some combo box rows
-        for i in range(1,14):
+        for i in range(1,15):
             self.quantity2.model().item(i).setEnabled(False)
         # enable some rows
-            self.quantity2.model().item(14).setEnabled(True)
             self.quantity2.model().item(15).setEnabled(True)
             self.quantity2.model().item(16).setEnabled(True)
+            self.quantity2.model().item(17).setEnabled(True)
 
     def radioPos_toggled(self):
         # give example in XData area
@@ -210,11 +210,11 @@ class Analysis(QWidget):
         else:
             self.Xdata.setText("(x1, y1), (x2, y2)")
         # disable some combo box rows
-        self.quantity2.model().item(14).setEnabled(False)
         self.quantity2.model().item(15).setEnabled(False)
         self.quantity2.model().item(16).setEnabled(False)
+        self.quantity2.model().item(17).setEnabled(False)
         # enable some combo box rows
-        for i in range(1,14):
+        for i in range(1,15):
             self.quantity2.model().item(i).setEnabled(True)
 
     def clearPlot(self):
@@ -462,11 +462,11 @@ class Analysis(QWidget):
                 Ydata = J * az.hole_current(component='y')[sites] * 1e3
                 YLabel = r'$\mathregular{J_{p,y}\ [mA\cdot cm^{-2}]}$'
             if txt == "Integrated planar defects recombination":
-                if system.dimension == 1:
+                if system.ypts.size == 1:
                     Ydata.append(G * x0 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
                     YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-2}\cdot s^{-1}}$]'
-                if system.dimension == 2:
+                if system.ypts.size > 1:
                     Ydata.append(G * x0**2 * sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list))
                     YLabel = r'[$\mathregular{G_{pl. defect}\ cm^{-1}\cdot s^{-1}}$]'
@@ -476,10 +476,10 @@ class Analysis(QWidget):
                 j_aug = az.integrated_auger_recombination()
                 j_def = sum(az.integrated_defect_recombination(d)\
                                 for d in system.defects_list)
-                if system.dimension == 1:
+                if system.ypts.size == 1:
                     Ydata.append(G * x0 * (j_srh + j_rad + j_aug + j_def))
                     YLabel = r'[$G_{tot}\ \mathregular{cm^{-2}\cdot s^{-1}}$]'
-                if system.dimension == 2:
+                if system.ypts.size > 1:
                     Ydata.append(G * x0**2 * (j_srh + j_rad + j_aug + j_def))
                     YLabel = r'[$G_{tot}\ \mathregular{cm^{-1}\cdot s^{-1}}$]'
             if txt == "Full steady state current":
@@ -493,7 +493,7 @@ class Analysis(QWidget):
             # plot
             if txt not in ["Full steady state current",\
                            "Integrated total recombination",\
-                           "Integrated defects recombination"]:
+                           "Integrated planar defects recombination"]:
                 if txt != "Band diagram":
                     ax = self.linearFig.figure.add_subplot(111)
                     X = X * 1e4  # set length in um
@@ -506,7 +506,7 @@ class Analysis(QWidget):
         # For quantities looped over
         if txt in ["Full steady state current",\
                    "Integrated total recombination",\
-                   "Integrated defects recombination"]:
+                   "Integrated planar defects recombination"]:
             try:
                 c = next(self.iterColors)
             except StopIteration:
