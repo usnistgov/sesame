@@ -396,13 +396,19 @@ class Simulation(QWidget):
             # get solver settings
             solverSettings = self.getSolverSettings()
 
+            # test if working directory is writable. The built-in function
+            # os.access does not work so we try to write a file and then remove
+            # it.
+            dirPath = os.path.dirname(solverSettings[1])
+            open(os.path.join(dirPath, 'W_OK'), 'w')
+            os.remove(os.path.join(dirPath, 'W_OK'))
+
             settings['periodicBCs'] = solverSettings[3]
 
             system = parseSettings(settings)
             generation, paramName = settings['gen']
 
             use_manual_g = settings['use_manual_g']
-
 
             # define a thread in which to run the simulation
             self.thread = QThread(self)
@@ -417,6 +423,17 @@ class Simulation(QWidget):
             # Disable run button
             self.brun.setEnabled(False)
             self.thread.start()
+
+        except OSError:
+            # Dialog box
+            msg = QMessageBox()
+            msg.setWindowTitle("Processing error")
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText("The working directory is either not set properly or is not writable.")
+            msg.setEscapeButton(QMessageBox.Ok)
+            msg.exec_()
+            return
+
         except Exception:
             p = traceback.format_exc()
             # Dialog box
@@ -430,6 +447,8 @@ class Simulation(QWidget):
             # re enable run button
             self.brun.setEnabled(True)
             return
+        # else:
+            # os.remove(os.path.join(dirPath, 'W_OK'))
 
     @pyqtSlot(str)
     def displayMessage(self, message):
