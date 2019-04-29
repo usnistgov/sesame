@@ -8,4 +8,5 @@ Preliminaries
    install.rst
    INSTALL_beginner.rst
    authors.rst
+   citing.rst
    license.rst
