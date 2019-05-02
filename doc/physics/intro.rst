@@ -162,8 +162,8 @@ introduce the concept of quasi-Fermi level for electrons and holes (denoted by
 related to these quantities as 
 
 .. math::
-   n(x,y,z) &= N_C e^{\left(E_{F_n}(x,y,z) + q\phi(x,y,z) - \chi(x,y,z)\right)/k_BT}\\
-   p(x,y,z) &= N_V e^{\left(-E_{F_p}(x,y,z) - q\phi(x,y,z) - E_g+\chi(x,y,z)\right)/k_BT}
+   n(x,y,z) &= N_C e^{\left(E_{F_n}(x,y,z) + q\phi(x,y,z) + \chi(x,y,z)\right)/k_BT}\\
+   p(x,y,z) &= N_V e^{\left(-E_{F_p}(x,y,z) - q\phi(x,y,z) - E_g-\chi(x,y,z)\right)/k_BT}
    :label: np
 
 where the term :math:`\chi` is the electron affinity, :math:`\phi` is the
