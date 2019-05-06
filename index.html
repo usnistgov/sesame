@@ -42,58 +42,6 @@
   <script type="text/javascript" src="https://pages.nist.gov/leaveNotice/js/jquery.leaveNotice-nist.min.js"></script>
   <link rel="stylesheet" type="text/css" href="https://pages.nist.gov/leaveNotice/css/jquery.leaveNotice.css" />
  
-	<script type="text/javascript">
-$(document).ready(function(){
-	$('a.external').leaveNotice({siteName:"NIST LeaveNotice Test Page"});
-	//$('a[rel="external"]').leaveNotice({siteName:'NIST LeaveNotice Test Page'});
-	//$('a[target="_blank"]').leaveNotice({siteName:'NIST LeaveNotice Test Page'});
-	
-	//Initiation for example 1
-	$('a.ex1').leaveNotice();
-	
-	//Initiation for example 2
-	$('a.ex2').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page"
-	});
-	
-	//Initiation for example 3
-	$('a.ex3').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page",
-		exitMessage:"<h1>Say goodbye to<br/> {SITENAME}!</h1><p>Thanks. Shut the door behind you!</p>"
-	});
-	
-	//Initiation for example 4
-	$('a.ex4').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page",
-		exitMessage:"<h3>Say goodbye to {SITENAME}!</h3><p>Thanks. Shut the door behind you!</p>",
-		preLinkMessage:"<hr/><p>Have fun at:<br/><strong>{URL}</strong></p><hr/>"
-	});
-	
-	//Initiation for example 5
-	$('a.ex5').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page",
-		timeOut:0
-	});
-
-	//Initiation for example 7
-	$('a.ex6').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page",
-		newWindow:true
-	});
-	
-	//Initiation for example 7
-	$('a.ex7').leaveNotice({
-		siteName:"NIST LeaveNotice Test Page",
-		exitMessage:"<h3>Say goodbye to {SITENAME}!</h3><p>Thanks. Shut the door behind you!</p>",
-		preLinkMessage:"<hr/><p>Have fun at:<br/><strong>{URL}</strong></p><hr/>",
-		overlayId:"custom-blackout",
-		messageBoxId:"custom-messageBox",
-		messageBoxHolder:"custom-messageHolder",
-		overlayAlpha:0.6
-	});
-});
-</script>
-
 	
   
 </head>
@@ -144,22 +92,7 @@ $(document).ready(function(){
       href="https://www.github.com/usnistgov/sesame/releases/download/v1.0/sesameInstall.exe">Download executable (Windows)</a></strong>
       </ul>
       </font>
-      </p>
-	
-	<h2>LeaveNotice Examples</h2>
-<h3>1. Default Implementation <span>(no options set)</span></h3>
-<p><a href="http://www.google.com/" class="ex1" title="Example Site">Example Link</a></p>
-<code class="block">$('a.ex1').leaveNotice();</code>
-<hr>
-<h3>2. Standard Implementation <span>(only siteName set)</span></h3>
-<p><a href="http://www.google.com/" class="ex2">Example Link</a></p>
-
-
-<code class="block">$('a.ex2').leaveNotice({
-	siteName:"NIST LeaveNotice Test Page"
-});</code>
-
-
+      </p>	
 
       <h3>Documentation and tutorials</h3>
       <p>A complete documentation of the distribution is available. It contains examples on how to run Sesame both from the command line and
