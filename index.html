@@ -41,26 +41,10 @@
   <script type="text/javascript" src="https://code.jquery.com/jquery.1.12.4.min.js"></script>
   <script type="text/javascript" src="https://pages.nist.gov/leaveNotice/js/jquery.leaveNotice-nist.min.js"></script>
   <link rel="stylesheet" type="text/css" href="https://pages.nist.gov/leaveNotice/css/jquery.leaveNotice.css" />
-  
+ 
   <script type="text/javascript">
-  $(document).ready(function(){
-    // Mark external (non-nist.gov) A tags with class "external"
-    //If the adress start with https and ends with nist.gov
-    var re_nist = new RegExp('^https?:\/\/((^\/)*\.)*nist\\.gov(\/|$)'); 
-    //Regex to find address that start with https 
-    var re_absolute_address = new RegExp('^((https?:)?\/\/)');
-    $("a").each(function(){
-      var url=$(this).attr('href'); 
-      if(re_nist.test(url) || !re_absolute_address.test(url)){
-        $(this).addClass('local'); 
-      }else{
-        $(this).addClass('external');
-      } 
-    });
-    // Add leaveNotice to external A elements 
-    $('a.external').leaveNotice({
-      siteName: 'the NIST fork of the leaveNotice jQuery plugin',
-    });
+  $(function(){
+	$('a[rel=external]').leaveNotice();
   });
   </script>
     
@@ -95,16 +79,11 @@
       <ul> 
       <font size="4">
       <strong><a
-      href="https://www.github.com/usnistgov/sesame/">Download source code</a></strong>
+      href="https://www.github.com/usnistgov/sesame/" rel="external">Download source code</a></strong>
       </font>
       </ul>
       </p>
-      <code class="block">
-      $('a.ex3').leaveNotice({
-	      siteName:'NIST LeaveNotice Test Page',
-	      exitMessage:"<h1>Say goodbye to<br/> {SITENAME}!</h1><p>Thanks. Shut the door behind you!</p>"
-      });
-      </code>
+      
     
     
       
