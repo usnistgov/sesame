@@ -42,12 +42,59 @@
   <script type="text/javascript" src="https://pages.nist.gov/leaveNotice/js/jquery.leaveNotice-nist.min.js"></script>
   <link rel="stylesheet" type="text/css" href="https://pages.nist.gov/leaveNotice/css/jquery.leaveNotice.css" />
  
-  <script type="text/javascript">
-  $(function(){
-	$('a[rel=external]').leaveNotice();
-  });
-  </script>
-    
+	<script type="text/javascript">
+$(document).ready(function(){
+	$('a.external').leaveNotice({siteName:"NIST LeaveNotice Test Page"});
+	//$('a[rel="external"]').leaveNotice({siteName:'NIST LeaveNotice Test Page'});
+	//$('a[target="_blank"]').leaveNotice({siteName:'NIST LeaveNotice Test Page'});
+	
+	//Initiation for example 1
+	$('a.ex1').leaveNotice();
+	
+	//Initiation for example 2
+	$('a.ex2').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page"
+	});
+	
+	//Initiation for example 3
+	$('a.ex3').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page",
+		exitMessage:"<h1>Say goodbye to<br/> {SITENAME}!</h1><p>Thanks. Shut the door behind you!</p>"
+	});
+	
+	//Initiation for example 4
+	$('a.ex4').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page",
+		exitMessage:"<h3>Say goodbye to {SITENAME}!</h3><p>Thanks. Shut the door behind you!</p>",
+		preLinkMessage:"<hr/><p>Have fun at:<br/><strong>{URL}</strong></p><hr/>"
+	});
+	
+	//Initiation for example 5
+	$('a.ex5').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page",
+		timeOut:0
+	});
+
+	//Initiation for example 7
+	$('a.ex6').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page",
+		newWindow:true
+	});
+	
+	//Initiation for example 7
+	$('a.ex7').leaveNotice({
+		siteName:"NIST LeaveNotice Test Page",
+		exitMessage:"<h3>Say goodbye to {SITENAME}!</h3><p>Thanks. Shut the door behind you!</p>",
+		preLinkMessage:"<hr/><p>Have fun at:<br/><strong>{URL}</strong></p><hr/>",
+		overlayId:"custom-blackout",
+		messageBoxId:"custom-messageBox",
+		messageBoxHolder:"custom-messageHolder",
+		overlayAlpha:0.6
+	});
+});
+</script>
+
+	
   
 </head>
 <body>
