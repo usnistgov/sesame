@@ -169,7 +169,7 @@ Now we cycle over all the parameter sets which apply to a given node::
 	        sys = system(params)
 	
 	        # Get equilibrium solution
-	        eqsolution = sesame.solve_equilibrium(sys)
+        	eqsolution = sesame.solve(sys, 'Poisson')
 	
 	        # Define a function for generation profile
 	        f = lambda x, y: 2.3e21 * np.exp(-2.3e4 * x)
@@ -182,7 +182,7 @@ Now we cycle over all the parameter sets which apply to a given node::
 	            outputfile = outputfile + '{0}_'.format(paramvalue)
 	
 	        # Compute J-V curve
-	        jv = sesame.IVcurve(sys, voltages, eqsolution, outputfile)
+	        jv = sesame.IVcurve(sys, voltages, outputfile, guess=eqsolution)
 	        # Save computed J-V in array
 	        jvset_local[myjobcounter,:] = jv
 	
