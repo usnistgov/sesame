@@ -161,7 +161,7 @@ Next we scan over :math:`x_0` with a ``for`` loop.  At each value of :math:`x_0`
 	
 Now we solve the system::
 
-	    solution = sesame.solve(sys)
+	    solution = sesame.solve(sys, periodic_bcs=False, tol=1e-8)
 
 
 We obtain the current and store it in the array::
