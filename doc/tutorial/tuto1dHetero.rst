@@ -104,8 +104,6 @@ We've now completed the system definition.  As in the last example, we compute t
 
 :: 
 
-    eqsolution = sesame.solve_equilibrium(sys)
-
     phi = 1e21 # photon flux [1/(cm^2 s)]
     alpha = 2.3e6 # absorption coefficient [1/cm]
 
