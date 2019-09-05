@@ -117,11 +117,6 @@ contact boundary conditions.  For this example, we'll use selective Ohmic contac
 Computing an I-V curve
 ......................
 
-We've finished defining the system.  Before computing the system response to illumination and applied voltage, it's necessary to first solve the equilibrium system.  This is done with the command :func:`~sesame.solvers.Solver.solve_equilibrium`, which returns the equilibrium solution ::
-
-     # First find the equilibrium solution
-     eqsolution = sesame.solve_equilibrium(sys)
-
 To compute an I-V curve under illumination, we specify the generation profile with a function.  For this example, we use an exponentially varying generation profile defined in the function ``gfcn``::
 
     phi = 1e17       # photon flux [1/(cm^2 s)]
