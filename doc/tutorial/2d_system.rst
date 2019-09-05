@@ -127,7 +127,8 @@ Computing the IV curve
 The computation of the IV curve proceeds as in the previous tutorials.  We show the code below::
 
   # Solve equilibirum problem first
-  solution = sesame.solve_equilibrium(sys)
+  solution = sesame.solve(sys, 'Poisson')
+
 
   # define a function for generation profile
   f = lambda x, y: 2.3e21*np.exp(-2.3e4*x)
@@ -137,7 +138,7 @@ The computation of the IV curve proceeds as in the previous tutorials.  We show 
   # Specify applied voltages
   voltages = np.linspace(0, .9, 10)
   # Compute IV curve
-  j = sesame.IVcurve(sys, voltages, solution, '2dGB_V')
+  j = sesame.IVcurve(sys, voltages, '2dGB_V', guess=solution)
   # rescale to dimension-ful current
   j = j * sesame.scaling.current
 
