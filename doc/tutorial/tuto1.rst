@@ -133,7 +133,7 @@ Adding the illumination profile to the simulation is accomplished with the ``sys
 Finally we compute the I-V curve under illumination.  We do this with the sesame method :func:`~sesame.solvers.Solver.IVcurve`, whose the input arguments are the system object ``sys``, an array of applied voltage values, the equilibrium solution we just computed, and a string which is the seedname for the output files.::
 
     voltages = np.linspace(0, 0.95, 40)
-    j = sesame.IVcurve(sys, voltages, eqsolution, '1dhomo_V')
+    j = sesame.IVcurve(sys, voltages, '1dhomo_V')
     j = j * sys.scaling.current
 
 .. note::
