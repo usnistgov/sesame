@@ -112,7 +112,7 @@ We've now completed the system definition.  As in the last example, we compute t
     sys.generation(f)
 
     voltages = np.linspace(0, 0.95, 40)
-    j = sesame.IVcurve(sys, voltages, eqsolution, '1dhetero_V')
+    j = sesame.IVcurve(sys, voltages, '1dhetero_V')
     # convert dimensionless current to dimension-ful current
     j = j * sys.scaling.current
 
