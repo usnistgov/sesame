@@ -4,8 +4,6 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
-from scipy.io import savemat
-from . import analyzer
 from .utils import save_sim
 
 from .analyzer import Analyzer
@@ -17,7 +15,7 @@ from .getF import getF
 from .jacobian import getJ
 
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+# logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
 __all__ = ['solve', 'IVcurve']
 
@@ -297,7 +295,7 @@ class Solver():
         else:
             return None
 
-    def IVcurve(self, system, voltages, file_name, guess=None, tol=1e-6, 
+    def IVcurve(self, system, voltages, guess=None, tol=1e-6,
                 periodic_bcs=True, maxiter=300, verbose=True, htp=1, fmt='npz'):
         """
         Solve the Drift Diffusion Poisson equations for the voltages provided. The
@@ -382,7 +380,15 @@ class Solver():
         J = np.zeros((len(Vapp),))
         J[:] = np.nan
 
+        result_array = {'efn': np.empty((len(voltages), nx)),
+                    'efp': np.empty((len(voltages), nx)),\
+                    'v': np.empty((len(voltages), nx))}
+
+        last_converged_idx = 0
+
         for idx, vapp in enumerate(Vapp):
+
+            print(idx)
 
             if verbose:
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
@@ -396,15 +402,25 @@ class Solver():
 
             if result is not None:
                 # 1. Save efn, efp, v
-                name = file_name + "_{0}".format(idx)
-                # add some system settings to the saved results
 
-                if fmt == 'mat':
-                    save_sim(system, result, name, fmt='mat')
-                else:
-                    filename = "%s.gzip" % name
-                    save_sim(system, result, filename)
-                # 2. Compute the steady state current
+                # if file_name is not None:
+                #
+                #     name = file_name + "_{0}".format(idx)
+                #     # add some system settings to the saved results
+                #
+                #     if fmt == 'mat':
+                #         save_sim(system, result, name, fmt='mat')
+                #     else:
+                #         filename = "%s.gzip" % name
+                #         save_sim(system, result, filename)
+                #     # 2. Compute the steady state current
+
+                result_array['efn'][idx, :] = result['efn']
+                result_array['efp'][idx, :] = result['efp']
+                result_array['v'][idx, :] = result['v']
+
+                last_converged_idx = idx
+
                 try:
                     az = Analyzer(system, result)
                     J[idx] = az.full_current()
@@ -415,9 +431,19 @@ class Solver():
             else:
                 logging.info("The solver failed to converge for the applied voltage"\
                       + " {0} V (index {1}).".format(voltages[idx], idx))
-                return J
-                break
-        return J
+
+                result_array['efn'][idx, :] = np.nan
+                result_array['efp'][idx, :] = np.nan
+                result_array['v'][idx, :] = np.nan
+
+                # set guess for next voltage to the last converged solution
+                result = {'efn': result_array['efn'][last_converged_idx, :],\
+                          'efp': result_array['efp'][last_converged_idx, :],\
+                          'v': result_array['v'][last_converged_idx, :]}
+                # return J, result
+                # break
+
+        return J, result_array
 
 
 default = Solver()

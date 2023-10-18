@@ -7,8 +7,6 @@
 import numpy as np
 from scipy.integrate import quad
 from scipy.constants import m_e, epsilon_0
-from math import exp
-
 
 def defectsF(sys, defects_list, n, p, rho, r=None):
     """

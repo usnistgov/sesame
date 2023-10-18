@@ -20,7 +20,6 @@ except:
     mpl_enabled = False
 
 
-
 class Analyzer():
     """
     Object that simplifies the extraction of physical data (densities, currents,

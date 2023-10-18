@@ -7,7 +7,6 @@ import numpy as np
 from .observables import *
 from .defects import defectsF
 
-
 def getF(sys, v, efn, efp, veq):
     ###########################################################################
     #               organization of the right hand side vector                #

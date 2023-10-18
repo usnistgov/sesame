@@ -4,7 +4,7 @@
 # LICENSE.rst found in the top-level directory of this distribution.
 
 import numpy as np
-from itertools import chain, product
+from itertools import chain
 
 from .observables import get_n, get_p
 from .defects  import defectsF, defectsJ

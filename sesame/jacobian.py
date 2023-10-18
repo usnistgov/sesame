@@ -4,7 +4,6 @@ from itertools import chain
 from .observables import *
 from .defects  import defectsJ
 
-
 def getJ(sys, v, efn, efp):
     ###########################################################################
     #                     organization of the Jacobian matrix                 #

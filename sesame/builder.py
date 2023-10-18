@@ -7,13 +7,11 @@ from scipy.interpolate import InterpolatedUnivariateSpline as spline
 import numpy as np
 import scipy.constants as cts
 from collections import namedtuple
-from itertools import product
-import warnings
 
 from . import utils
 
 import logging
-logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
+# logging.basicConfig(level=logging.DEBUG, format='%(levelname)s: %(message)s')
 
 # named tuple of the characteristics of a defect
 defect = namedtuple('defect', ['sites', 'location', \
@@ -451,9 +449,9 @@ class Builder():
 
         # Schottky requires work functions
         if left_contact == 'Schottky' and left_wf is None:
-            raise ValueError("Shcottky contacts require work functions.")
+            raise ValueError("Schottky contacts require work functions.")
         if right_contact == 'Schottky' and right_wf is None:
-            raise ValueError("Shcottky contacts require work functions.")
+            raise ValueError("Schottky contacts require work functions.")
 
         self.contacts_bcs = [left_contact, right_contact]
         self.contacts_WF = [left_wf, right_wf]
