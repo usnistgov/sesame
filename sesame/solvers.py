@@ -388,8 +388,6 @@ class Solver():
 
         for idx, vapp in enumerate(Vapp):
 
-            print(idx)
-
             if verbose:
                 logging.info("Applied voltage: {0} V".format(voltages[idx]))
 
